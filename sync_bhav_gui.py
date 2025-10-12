@@ -5,8 +5,11 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 from dotenv import load_dotenv
-from tkinter import Tk, Label, Button, StringVar, filedialog, ttk, messagebox
-from tkinter.scrolledtext import ScrolledText  # ✅ multi-line log box
+from tkinter import Tk, Label, Button, StringVar, filedialog, ttk, messagebox, Toplevel, Entry, Checkbutton, IntVar
+from tkinter.scrolledtext import ScrolledText
+
+# A/D reporting functions (includes new export function)
+from reporting_adv_decl import compute_adv_decl, compute_range, plot_adv_decl, export_adv_decl_csv
 
 # ------------ Config ------------
 load_dotenv()
@@ -134,10 +137,9 @@ def upsert_bhav(conn, df: pd.DataFrame):
     conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
     conn.execute(text("CREATE TEMPORARY TABLE tmp_bhav LIKE nse_equity_bhavcopy_full;"))
 
-    # IMPORTANT: use the SAME connection so the temp table is visible
     df.to_sql(
         name="tmp_bhav",
-        con=conn,
+        con=conn,   # same connection so temp table is visible
         if_exists="append",
         index=False,
         method="multi",
@@ -184,7 +186,6 @@ def sync_folder(progress_cb=None, log_cb=None):
     total = len(files)
     if progress_cb: progress_cb(0, total)
 
-    # new DB session per file
     for idx, path in enumerate(sorted(files)):
         try:
             checksum = md5_of_file(path)
@@ -213,53 +214,53 @@ def sync_folder(progress_cb=None, log_cb=None):
 class App:
     def __init__(self, root):
         self.root = root
-        root.title("NSE Bhav Sync")
+        root.title("NSE Bhav Sync + Reports")
+        root.geometry("920x590")
 
-        # Optional: set a fixed starting size so content doesn't grow the window
-        root.geometry("800x480")
-
-        # Header
         self.folder_text = StringVar(value=f"Folder: {BHAV_FOLDER}")
         Label(root, textvariable=self.folder_text).pack(padx=10, pady=(10, 4), anchor="w")
 
-        # Progress bar
-        self.pb = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=760)
+        self.pb = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=880)
         self.pb.pack(padx=10, pady=6)
 
-        # ✅ Multi-line log (won't expand window width)
-        self.log_box = ScrolledText(root, width=100, height=15, wrap="word")
+        self.log_box = ScrolledText(root, width=120, height=18, wrap="word")
         self.log_box.pack(padx=10, pady=6, fill="both", expand=True)
-        self.log_box.insert("end", "Ready.\n")
-        self.log_box.configure(state="disabled")
+        self._append_sync("Ready.")
 
-        # Buttons row
         btn_frame = ttk.Frame(root)
         btn_frame.pack(padx=10, pady=6, anchor="w")
         Button(btn_frame, text="Choose Folder", command=self.choose_folder).grid(row=0, column=0, padx=6)
         Button(btn_frame, text="Sync", command=self.run_sync).grid(row=0, column=1, padx=6)
         Button(btn_frame, text="Count Days", command=self.count_days).grid(row=0, column=2, padx=6)
+        ttk.Separator(btn_frame, orient="vertical").grid(row=0, column=3, padx=12, sticky="ns")
 
-    # Thread-safe logger
+        # Reporting buttons
+        Button(btn_frame, text="Compute A/D (Day)", command=self.compute_ad_day_dialog).grid(row=0, column=4, padx=6)
+        Button(btn_frame, text="Compute Range", command=self.compute_range_dialog).grid(row=0, column=5, padx=6)
+        Button(btn_frame, text="Plot A/D", command=self.plot_ad_dialog).grid(row=0, column=6, padx=6)
+        Button(btn_frame, text="Export A/D CSV", command=self.export_ad_dialog).grid(row=0, column=7, padx=6)  # ✅ NEW
+
+    # Thread-safe logging
     def append_log(self, msg: str):
-        def _append():
-            self.log_box.configure(state="normal")
-            self.log_box.insert("end", msg + "\n")
-            self.log_box.see("end")
-            # keep last ~2000 lines to avoid memory bloat
-            content = self.log_box.get("1.0", "end")
-            if content.count("\n") > 2000:
-                self.log_box.delete("1.0", "200.0")
-            self.log_box.configure(state="disabled")
-        self.root.after(0, _append)
+        self.root.after(0, lambda: self._append_sync(msg))
+
+    def _append_sync(self, msg: str):
+        self.log_box.configure(state="normal")
+        self.log_box.insert("end", msg + "\n")
+        self.log_box.see("end")
+        content = self.log_box.get("1.0", "end")
+        if content.count("\n") > 2000:
+            self.log_box.delete("1.0", "200.0")
+        self.log_box.configure(state="disabled")
 
     def set_progress(self, done, total):
-        def _update():
-            self.pb["maximum"] = max(total, 1)
-            self.pb["value"] = done
-        self.root.after(0, _update)
+        self.root.after(0, lambda: self._set_progress_sync(done, total))
+
+    def _set_progress_sync(self, done, total):
+        self.pb["maximum"] = max(total, 1)
+        self.pb["value"] = done
 
     def choose_folder(self):
-        from tkinter import filedialog
         global BHAV_FOLDER
         folder = filedialog.askdirectory(initialdir=str(BHAV_FOLDER))
         if folder:
@@ -279,14 +280,12 @@ class App:
         try:
             eng = engine()
             with eng.connect() as conn:
-                # Distinct days available in the main table
                 rows = conn.execute(text(f"SELECT DISTINCT trade_date FROM {TABLE} ORDER BY trade_date")).fetchall()
                 days = [r[0] for r in rows]
                 n = len(days)
                 preview = ""
                 if n:
                     preview = f"\nRange: {days[0]} → {days[-1]}"
-                    # show up to 10 sample dates
                     sample = ", ".join(str(d) for d in days[:10])
                     if n > 10:
                         sample += ", …"
@@ -299,11 +298,166 @@ class App:
             self.append_log(traceback.format_exc())
             messagebox.showerror("Days Present", f"Failed to count days:\n{e}")
 
+    # ---------- A/D dialogs ----------
+    def compute_ad_day_dialog(self):
+        win = Toplevel(self.root)
+        win.title("Compute A/D (One Day)")
+        Label(win, text="Trade Date (YYYY-MM-DD):").grid(row=0, column=0, padx=8, pady=8, sticky="e")
+        e_date = Entry(win, width=15); e_date.grid(row=0, column=1, padx=8, pady=8)
+        Label(win, text="Force recompute:").grid(row=1, column=0, padx=8, pady=4, sticky="e")
+        force_var = IntVar(value=0)
+        Checkbutton(win, variable=force_var).grid(row=1, column=1, padx=8, pady=4, sticky="w")
+
+        def run():
+            val = e_date.get().strip()
+            try:
+                y, m, d = map(int, val.split("-"))
+                dt = date(y, m, d)
+            except Exception:
+                messagebox.showerror("Invalid date", "Please enter date as YYYY-MM-DD")
+                return
+            win.destroy()
+            threading.Thread(target=self._compute_ad_day_worker, args=(dt, bool(force_var.get())), daemon=True).start()
+
+        Button(win, text="Compute", command=run).grid(row=2, column=0, columnspan=2, pady=10)
+
+    def _compute_ad_day_worker(self, dt: date, force: bool):
+        try:
+            self.append_log(f"Computing A/D for {dt} (force={force}) …")
+            res = compute_adv_decl(dt, force=force)
+            self.append_log(f"A/D {dt}: Advances={res['advances']}, Declines={res['declines']}, Unchanged={res['unchanged']}, Total={res['total']}")
+            messagebox.showinfo("Compute A/D", f"{dt}\nAdvances={res['advances']}\nDeclines={res['declines']}\nUnchanged={res['unchanged']}\nTotal={res['total']}")
+        except Exception as e:
+            self.append_log(f"Compute A/D failed: {e}")
+            self.append_log(traceback.format_exc())
+            messagebox.showerror("Compute A/D", f"Failed: {e}")
+
+    def compute_range_dialog(self):
+        win = Toplevel(self.root)
+        win.title("Compute A/D Range")
+        Label(win, text="Start (YYYY-MM-DD):").grid(row=0, column=0, padx=8, pady=6, sticky="e")
+        e_start = Entry(win, width=15); e_start.grid(row=0, column=1, padx=8, pady=6)
+        Label(win, text="End (YYYY-MM-DD):").grid(row=1, column=0, padx=8, pady=6, sticky="e")
+        e_end = Entry(win, width=15); e_end.grid(row=1, column=1, padx=8, pady=6)
+        Label(win, text="Force recompute:").grid(row=2, column=0, padx=8, pady=6, sticky="e")
+        force_var = IntVar(value=0)
+        Checkbutton(win, variable=force_var).grid(row=2, column=1, padx=8, pady=6, sticky="w")
+
+        def run():
+            try:
+                y1, m1, d1 = map(int, e_start.get().strip().split("-"))
+                y2, m2, d2 = map(int, e_end.get().strip().split("-"))
+                d_start = date(y1, m1, d1); d_end = date(y2, m2, d2)
+            except Exception:
+                messagebox.showerror("Invalid date", "Use YYYY-MM-DD for both dates.")
+                return
+            win.destroy()
+            threading.Thread(target=self._compute_range_worker, args=(d_start, d_end, bool(force_var.get())), daemon=True).start()
+
+        Button(win, text="Compute Range", command=run).grid(row=3, column=0, columnspan=2, pady=10)
+
+    def _compute_range_worker(self, d_start: date, d_end: date, force: bool):
+        try:
+            self.append_log(f"Computing A/D from {d_start} to {d_end} (force={force}) …")
+            df = compute_range(d_start, d_end, force=force)
+            self.append_log(f"Done. Cached {len(df)} days.")
+            messagebox.showinfo("Compute Range", f"Computed/Cached: {len(df)} days")
+        except Exception as e:
+            self.append_log(f"Compute Range failed: {e}")
+            self.append_log(traceback.format_exc())
+            messagebox.showerror("Compute Range", f"Failed: {e}")
+
+    def plot_ad_dialog(self):
+        win = Toplevel(self.root)
+        win.title("Plot A/D")
+        Label(win, text="Start (YYYY-MM-DD, empty=auto):").grid(row=0, column=0, padx=8, pady=6, sticky="e")
+        e_start = Entry(win, width=15); e_start.grid(row=0, column=1, padx=8, pady=6)
+        Label(win, text="End (YYYY-MM-DD, empty=auto):").grid(row=1, column=0, padx=8, pady=6, sticky="e")
+        e_end = Entry(win, width=15); e_end.grid(row=1, column=1, padx=8, pady=6)
+
+        def run():
+            s = e_start.get().strip()
+            e = e_end.get().strip()
+            d_start = None; d_end = None
+            try:
+                if s:
+                    y1, m1, d1 = map(int, s.split("-"))
+                    d_start = date(y1, m1, d1)
+                if e:
+                    y2, m2, d2 = map(int, e.split("-"))
+                    d_end = date(y2, m2, d2)
+            except Exception:
+                messagebox.showerror("Invalid date", "Use YYYY-MM-DD or leave empty.")
+                return
+            win.destroy()
+            threading.Thread(target=self._plot_worker, args=(d_start, d_end), daemon=True).start()
+
+        Button(win, text="Plot", command=run).grid(row=2, column=0, columnspan=2, pady=10)
+
+    def _plot_worker(self, d_start: date | None, d_end: date | None):
+        try:
+            self.append_log(f"Plotting A/D … range: {d_start} → {d_end}")
+            plot_adv_decl(start=d_start, end=d_end)  # opens Matplotlib window
+            self.append_log("Plot complete.")
+        except Exception as e:
+            self.append_log(f"Plot failed: {e}")
+            self.append_log(traceback.format_exc())
+            messagebox.showerror("Plot A/D", f"Failed: {e}")
+
+    # ---------- Export A/D CSV ----------
+    def export_ad_dialog(self):
+        win = Toplevel(self.root)
+        win.title("Export A/D CSV")
+        Label(win, text="Start (YYYY-MM-DD, empty=auto):").grid(row=0, column=0, padx=8, pady=6, sticky="e")
+        e_start = Entry(win, width=15); e_start.grid(row=0, column=1, padx=8, pady=6)
+        Label(win, text="End (YYYY-MM-DD, empty=auto):").grid(row=1, column=0, padx=8, pady=6, sticky="e")
+        e_end = Entry(win, width=15); e_end.grid(row=1, column=1, padx=8, pady=6)
+
+        def run():
+            s = e_start.get().strip()
+            e = e_end.get().strip()
+            d_start = None; d_end = None
+            try:
+                if s:
+                    y1, m1, d1 = map(int, s.split("-"))
+                    d_start = date(y1, m1, d1)
+                if e:
+                    y2, m2, d2 = map(int, e.split("-"))
+                    d_end = date(y2, m2, d2)
+            except Exception:
+                messagebox.showerror("Invalid date", "Use YYYY-MM-DD or leave empty.")
+                return
+
+            # Ask where to save
+            save_path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv")],
+                initialfile="adv_decl.csv",
+                title="Save Advance/Decline CSV"
+            )
+            if not save_path:
+                return  # user cancelled
+            win.destroy()
+            threading.Thread(target=self._export_worker, args=(d_start, d_end, save_path), daemon=True).start()
+
+        Button(win, text="Export CSV", command=run).grid(row=2, column=0, columnspan=2, pady=10)
+
+    def _export_worker(self, d_start: date | None, d_end: date | None, save_path: str):
+        try:
+            self.append_log(f"Exporting A/D CSV → {save_path} (range: {d_start} → {d_end}) …")
+            path = export_adv_decl_csv(save_path, start=d_start, end=d_end)
+            self.append_log(f"Export complete: {path}")
+            messagebox.showinfo("Export A/D CSV", f"Saved: {path}")
+        except Exception as e:
+            self.append_log(f"Export failed: {e}")
+            self.append_log(traceback.format_exc())
+            messagebox.showerror("Export A/D CSV", f"Failed: {e}")
+
 if __name__ == "__main__":
     root = Tk()
     try:
         import ctypes
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # nicer scaling on Windows
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         pass
     App(root)

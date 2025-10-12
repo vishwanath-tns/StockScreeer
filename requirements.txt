@@ -3,3 +3,4 @@ sqlalchemy
 pymysql
 python-dotenv
 tqdm
+matplotlib
