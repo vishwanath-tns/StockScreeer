@@ -1,0 +1,50 @@
+# --- Environment & Credentials ---
+.env
+*.env
+
+# --- Python cache / build artifacts ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.dll
+*.log
+*.tmp
+*.bak
+
+# --- IDE / Editor files ---
+.vscode/
+.idea/
+*.iml
+
+# --- OS-generated files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Virtual environments ---
+venv/
+env/
+.venv/
+.env/
+pip-wheel-metadata/
+
+# --- Python packaging ---
+build/
+dist/
+*.egg-info/
+
+# --- Cache or data folders ---
+.cache/
+logs/
+output/
+data/
+
+# --- Bhav copies folder (your local data) ---
+bhav_data/
+!bhav_data/.keep   # optional: keep folder structure empty on GitHub
+
+# --- SQLite or local DBs (if any future feature adds them) ---
+*.db
+*.sqlite3
