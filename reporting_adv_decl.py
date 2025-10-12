@@ -215,8 +215,31 @@ def plot_adv_decl(start: Optional[date] = None,
         # style may not be installed (seaborn not available) — continue with defaults
         pass
     fig, ax = plt.subplots()
-    df["advances"].plot(ax=ax, label="Advances")
-    df["declines"].plot(ax=ax, label="Declines")
+    # Plot with explicit markers so individual data points are visible
+    ax.plot(
+        df.index,
+        df["advances"],
+        label="Advances",
+        marker="o",
+        markersize=5,
+        linestyle="-",
+        linewidth=1.25,
+        color="#2ca02c",  # green
+        alpha=0.9,
+        zorder=3,
+    )
+    ax.plot(
+        df.index,
+        df["declines"],
+        label="Declines",
+        marker="o",
+        markersize=5,
+        linestyle="-",
+        linewidth=1.25,
+        color="#d62728",  # red
+        alpha=0.9,
+        zorder=3,
+    )
     ax.legend()
     ax.set_title(f"Advance/Decline — {scope} — {start} to {end}")
     ax.set_xlabel("Date")
@@ -225,6 +248,8 @@ def plot_adv_decl(start: Optional[date] = None,
     ax.grid(which='major', linestyle='-', linewidth=0.6, alpha=0.8)
     ax.grid(which='minor', linestyle=':', linewidth=0.4, alpha=0.6)
     ax.minorticks_on()
+    # Improve date label formatting and layout
+    fig.autofmt_xdate()
     fig.tight_layout()
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
