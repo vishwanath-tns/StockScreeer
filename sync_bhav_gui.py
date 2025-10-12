@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 from dotenv import load_dotenv
 from tkinter import Tk, Label, Button, StringVar, filedialog, ttk, messagebox
+from tkinter.scrolledtext import ScrolledText  # ✅ multi-line log box
 
 # ------------ Config ------------
 load_dotenv()
@@ -15,10 +16,9 @@ DB   = os.getenv("MYSQL_DB", "marketdata")
 USER = os.getenv("MYSQL_USER", "root")
 PWD  = os.getenv("MYSQL_PASSWORD", "")
 BHAV_FOLDER = Path(os.getenv("BHAV_FOLDER", "."))
+
 TABLE = "nse_equity_bhavcopy_full"
 LOG_TABLE = "imports_log"
-
-# File patterns to load
 VALID_EXTS = (".csv", ".zip")
 
 # ------------ DB Utils ------------
@@ -89,25 +89,20 @@ def read_any(path: Path) -> pd.DataFrame:
         df = read_csv_from_zip(path)
     else:
         df = pd.read_csv(path)
-    # strip headers and normalize
     df.columns = [c.strip() for c in df.columns]
-    # assert columns exist
     missing = [c for c in COLMAP.keys() if c not in df.columns]
     if missing:
         raise ValueError(f"Missing columns {missing} in {path.name}")
     df = df[list(COLMAP.keys())].rename(columns=COLMAP)
 
-    # clean strings
     for s in ("symbol", "series"):
         df[s] = df[s].astype(str).str.strip()
 
-    # parse date like '10-Oct-2025'
     df["trade_date"] = pd.to_datetime(
         df["trade_date"].astype(str).str.strip(),
         dayfirst=True, errors="coerce"
     ).dt.date
 
-    # numeric cleanups (DELIV_QTY/DELIV_PER can be blank/NA/'-')
     def to_int_or_null(x):
         if pd.isna(x): return None
         s = str(x).replace(",", "").strip()
@@ -125,24 +120,21 @@ def read_any(path: Path) -> pd.DataFrame:
     if "deliv_qty" in df:  df["deliv_qty"] = df["deliv_qty"].map(to_int_or_null)
     if "deliv_per" in df:  df["deliv_per"] = df["deliv_per"].map(to_float_or_null)
 
-    # Drop bad rows
     df = df.dropna(subset=["trade_date", "symbol", "series"])
     return df
 
 def extract_single_trade_date(df: pd.DataFrame) -> date:
-    uniq = pd.Series(df["trade_date"].unique())
-    uniq = uniq.dropna()
+    uniq = pd.Series(df["trade_date"].unique()).dropna()
     if len(uniq) != 1:
         raise ValueError(f"Expected exactly 1 trade_date in file, found: {list(uniq)}")
     return pd.to_datetime(uniq.iloc[0]).date()
 
 # ------------ Upsert ------------
 def upsert_bhav(conn, df: pd.DataFrame):
-    # Defensive: ensure a clean temporary table in this session
     conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
     conn.execute(text("CREATE TEMPORARY TABLE tmp_bhav LIKE nse_equity_bhavcopy_full;"))
 
-    # Use the SAME connection so temp table is visible
+    # IMPORTANT: use the SAME connection so the temp table is visible
     df.to_sql(
         name="tmp_bhav",
         con=conn,
@@ -177,8 +169,6 @@ def upsert_bhav(conn, df: pd.DataFrame):
       deliv_per    = VALUES(deliv_per);
     """
     conn.execute(text(upsert_sql))
-
-    # Clean up explicitly (good hygiene even though session ends per file)
     conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
 
 # ------------ Scanner ------------
@@ -194,7 +184,7 @@ def sync_folder(progress_cb=None, log_cb=None):
     total = len(files)
     if progress_cb: progress_cb(0, total)
 
-    # New DB session per file — avoids lingering temp tables
+    # new DB session per file
     for idx, path in enumerate(sorted(files)):
         try:
             checksum = md5_of_file(path)
@@ -224,37 +214,58 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title("NSE Bhav Sync")
-        self.status = StringVar(value=f"Folder: {BHAV_FOLDER}")
-        Label(root, textvariable=self.status).pack(padx=10, pady=6)
 
-        self.pb = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=400)
+        # Optional: set a fixed starting size so content doesn't grow the window
+        root.geometry("800x480")
+
+        # Header
+        self.folder_text = StringVar(value=f"Folder: {BHAV_FOLDER}")
+        Label(root, textvariable=self.folder_text).pack(padx=10, pady=(10, 4), anchor="w")
+
+        # Progress bar
+        self.pb = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=760)
         self.pb.pack(padx=10, pady=6)
 
-        self.log = StringVar(value="")
-        self.log_label = Label(root, textvariable=self.log, justify="left", anchor="w")
-        self.log_label.pack(padx=10, pady=6)
+        # ✅ Multi-line log (won't expand window width)
+        self.log_box = ScrolledText(root, width=100, height=15, wrap="word")
+        self.log_box.pack(padx=10, pady=6, fill="both", expand=True)
+        self.log_box.insert("end", "Ready.\n")
+        self.log_box.configure(state="disabled")
 
-        frm = ttk.Frame(root)
-        frm.pack(padx=10, pady=6)
-        Button(frm, text="Choose Folder", command=self.choose_folder).grid(row=0, column=0, padx=6)
-        Button(frm, text="Sync", command=self.run_sync).grid(row=0, column=1, padx=6)
+        # Buttons row
+        btn_frame = ttk.Frame(root)
+        btn_frame.pack(padx=10, pady=6, anchor="w")
+        Button(btn_frame, text="Choose Folder", command=self.choose_folder).grid(row=0, column=0, padx=6)
+        Button(btn_frame, text="Sync", command=self.run_sync).grid(row=0, column=1, padx=6)
+        Button(btn_frame, text="Count Days", command=self.count_days).grid(row=0, column=2, padx=6)
+
+    # Thread-safe logger
+    def append_log(self, msg: str):
+        def _append():
+            self.log_box.configure(state="normal")
+            self.log_box.insert("end", msg + "\n")
+            self.log_box.see("end")
+            # keep last ~2000 lines to avoid memory bloat
+            content = self.log_box.get("1.0", "end")
+            if content.count("\n") > 2000:
+                self.log_box.delete("1.0", "200.0")
+            self.log_box.configure(state="disabled")
+        self.root.after(0, _append)
+
+    def set_progress(self, done, total):
+        def _update():
+            self.pb["maximum"] = max(total, 1)
+            self.pb["value"] = done
+        self.root.after(0, _update)
 
     def choose_folder(self):
+        from tkinter import filedialog
         global BHAV_FOLDER
         folder = filedialog.askdirectory(initialdir=str(BHAV_FOLDER))
         if folder:
             BHAV_FOLDER = Path(folder)
-            self.status.set(f"Folder: {BHAV_FOLDER}")
-
-    def set_progress(self, done, total):
-        self.pb["maximum"] = max(total, 1)
-        self.pb["value"] = done
-        self.root.update_idletasks()
-
-    def append_log(self, msg):
-        prev = self.log.get()
-        new = (prev + "\n" + msg).strip()
-        self.log.set("\n".join(new.splitlines()[-15:]))
+            self.folder_text.set(f"Folder: {BHAV_FOLDER}")
+            self.append_log(f"Folder set to: {BHAV_FOLDER}")
 
     def run_sync(self):
         def worker():
@@ -263,6 +274,30 @@ class App:
             self.append_log(f"Done. Imported: {processed}, Skipped: {skipped}, Failed: {failed}")
             messagebox.showinfo("NSE Bhav Sync", f"Imported: {processed}\nSkipped: {skipped}\nFailed: {failed}")
         threading.Thread(target=worker, daemon=True).start()
+
+    def count_days(self):
+        try:
+            eng = engine()
+            with eng.connect() as conn:
+                # Distinct days available in the main table
+                rows = conn.execute(text(f"SELECT DISTINCT trade_date FROM {TABLE} ORDER BY trade_date")).fetchall()
+                days = [r[0] for r in rows]
+                n = len(days)
+                preview = ""
+                if n:
+                    preview = f"\nRange: {days[0]} → {days[-1]}"
+                    # show up to 10 sample dates
+                    sample = ", ".join(str(d) for d in days[:10])
+                    if n > 10:
+                        sample += ", …"
+                    preview += f"\nSample: {sample}"
+                msg = f"Distinct trading days present: {n}{preview}"
+                self.append_log(msg)
+                messagebox.showinfo("Days Present", msg)
+        except Exception as e:
+            self.append_log(f"Count Days failed: {e}")
+            self.append_log(traceback.format_exc())
+            messagebox.showerror("Days Present", f"Failed to count days:\n{e}")
 
 if __name__ == "__main__":
     root = Tk()
