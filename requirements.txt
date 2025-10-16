@@ -1,6 +1,9 @@
+
 pandas
 sqlalchemy
 pymysql
 python-dotenv
 tqdm
 matplotlib
+mplfinance
+mplcursors  # optional: used for interactive hover when available

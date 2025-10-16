@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 load_dotenv()
 
@@ -113,7 +114,7 @@ def compute_adv_decl(trade_dt: date, series: Iterable[str] = DEFAULT_SERIES, for
     payload.update({"trade_date": trade_dt, "series_scope": scope, "source_rows": row_cnt})
     return payload
 
-def compute_range(start: date, end: date, series: Iterable[str] = DEFAULT_SERIES, force: bool = False) -> pd.DataFrame:
+def compute_range(start: date, end: date, series: Iterable[str] = DEFAULT_SERIES, force: bool = False, progress_cb=None) -> pd.DataFrame:
     scope = _series_scope(series)
     eng = engine()
     with eng.connect() as conn:
@@ -127,8 +128,15 @@ def compute_range(start: date, end: date, series: Iterable[str] = DEFAULT_SERIES
             {"a": start, "b": end}
         ).scalars().all()
     rows = []
-    for d in dates:
+    total = len(dates)
+    for i, d in enumerate(dates):
         rows.append(compute_adv_decl(d, series=series, force=force))
+        if progress_cb:
+            try:
+                # call progress callback with (current_index, total, date)
+                progress_cb(i + 1, total, d)
+            except Exception:
+                pass
     return pd.DataFrame(rows)
 
 def export_adv_decl_csv(save_path: str,
@@ -178,7 +186,8 @@ def export_adv_decl_csv(save_path: str,
 def plot_adv_decl(start: Optional[date] = None,
                   end: Optional[date] = None,
                   series: Iterable[str] = DEFAULT_SERIES,
-                  save_path: Optional[str] = None):
+                  save_path: Optional[str] = None,
+                  report_type: str = "counts"):
     scope = _series_scope(series)
     eng = engine()
     with eng.connect() as conn:
@@ -215,33 +224,93 @@ def plot_adv_decl(start: Optional[date] = None,
         # style may not be installed (seaborn not available) — continue with defaults
         pass
     fig, ax = plt.subplots()
-    # Plot with explicit markers so individual data points are visible
-    ax.plot(
-        df.index,
-        df["advances"],
-        label="Advances",
-        marker="o",
-        markersize=5,
-        linestyle="-",
-        linewidth=1.25,
-        color="#2ca02c",  # green
-        alpha=0.9,
-        zorder=3,
-    )
-    ax.plot(
-        df.index,
-        df["declines"],
-        label="Declines",
-        marker="o",
-        markersize=5,
-        linestyle="-",
-        linewidth=1.25,
-        color="#d62728",  # red
-        alpha=0.9,
-        zorder=3,
-    )
-    ax.legend()
-    ax.set_title(f"Advance/Decline — {scope} — {start} to {end}")
+    # compute ratios
+    df["adv_ratio"] = df["advances"] / df["total"]
+    df["dec_ratio"] = df["declines"] / df["total"]
+
+    # Plot according to report_type
+    report_type = (report_type or "counts").lower()
+    ratio_ax = None
+    if report_type == "counts":
+        # Plot with explicit markers so individual data points are visible
+        ax.plot(
+            df.index,
+            df["advances"],
+            label="Advances",
+            marker="o",
+            markersize=5,
+            linestyle="-",
+            linewidth=1.25,
+            color="#2ca02c",  # green
+            alpha=0.9,
+            zorder=3,
+        )
+        ax.plot(
+            df.index,
+            df["declines"],
+            label="Declines",
+            marker="o",
+            markersize=5,
+            linestyle="-",
+            linewidth=1.25,
+            color="#d62728",  # red
+            alpha=0.9,
+            zorder=3,
+        )
+    elif report_type == "ratio":
+        # single adv_ratio line on secondary axis as percent
+        ratio_ax = ax.twinx()
+        ratio_ax.plot(
+            df.index,
+            df["adv_ratio"] * 100.0,
+            label="Adv Ratio (%)",
+            marker="o",
+            markersize=5,
+            linestyle="-",
+            linewidth=1.25,
+            color="#1f77b4",
+            alpha=0.9,
+            zorder=3,
+        )
+        ratio_ax.set_ylabel("Adv Ratio (%)")
+    elif report_type == "both_ratios":
+        ratio_ax = ax.twinx()
+        ratio_ax.plot(
+            df.index,
+            df["adv_ratio"] * 100.0,
+            label="Adv Ratio (%)",
+            marker="o",
+            markersize=5,
+            linestyle="-",
+            linewidth=1.25,
+            color="#1f77b4",
+            alpha=0.9,
+            zorder=3,
+        )
+        ratio_ax.plot(
+            df.index,
+            df["dec_ratio"] * 100.0,
+            label="Dec Ratio (%)",
+            marker="o",
+            markersize=5,
+            linestyle="-",
+            linewidth=1.25,
+            color="#ff7f0e",
+            alpha=0.9,
+            zorder=3,
+        )
+        ratio_ax.set_ylabel("Ratio (%)")
+    else:
+        raise ValueError("report_type must be one of: counts, ratio, both_ratios")
+    # legends: include ratio axis legend if present
+    if ratio_ax is not None:
+        lines, labels = ax.get_legend_handles_labels()
+        rlines, rlabels = ratio_ax.get_legend_handles_labels()
+        ax.legend(lines + rlines, labels + rlabels)
+    else:
+        ax.legend()
+
+    ax.set_title(f"Advance/Decline — {scope} — {start} to {end} ({report_type})")
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
     # show major and minor grid for readability
@@ -249,6 +318,114 @@ def plot_adv_decl(start: Optional[date] = None,
     ax.grid(which='minor', linestyle=':', linewidth=0.4, alpha=0.6)
     ax.minorticks_on()
     # Improve date label formatting and layout
+    # Enable interactive hover showing full date (day-month-year)
+    try:
+        import mplcursors
+
+        # include ratio axis lines too if present
+        _lines = ax.lines[:]
+        if ratio_ax is not None:
+            _lines = _lines + ratio_ax.lines
+        cursor = mplcursors.cursor(_lines, hover=True)
+
+        def _format_val(y):
+            try:
+                yv = float(y)
+                # If it's a ratio percent (we plotted ratio_ax as percent > 1), show with 2 decimals
+                if abs(yv) <= 100 and not yv.is_integer():
+                    return f"{yv:.2f}%" if yv <= 100 else f"{yv:.2f}"
+                return f"{int(round(yv))}"
+            except Exception:
+                return str(y)
+
+        @cursor.connect("add")
+        def _on_add(sel):
+            try:
+                x, y = sel.target
+                # Prefer pandas to format the x value if possible (removes time)
+                try:
+                    dt = pd.to_datetime(x).strftime("%Y-%m-%d")
+                except Exception:
+                    dt = mdates.num2date(x).strftime("%Y-%m-%d")
+                val = _format_val(y)
+                sel.annotation.set_text(f"{dt}\n{val}")
+            except Exception:
+                sel.annotation.set_text(str(sel.target))
+    except Exception:
+        # Fallback: simple annotation on mouse move
+        annot = ax.annotate("", xy=(0, 0), xytext=(15, 15), textcoords="offset points",
+                            bbox=dict(boxstyle="round", fc="w"))
+        annot.set_visible(False)
+
+        lines = ax.lines
+        if ratio_ax is not None:
+            lines = lines + ratio_ax.lines
+        xdatas = [l.get_xdata() for l in lines]
+        ydatas = [l.get_ydata() for l in lines]
+
+        def _on_move(event):
+            if event.inaxes != ax:
+                return
+            try:
+                ex = event.xdata
+                if ex is None:
+                    if annot.get_visible():
+                        annot.set_visible(False)
+                        fig.canvas.draw_idle()
+                    return
+                # find nearest point among all lines
+                nearest = None
+                mindiff = float('inf')
+                for li, (xs, ys) in enumerate(zip(xdatas, ydatas)):
+                    if len(xs) == 0:
+                        continue
+                    # convert xs to numeric matplotlib dates
+                    try:
+                        nums = mdates.date2num(xs)
+                    except Exception:
+                        # xs may already be numeric
+                        nums = xs
+                    # find closest index
+                    idx = int(min(range(len(nums)), key=lambda i: abs(nums[i] - ex)))
+                    diff = abs(nums[idx] - ex)
+                    if diff < mindiff:
+                        mindiff = diff
+                        nearest = (li, idx)
+                # threshold: within a small fraction of a day
+                if nearest and mindiff < 1.0:
+                    li, idx = nearest
+                    x = xdatas[li][idx]
+                    y = ydatas[li][idx]
+                    try:
+                        try:
+                            dt = pd.to_datetime(x).strftime("%Y-%m-%d")
+                        except Exception:
+                            dt = mdates.num2date(x).strftime("%Y-%m-%d")
+                        # format value: if numeric and likely percent (ratio plotted on percent axis), format accordingly
+                        try:
+                            yv = float(y)
+                            if not yv.is_integer():
+                                valtxt = f"{yv:.2f}%" if abs(yv) <= 100 else f"{yv:.2f}"
+                            else:
+                                valtxt = f"{int(round(yv))}"
+                        except Exception:
+                            valtxt = str(y)
+                        txt = f"{dt}\n{valtxt}"
+                    except Exception:
+                        txt = f"{x}\n{y}"
+                    annot.xy = (x, y)
+                    annot.set_text(txt)
+                    annot.set_visible(True)
+                    fig.canvas.draw_idle()
+                else:
+                    if annot.get_visible():
+                        annot.set_visible(False)
+                        fig.canvas.draw_idle()
+            except Exception:
+                pass
+
+        fig.canvas.mpl_connect('motion_notify_event', _on_move)
+
     fig.autofmt_xdate()
     fig.tight_layout()
     if save_path:
