@@ -14,6 +14,8 @@ import time
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import pandas as pd
+from sqlalchemy import text
 
 LOG_MAX_LINES = 200
 
@@ -34,6 +36,8 @@ class ScannerGUI:
         self.candles_frame = ttk.Frame(nb)
         self.sma_frame = ttk.Frame(nb)
         self.strong_frame = ttk.Frame(nb)
+        self.indices_frame = ttk.Frame(nb)
+        self.rsi_frame = ttk.Frame(nb)
 
         nb.add(self.accum_frame, text="Accumulation Scanner")
         nb.add(self.swing_frame, text="Swing Scanner")
@@ -43,6 +47,8 @@ class ScannerGUI:
         nb.add(self.candles_frame, text="Candles")
         nb.add(self.sma_frame, text="SMA Trends")
         nb.add(self.strong_frame, text="Strong Uptrend")
+        nb.add(self.indices_frame, text="Indices Import")
+        nb.add(self.rsi_frame, text="RSI Calculator")
 
         self._build_accum_tab()
         self._build_swing_tab()
@@ -52,6 +58,8 @@ class ScannerGUI:
         self._build_candles_tab()
         self._build_sma_tab()
         self._build_strong_tab()
+        self._build_indices_tab()
+        self._build_rsi_tab()
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -373,6 +381,896 @@ class ScannerGUI:
 
         self.ad_run_btn = ttk.Button(f, text="Show Report", command=self.run_adv_decl_report)
         self.ad_run_btn.grid(row=4, column=0, pady=6)
+
+    # -------- Indices import tab --------
+    def _build_indices_tab(self):
+        f = self.indices_frame
+        ttk.Label(f, text="Indices CSV folder").grid(row=0, column=0, sticky="w")
+        self.idx_folder = tk.StringVar(value="")
+        ttk.Entry(f, textvariable=self.idx_folder, width=50).grid(row=0, column=1, columnspan=2, sticky="w")
+        ttk.Button(f, text="Browse", command=lambda: self._browse(self.idx_folder, folder=True)).grid(row=0, column=3)
+
+        self.idx_combine = tk.BooleanVar(value=True)
+        ttk.Checkbutton(f, text="Combine files before upsert (dedupe across files)", variable=self.idx_combine).grid(row=1, column=0, columnspan=3, sticky="w")
+
+        self.idx_recurse = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text="Recurse subfolders", variable=self.idx_recurse).grid(row=2, column=0, columnspan=3, sticky="w")
+
+        ttk.Label(f, text="Target table").grid(row=3, column=0, sticky="w")
+        self.idx_table = tk.StringVar(value="indices_daily")
+        ttk.Entry(f, textvariable=self.idx_table, width=20).grid(row=3, column=1, sticky="w")
+
+        ttk.Button(f, text="Import Indices", command=self.run_import_indices).grid(row=4, column=0, pady=8)
+        ttk.Label(f, text="BHAV Start (YYYY-MM-DD)").grid(row=4, column=1, sticky="e")
+        self.bhav_start = tk.StringVar(value="2025-01-01")
+        ttk.Entry(f, textvariable=self.bhav_start, width=12).grid(row=4, column=2, sticky="w")
+        ttk.Label(f, text="BHAV End").grid(row=4, column=3, sticky="e")
+        self.bhav_end = tk.StringVar(value=datetime.today().strftime('%Y-%m-%d'))
+        ttk.Entry(f, textvariable=self.bhav_end, width=12).grid(row=4, column=4, sticky="w")
+
+        # Relative Strength quick-run controls
+        ttk.Label(f, text="RS: Index").grid(row=4, column=1, sticky="e")
+        self.rs_index = tk.StringVar(value="NIFTY 50")
+        ttk.Entry(f, textvariable=self.rs_index, width=18).grid(row=4, column=2, sticky="w")
+        ttk.Label(f, text="As-of").grid(row=5, column=0, sticky="w")
+        self.rs_asof = tk.StringVar(value=datetime.today().strftime('%Y-%m-%d'))
+        ttk.Entry(f, textvariable=self.rs_asof, width=12).grid(row=5, column=1, sticky="w")
+        ttk.Label(f, text="Lookback days").grid(row=5, column=2, sticky="w")
+        self.rs_lookback = tk.IntVar(value=90)
+        ttk.Entry(f, textvariable=self.rs_lookback, width=8).grid(row=5, column=3, sticky="w")
+        ttk.Label(f, text="Limit (test)").grid(row=6, column=0, sticky="w")
+        self.rs_limit = tk.IntVar(value=0)
+        ttk.Entry(f, textvariable=self.rs_limit, width=8).grid(row=6, column=1, sticky="w")
+        ttk.Button(f, text="Run RS Scan", command=self.run_rs_scan).grid(row=6, column=2, pady=6)
+        # BHAV aggregation buttons
+        ttk.Button(f, text="Aggregate BHAV (weekly)", command=lambda: self.run_aggregate_bhav('weekly')).grid(row=7, column=0, pady=6)
+        ttk.Button(f, text="Aggregate BHAV (monthly)", command=lambda: self.run_aggregate_bhav('monthly')).grid(row=7, column=1, pady=6)
+
+        # Results text area
+        self.idx_results = tk.Text(f, height=10, wrap="none")
+        self.idx_results.grid(row=5, column=0, columnspan=4, sticky="nsew")
+        f.grid_rowconfigure(5, weight=1)
+        f.grid_columnconfigure(1, weight=1)
+
+    def _build_rsi_tab(self):
+        f = self.rsi_frame
+        ttk.Label(f, text="RSI period").grid(row=0, column=0, sticky="w")
+        self.rsi_period = tk.IntVar(value=9)
+        ttk.Entry(f, textvariable=self.rsi_period, width=6).grid(row=0, column=1, sticky="w")
+
+        ttk.Label(f, text="Frequencies").grid(row=0, column=2, sticky="w")
+        self.rsi_daily = tk.BooleanVar(value=True)
+        self.rsi_weekly = tk.BooleanVar(value=True)
+        self.rsi_monthly = tk.BooleanVar(value=True)
+        ttk.Checkbutton(f, text="Daily", variable=self.rsi_daily).grid(row=0, column=3, sticky="w")
+        ttk.Checkbutton(f, text="Weekly", variable=self.rsi_weekly).grid(row=0, column=4, sticky="w")
+        ttk.Checkbutton(f, text="Monthly", variable=self.rsi_monthly).grid(row=0, column=5, sticky="w")
+
+        ttk.Label(f, text="Workers").grid(row=1, column=0, sticky="w")
+        self.rsi_workers = tk.IntVar(value=4)
+        ttk.Entry(f, textvariable=self.rsi_workers, width=6).grid(row=1, column=1, sticky="w")
+
+        ttk.Label(f, text="Start (YYYY-MM-DD)").grid(row=2, column=0, sticky="w")
+        self.rsi_start = tk.StringVar(value="2025-01-01")
+        ttk.Entry(f, textvariable=self.rsi_start, width=12).grid(row=2, column=1, sticky="w")
+
+        ttk.Label(f, text="End (YYYY-MM-DD)").grid(row=2, column=2, sticky="w")
+        self.rsi_end = tk.StringVar(value=datetime.today().strftime('%Y-%m-%d'))
+        ttk.Entry(f, textvariable=self.rsi_end, width=12).grid(row=2, column=3, sticky="w")
+
+        ttk.Button(f, text="Run RSI", command=self.run_rsi_calc).grid(row=3, column=0, pady=8)
+        # Cancel and percent
+        self.rsi_cancel_token = {'cancel': False}
+        ttk.Button(f, text="Cancel RSI", command=lambda: self._cancel_rsi()).grid(row=3, column=1, pady=8)
+        self.rsi_percent_lbl = ttk.Label(f, text="0%")
+        self.rsi_percent_lbl.grid(row=3, column=2, sticky='w')
+
+        # progress bar and results box
+        self.rsi_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
+        self.rsi_progress.grid(row=4, column=0, columnspan=6, pady=(4,8), sticky='we')
+        self.rsi_results = tk.Text(f, height=12, wrap='none')
+        self.rsi_results.grid(row=5, column=0, columnspan=6, sticky='nsew')
+        f.grid_rowconfigure(5, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        # RSI Cross scanner controls (80/20)
+        ttk.Separator(f, orient='horizontal').grid(row=6, column=0, columnspan=6, sticky='ew', pady=6)
+        ttk.Label(f, text='RSI Cross Scanner (80/20)').grid(row=7, column=0, sticky='w')
+        ttk.Button(f, text='Run Incremental Cross Scan', command=self.run_rsi_cross_incremental).grid(row=7, column=1)
+        ttk.Button(f, text='Run Full Cross Scan', command=self.run_rsi_cross_full).grid(row=7, column=2)
+        ttk.Button(f, text='Cancel Cross Scan', command=self._cancel_rsi).grid(row=7, column=3)
+
+        # reporting buttons
+        ttk.Button(f, text='Latest Day (80_up)', command=lambda: self.show_latest_cross('80_up')).grid(row=8, column=0)
+        ttk.Button(f, text='Last Week (80_up)', command=lambda: self.show_range_cross(days=7, cross_type='80_up')).grid(row=8, column=1)
+        ttk.Button(f, text='Last Month (80_up)', command=lambda: self.show_range_cross(days=30, cross_type='80_up')).grid(row=8, column=2)
+        # count crosses button
+        ttk.Button(f, text='Count Crosses (window)', command=self.count_crosses_action).grid(row=8, column=3, padx=6)
+
+        # quick filters: window days and top-N
+        ttk.Label(f, text='Window days').grid(row=8, column=3, sticky='e')
+        self.cross_window_days = tk.IntVar(value=365)
+        ttk.Entry(f, textvariable=self.cross_window_days, width=6).grid(row=8, column=4, sticky='w')
+        ttk.Label(f, text='Top N').grid(row=8, column=5, sticky='e')
+        self.cross_top_n = tk.IntVar(value=0)
+        ttk.Entry(f, textvariable=self.cross_top_n, width=6).grid(row=8, column=6, sticky='w')
+        ttk.Button(f, text='Stocks above window highs', command=self.run_stocks_above_window).grid(row=8, column=7, padx=6)
+        ttk.Button(f, text='Export CSV', command=self.export_cross_csv).grid(row=8, column=8, padx=6)
+
+        # Treeview for cross report results (added 'diff' for breakout strength)
+        cols = ("symbol", "trade_date", "period", "cross_type", "prev_rsi", "curr_rsi", "high", "created_at", "diff")
+        tree_frame = ttk.Frame(f)
+        tree_frame.grid(row=9, column=0, columnspan=6, sticky="nsew", pady=(6,0))
+        f.grid_rowconfigure(9, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        self.cross_tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=12)
+        for c in cols:
+            self.cross_tree.heading(c, text=c, command=lambda _col=c: self._cross_tree_sort(_col))
+            self.cross_tree.column(c, width=100, anchor="w")
+
+        # double-click to open detail chart
+        self.cross_tree.bind("<Double-1>", self._on_cross_row_double_click)
+
+        vscroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.cross_tree.yview)
+        hscroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.cross_tree.xview)
+        self.cross_tree.configure(yscrollcommand=vscroll.set, xscrollcommand=hscroll.set)
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        self.cross_tree.grid(row=0, column=0, sticky="nsew")
+        vscroll.grid(row=0, column=1, sticky="ns")
+        hscroll.grid(row=1, column=0, sticky="ew")
+
+    def run_rsi_calc(self):
+        import rsi_calculator as rc
+
+        def worker():
+            try:
+                period = int(self.rsi_period.get())
+                freqs = []
+                if self.rsi_daily.get(): freqs.append('daily')
+                if self.rsi_weekly.get(): freqs.append('weekly')
+                if self.rsi_monthly.get(): freqs.append('monthly')
+                workers = max(1, int(self.rsi_workers.get()))
+                start = self.rsi_start.get().strip() or None
+                end = self.rsi_end.get().strip() or None
+
+                eng = None
+                try:
+                    from import_nifty_index import build_engine
+                    eng = build_engine()
+                except Exception:
+                    try:
+                        eng = rc._ensure_engine()
+                    except Exception:
+                        eng = None
+
+                if not eng:
+                    self.append_log('No DB engine available for RSI compute; aborting')
+                    return
+
+                # progress callback
+                total_holder = {'total': 0}
+
+                def _progress(current, total, message):
+                    try:
+                        # set progress maximum once
+                        if total_holder['total'] != total and total > 0:
+                            total_holder['total'] = total
+                            def _set_max():
+                                try:
+                                    self.rsi_progress['maximum'] = total
+                                except Exception:
+                                    pass
+                            self.root.after(0, _set_max)
+
+                        def _update():
+                            try:
+                                self.append_log(f"[RSI] {message}")
+                                # update progressbar value
+                                if total > 0:
+                                    try:
+                                        self.rsi_progress['value'] = current
+                                        pct = int((current/total)*100)
+                                        self.rsi_percent_lbl['text'] = f"{pct}%"
+                                    except Exception:
+                                        pass
+                                # show message in results box
+                                self.rsi_results.delete('1.0', 'end')
+                                self.rsi_results.insert('end', f"{message}\nProcessed {current}/{total}\n")
+                            except Exception:
+                                pass
+                        self.root.after(0, _update)
+                    except Exception:
+                        pass
+
+                self.append_log(f"Starting RSI compute period={period} freqs={freqs} workers={workers} start={start} end={end}")
+                # reset cancel token
+                self.rsi_cancel_token['cancel'] = False
+                rc.run_rsi(eng, period=period, freqs=freqs, workers=workers, progress_cb=_progress, start=start, end=end, cancel_token=self.rsi_cancel_token)
+                self.append_log('RSI compute finished')
+                def _done():
+                    try:
+                        self.rsi_results.insert('end', 'RSI compute finished\n')
+                        self.rsi_progress['value'] = self.rsi_progress['maximum']
+                        self.rsi_percent_lbl['text'] = '100%'
+                    except Exception:
+                        pass
+                self.root.after(0, _done)
+            except Exception as e:
+                self.append_log(f"RSI compute error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    # -------- RSI cross scanner actions --------
+    def run_rsi_cross_incremental(self):
+        import rsi_cross_scanner as rcs
+
+        def worker():
+            try:
+                eng = rcs._ensure_engine()
+                period = int(self.rsi_period.get())
+                as_of = self.rsi_end.get().strip() or None
+                lookback = 30
+                # reset cancel token
+                self.rsi_cancel_token['cancel'] = False
+
+                def _progress(c, t, m):
+                    self.append_log(f"[Cross] {m}")
+                    def _u():
+                        try:
+                            self.rsi_results.delete('1.0', 'end')
+                            self.rsi_results.insert('end', f"{m}\n{c}/{t}\n")
+                            if t > 0:
+                                pct = int((c / t) * 100)
+                                self.rsi_percent_lbl['text'] = f"{pct}%"
+                        except Exception:
+                            pass
+                    self.root.after(0, _u)
+
+                rcs.scan_incremental_and_upsert(eng, period=period, as_of=as_of, lookback_days=lookback, progress_cb=_progress, limit=0)
+                self.append_log('[Cross] Incremental scan finished')
+            except Exception as e:
+                self.append_log(f"Cross scan error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def run_rsi_cross_full(self):
+        import rsi_cross_scanner as rcs
+
+        def worker():
+            try:
+                eng = rcs._ensure_engine()
+                period = int(self.rsi_period.get())
+                as_of = self.rsi_end.get().strip() or None
+                lookback = 365
+                def _progress(c, t, m):
+                    self.append_log(f"[Cross] {m}")
+                    def _u():
+                        try:
+                            self.rsi_results.delete('1.0', 'end')
+                            self.rsi_results.insert('end', f"{m}\n{c}/{t}\n")
+                            if t > 0:
+                                pct = int((c / t) * 100)
+                                self.rsi_percent_lbl['text'] = f"{pct}%"
+                        except Exception:
+                            pass
+                    self.root.after(0, _u)
+
+                rcs.scan_and_upsert(eng, period=period, as_of=as_of, lookback_days=lookback, progress_cb=_progress, limit=0)
+                self.append_log('[Cross] Full scan finished')
+            except Exception as e:
+                self.append_log(f"Cross scan error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def count_crosses_action(self):
+        """Handler to count RSI cross events per symbol in the configured window and show results."""
+        import rsi_cross_scanner as rcs
+
+        def worker():
+            try:
+                eng = rcs._ensure_engine()
+                days = int(self.cross_window_days.get() or 365)
+                period = int(self.rsi_period.get())
+                as_of = self.rsi_end.get().strip() or None
+                # call helper
+                df = rcs.count_crosses_in_window(eng, as_of=as_of, days=days, period=period, cross_type=None)
+
+                # show in text area
+                def _show_text():
+                    try:
+                        self.rsi_results.delete('1.0', 'end')
+                        if df.empty:
+                            self.rsi_results.insert('end', 'No cross counts found')
+                        else:
+                            self.rsi_results.insert('end', df.to_string(index=False))
+                    except Exception:
+                        pass
+                self.root.after(0, _show_text)
+
+                # populate cross_tree with counts: map symbol->count into tree, put count into 'diff' column
+                def _populate_tree():
+                    try:
+                        for i in self.cross_tree.get_children():
+                            self.cross_tree.delete(i)
+                        if df.empty:
+                            return
+                        for _, r in df.iterrows():
+                            vals = (
+                                r.get('symbol'),
+                                pd.to_datetime(r.get('last_cross_date')).strftime('%Y-%m-%d') if pd.notna(r.get('last_cross_date')) else '',
+                                '',
+                                '',
+                                '',
+                                '',
+                                None,
+                                '',
+                                int(r.get('cross_count')) if pd.notna(r.get('cross_count')) else 0,
+                            )
+                            self.cross_tree.insert('', 'end', values=vals)
+                    except Exception as e:
+                        self.append_log(f"Error populating tree for counts: {e}")
+                self.root.after(0, _populate_tree)
+            except Exception as e:
+                self.append_log(f"Error counting crosses: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def show_latest_cross(self, cross_type='80_up'):
+        import rsi_cross_scanner as rcs
+        try:
+            eng = rcs._ensure_engine()
+            d = rcs.latest_cross_date(eng, cross_type=cross_type)
+            if d is None:
+                messagebox.showinfo('No data', 'No cross events found')
+                return
+            df = rcs.get_crosses_on_date(eng, d.isoformat(), cross_type=cross_type)
+            # populate treeview
+            try:
+                for i in self.cross_tree.get_children():
+                    self.cross_tree.delete(i)
+                if df.empty:
+                    return
+                # ensure expected columns present
+                for _, r in df.iterrows():
+                    vals = (
+                        r.get('symbol'),
+                        pd.to_datetime(r.get('trade_date')).strftime('%Y-%m-%d') if pd.notna(r.get('trade_date')) else '',
+                        int(r.get('period')) if pd.notna(r.get('period')) else None,
+                        r.get('cross_type'),
+                        float(r.get('prev_rsi')) if pd.notna(r.get('prev_rsi')) else None,
+                        float(r.get('curr_rsi')) if pd.notna(r.get('curr_rsi')) else None,
+                        float(r.get('high')) if pd.notna(r.get('high')) else None,
+                        pd.to_datetime(r.get('created_at')).strftime('%Y-%m-%d %H:%M:%S') if pd.notna(r.get('created_at')) else ''
+                    )
+                    self.cross_tree.insert('', 'end', values=vals)
+            except Exception:
+                # fallback to text box on failure
+                self.rsi_results.delete('1.0', 'end')
+                self.rsi_results.insert('end', df.to_string(index=False))
+        except Exception as e:
+            self.append_log(f"Error showing latest cross: {e}")
+            self.append_log(traceback.format_exc())
+
+    def show_range_cross(self, days=7, cross_type='80_up'):
+        import rsi_cross_scanner as rcs
+        try:
+            eng = rcs._ensure_engine()
+            end = pd.to_datetime(self.rsi_end.get().strip() or pd.Timestamp.today()).date()
+            start = end - pd.Timedelta(days=days)
+            with eng.connect() as conn:
+                q = text("SELECT * FROM nse_rsi_crosses WHERE trade_date BETWEEN :a AND :b AND cross_type = :ct ORDER BY trade_date DESC")
+                rows = conn.execute(q, {"a": start.strftime('%Y-%m-%d'), "b": end.strftime('%Y-%m-%d'), "ct": cross_type}).fetchall()
+            if not rows:
+                # clear tree and show no results
+                for i in self.cross_tree.get_children():
+                    self.cross_tree.delete(i)
+                return
+            df = pd.DataFrame(rows, columns=[c for c in rows[0]._fields])
+            # populate treeview
+            for i in self.cross_tree.get_children():
+                self.cross_tree.delete(i)
+            for _, r in df.iterrows():
+                vals = (
+                    r.get('symbol'),
+                    pd.to_datetime(r.get('trade_date')).strftime('%Y-%m-%d') if pd.notna(r.get('trade_date')) else '',
+                    int(r.get('period')) if pd.notna(r.get('period')) else None,
+                    r.get('cross_type'),
+                    float(r.get('prev_rsi')) if pd.notna(r.get('prev_rsi')) else None,
+                    float(r.get('curr_rsi')) if pd.notna(r.get('curr_rsi')) else None,
+                    float(r.get('high')) if pd.notna(r.get('high')) else None,
+                    pd.to_datetime(r.get('created_at')).strftime('%Y-%m-%d %H:%M:%S') if pd.notna(r.get('created_at')) else ''
+                )
+                self.cross_tree.insert('', 'end', values=vals)
+        except Exception as e:
+            self.append_log(f"Error showing range cross: {e}")
+            self.append_log(traceback.format_exc())
+
+    def run_stocks_above_window(self):
+        import rsi_cross_scanner as rcs
+
+        def worker():
+            try:
+                eng = rcs._ensure_engine()
+                days = int(self.cross_window_days.get() or 365)
+                topn = int(self.cross_top_n.get() or 0)
+                as_of = self.rsi_end.get().strip() or None
+
+                # UI: start indeterminate progress
+                def _start_ui():
+                    try:
+                        self.rsi_results.delete('1.0', 'end')
+                        self.rsi_results.insert('end', 'Running stocks above window highs...')
+                        self.rsi_progress.configure(mode='indeterminate')
+                        try:
+                            self.rsi_progress.start(50)
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+                self.root.after(0, _start_ui)
+
+                df = rcs.stocks_trading_above_cross_window(eng, as_of=as_of, days=days, period=int(self.rsi_period.get()), cross_type='80_up')
+
+                # stop progress
+                def _stop_ui():
+                    try:
+                        try:
+                            self.rsi_progress.stop()
+                        except Exception:
+                            pass
+                        self.rsi_progress.configure(mode='determinate')
+                        self.rsi_progress['value'] = 0
+                    except Exception:
+                        pass
+                self.root.after(0, _stop_ui)
+
+                if df.empty:
+                    # No results — attempt incremental scan fallback after user confirmation
+                    def _prompt_and_run():
+                        do_run = messagebox.askyesno('No results', 'No cross events found in the selected window. Run incremental cross scan now and retry?')
+                        if not do_run:
+                            for i in self.cross_tree.get_children():
+                                self.cross_tree.delete(i)
+                            self._last_cross_df = pd.DataFrame()
+                            return
+
+                        # run incremental scan (same worker thread) and provide progress updates
+                        try:
+                            def _scan_progress(cu, to, msg):
+                                try:
+                                    self.append_log(f"[Scan] {msg}")
+                                    def _ui():
+                                        try:
+                                            self.rsi_results.delete('1.0', 'end')
+                                            self.rsi_results.insert('end', f"{msg}\n{cu}/{to}\n")
+                                        except Exception:
+                                            pass
+                                    self.root.after(0, _ui)
+                                except Exception:
+                                    pass
+
+                            # run incremental scan; lookback_days=days
+                            self.append_log('Starting incremental cross scan (fallback)...')
+                            rcs.scan_incremental_and_upsert(eng, period=int(self.rsi_period.get()), as_of=as_of, lookback_days=days, progress_cb=_scan_progress)
+                            self.append_log('Incremental scan (fallback) finished; re-querying results')
+                        except Exception as e:
+                            self.append_log(f"Fallback scan error: {e}")
+                            self.append_log(traceback.format_exc())
+                            return
+
+                        # re-run the query after scan
+                        try:
+                            df2 = rcs.stocks_trading_above_cross_window(eng, as_of=as_of, days=days, period=int(self.rsi_period.get()), cross_type='80_up')
+                            if df2.empty:
+                                messagebox.showinfo('No results', 'No stocks found after incremental scan')
+                                for i in self.cross_tree.get_children():
+                                    self.cross_tree.delete(i)
+                                self._last_cross_df = pd.DataFrame()
+                                return
+                            # apply top-N
+                            if topn and topn > 0:
+                                df2 = df2.head(topn)
+                            df2['diff'] = pd.to_numeric(df2['asof_close'], errors='coerce') - pd.to_numeric(df2['max_cross_high'], errors='coerce')
+                            self._last_cross_df = df2.copy()
+                            # populate tree
+                            for i in self.cross_tree.get_children():
+                                self.cross_tree.delete(i)
+                            for _, r in df2.iterrows():
+                                vals = (
+                                    r.get('symbol'),
+                                    pd.to_datetime(r.get('last_cross_date')).strftime('%Y-%m-%d') if pd.notna(r.get('last_cross_date')) else '',
+                                    '',
+                                    '80_up',
+                                    '',
+                                    '',
+                                    float(r.get('max_cross_high')) if pd.notna(r.get('max_cross_high')) else None,
+                                    '',
+                                    float(r.get('diff')) if pd.notna(r.get('diff')) else None,
+                                )
+                                self.cross_tree.insert('', 'end', values=vals)
+                        except Exception as e:
+                            self.append_log(f"Error re-querying after fallback scan: {e}")
+                            self.append_log(traceback.format_exc())
+
+                    self.root.after(0, _prompt_and_run)
+                    return
+
+                # apply top-N
+                if topn and topn > 0:
+                    df = df.head(topn)
+                # compute diff column (asof_close - cross_high)
+                df['diff'] = pd.to_numeric(df['asof_close'], errors='coerce') - pd.to_numeric(df['cross_high'], errors='coerce')
+
+                # store for export
+                self._last_cross_df = df.copy()
+
+                # populate tree on main thread
+                def _populate():
+                    try:
+                        for i in self.cross_tree.get_children():
+                            self.cross_tree.delete(i)
+                        for _, r in df.iterrows():
+                            vals = (
+                                r.get('symbol'),
+                                pd.to_datetime(r.get('cross_date')).strftime('%Y-%m-%d') if pd.notna(r.get('cross_date')) else '',
+                                '',
+                                '80_up',
+                                '',
+                                '',
+                                float(r.get('cross_high')) if pd.notna(r.get('cross_high')) else None,
+                                '',
+                                float(r.get('diff')) if pd.notna(r.get('diff')) else None,
+                            )
+                            self.cross_tree.insert('', 'end', values=vals)
+                    except Exception as e:
+                        self.append_log(f"Error populating tree: {e}")
+                self.root.after(0, _populate)
+            except Exception as e:
+                self.append_log(f"Error running stocks above window highs: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def export_cross_csv(self):
+        try:
+            df = getattr(self, '_last_cross_df', None)
+            if df is None or df.empty:
+                messagebox.showinfo('No data', 'No results to export')
+                return
+            path = filedialog.asksaveasfilename(defaultextension='.csv', filetypes=[('CSV files','*.csv'),('All files','*.*')])
+            if not path:
+                return
+            df.to_csv(path, index=False)
+            messagebox.showinfo('Saved', f'Exported {len(df)} rows to {path}')
+        except Exception as e:
+            self.append_log(f"Error exporting CSV: {e}")
+            self.append_log(traceback.format_exc())
+
+    def _cross_tree_sort(self, col: str):
+        # Toggle sort direction for column and reorder tree rows
+        try:
+            children = list(self.cross_tree.get_children(''))
+            if not children:
+                return
+            # read column values
+            vals = [(self.cross_tree.set(ch, col), ch) for ch in children]
+
+            def _maybe_cast(v):
+                # try date
+                try:
+                    return datetime.fromisoformat(v)
+                except Exception:
+                    pass
+                try:
+                    return float(v)
+                except Exception:
+                    pass
+                return v.lower() if isinstance(v, str) else v
+
+            # determine previous sort state
+            prev = getattr(self, '_cross_tree_sort_state', {}).get(col, False)
+            reverse = not prev
+            vals.sort(key=lambda x: _maybe_cast(x[0]) if x[0] is not None else '', reverse=reverse)
+            for idx, (_v, iid) in enumerate(vals):
+                self.cross_tree.move(iid, '', idx)
+            # update state
+            self._cross_tree_sort_state = {col: reverse}
+            # update headings to show arrow
+            for c in self.cross_tree['columns']:
+                txt = c
+                if c == col:
+                    txt = f"{c} {'▼' if reverse else '▲'}"
+                try:
+                    self.cross_tree.heading(c, text=txt, command=lambda _col=c: self._cross_tree_sort(_col))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def _on_cross_row_double_click(self, event):
+        # identify selected item and open a detail window with a small price chart
+        try:
+            item = self.cross_tree.identify_row(event.y)
+            if not item:
+                return
+            vals = self.cross_tree.item(item, 'values')
+            if not vals:
+                return
+            symbol = vals[0]
+            # open detail window in main thread
+            def _open():
+                try:
+                    win = tk.Toplevel(self.root)
+                    win.title(f"{symbol} - Price Detail")
+                    win.geometry('600x400')
+                    lbl = ttk.Label(win, text=f"Loading price chart for {symbol}...")
+                    lbl.pack()
+
+                    # fetch last 180 days of closes and plot
+                    try:
+                        import matplotlib
+                        matplotlib.use('Agg')
+                        import matplotlib.pyplot as plt
+                        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+                    except Exception:
+                        lbl.config(text='matplotlib not available')
+                        return
+
+                    try:
+                        eng = None
+                        try:
+                            eng = __import__('rsi_cross_scanner').rsi_cross_scanner._ensure_engine()
+                        except Exception:
+                            try:
+                                from rsi_cross_scanner import _ensure_engine
+                                eng = _ensure_engine()
+                            except Exception:
+                                eng = None
+                        if not eng:
+                            lbl.config(text='No DB engine available')
+                            return
+
+                        with eng.connect() as conn:
+                            q = text("SELECT trade_date, close_price FROM nse_equity_bhavcopy_full WHERE symbol = :s AND trade_date <= :d ORDER BY trade_date DESC LIMIT 180")
+                            rows = conn.execute(q, {"s": symbol, "d": self.rsi_end.get().strip() or date.today().strftime('%Y-%m-%d')}).fetchall()
+                        if not rows:
+                            lbl.config(text='No price data')
+                            return
+                        df = pd.DataFrame(rows, columns=['trade_date', 'close'])
+                        df['trade_date'] = pd.to_datetime(df['trade_date'])
+                        df = df.sort_values('trade_date')
+
+                        fig, ax = plt.subplots(figsize=(6,3))
+                        ax.plot(df['trade_date'], df['close'], label=symbol)
+                        ax.set_title(f"{symbol} - last {len(df)} days")
+                        ax.set_xlabel('Date')
+                        ax.set_ylabel('Close')
+                        ax.grid(True)
+                        fig.autofmt_xdate()
+
+                        canvas = FigureCanvasTkAgg(fig, master=win)
+                        canvas.draw()
+                        canvas.get_tk_widget().pack(fill='both', expand=True)
+                    except Exception as pe:
+                        lbl.config(text=f'Error plotting: {pe}')
+                except Exception:
+                    pass
+            self.root.after(0, _open)
+        except Exception:
+            pass
+
+    def _cancel_rsi(self):
+        try:
+            self.rsi_cancel_token['cancel'] = True
+            self.append_log('RSI cancel requested')
+        except Exception:
+            pass
+
+    def run_import_indices(self):
+        import import_nifty_index as inj
+
+        def worker():
+            folder = self.idx_folder.get().strip()
+            if not folder or not Path(folder).exists():
+                self.append_log(f"Indices import: folder not found: {folder}")
+                messagebox.showerror("Folder not found", f"Folder not found: {folder}")
+                return
+
+            upsert = True
+            table = self.idx_table.get().strip() or "indices_daily"
+            recurse = self.idx_recurse.get()
+            combine = self.idx_combine.get()
+
+            self.append_log(f"Starting indices import from: {folder} (combine={combine}, recurse={recurse})")
+            # disable button on main thread
+            self.root.after(0, lambda: self.append_log("Import running in background..."))
+
+            eng = inj.build_engine()
+
+            try:
+                if combine:
+                    # read all CSVs, normalise and concat, drop duplicates, then upsert once
+                    files = []
+                    if recurse:
+                        for root, _, fns in __import__('os').walk(folder):
+                            for fn in fns:
+                                if fn.lower().endswith('.csv'):
+                                    files.append(__import__('os').path.join(root, fn))
+                    else:
+                        for fn in __import__('os').listdir(folder):
+                            if fn.lower().endswith('.csv'):
+                                files.append(__import__('os').path.join(folder, fn))
+
+                    if not files:
+                        self.append_log("No CSV files found to import.")
+                        return
+
+                    dfs = []
+                    for p in sorted(files):
+                        try:
+                            df = pd.read_csv(p, skip_blank_lines=True)
+                            df = inj.normalise_columns(df)
+                            # ensure index_name is set per-file so combined frame keeps provenance
+                            try:
+                                raw = Path(p).stem
+                                idxname = inj.filename_to_index_name(raw)
+                            except Exception:
+                                idxname = "UNKNOWN"
+                            df["index_name"] = idxname
+                            dfs.append(df)
+                            self.append_log(f"Parsed {len(df)} rows from {p}")
+                        except Exception as e:
+                            self.append_log(f"Failed to read {p}: {e}")
+
+                    if not dfs:
+                        self.append_log("No valid CSV data parsed.")
+                        return
+
+                    big = pd.concat(dfs, ignore_index=True)
+                    # drop duplicates by (index_name, trade_date) when index_name present,
+                    # otherwise fall back to trade_date only
+                    if 'trade_date' in big.columns:
+                        if 'index_name' in big.columns:
+                            big = big.drop_duplicates(subset=['index_name', 'trade_date'], keep='last')
+                        else:
+                            big = big.drop_duplicates(subset=['trade_date'], keep='last')
+
+                    self.append_log(f"Combined dataframe has {len(big)} unique dates. Upserting to {table}...")
+                    inj.upsert_with_temp_table(eng, big, table=table)
+                    self.append_log(f"Combined upsert complete: {len(big)} rows")
+                    # show summary in results box
+                    def _show():
+                        self.idx_results.delete('1.0', 'end')
+                        self.idx_results.insert('end', f"Imported {len(big)} unique rows from {len(files)} files.\n")
+                    self.root.after(0, _show)
+                else:
+                    # import files one by one using module helper (it will upsert per-file safely)
+                    summaries = inj.import_folder(folder, eng, table=table, upsert=upsert, recurse=recurse)
+                    self.append_log(f"Imported {len(summaries)} files (see details)")
+                    def _show2():
+                        self.idx_results.delete('1.0', 'end')
+                        for s in summaries:
+                            self.idx_results.insert('end', str(s) + '\n')
+                    self.root.after(0, _show2)
+            except Exception as e:
+                self.append_log(f"Import error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def run_rs_scan(self):
+        """Run the relative strength scanner in a background thread using scan_relative_strength.main()."""
+        def worker():
+            try:
+                import scan_relative_strength as srs
+
+                self.append_log(f"Starting RS preview: index={self.rs_index.get()} as-of={self.rs_asof.get()} lookback={self.rs_lookback.get()}")
+                # compute preview top N
+                topn = 20
+                preview = srs.compute_relative_strength_preview(self.rs_index.get(), self.rs_asof.get(), self.rs_lookback.get(), top_n=topn)
+                if preview.empty:
+                    self.append_log("RS preview returned no rows")
+                    return
+
+                # show preview in results box
+                def _show_preview():
+                    try:
+                        self.idx_results.delete('1.0', 'end')
+                        self.idx_results.insert('end', f"Top {topn} symbols by RS:\n")
+                        self.idx_results.insert('end', preview[['symbol','rs_value','stock_return','index_return']].to_string(index=False))
+                    except Exception:
+                        pass
+
+                self.root.after(0, _show_preview)
+
+                # ask user to confirm upsert
+                do_upsert = messagebox.askyesno("Upsert RS results?", f"Upsert top {topn} RS rows to DB?")
+                if not do_upsert:
+                    self.append_log("User cancelled RS upsert")
+                    return
+
+                # upsert all preview rows (or full set) via the scanner's bulk compute + upsert
+                self.append_log("Upserting RS preview rows to database...")
+                # call main() with same params to compute & upsert full set (or limited set)
+                import sys
+                old_argv = sys.argv
+                try:
+                    sys.argv = [old_argv[0], '--index', self.rs_index.get(), '--as-of', self.rs_asof.get(), '--lookback', str(self.rs_lookback.get()), '--limit', str(self.rs_limit.get() or 0)]
+                    srs.main()
+                finally:
+                    sys.argv = old_argv
+                self.append_log("RS upsert completed")
+            except Exception as e:
+                self.append_log(f"RS scan error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def run_aggregate_bhav(self, freq: str = 'weekly'):
+        """Run BHAV aggregation (weekly or monthly) in a background thread.
+
+        Defaults to aggregating the last 365 days up to today if no dates are provided.
+        """
+        def worker():
+            try:
+                import aggregate_bhav as ab
+                eng = None
+                try:
+                    # prefer engine builder from import_nifty_index if present
+                    from import_nifty_index import build_engine
+                    eng = build_engine()
+                except Exception:
+                    try:
+                        eng = ab._ensure_engine()
+                    except Exception:
+                        eng = None
+
+                today = date.today()
+                one_year_ago = today - pd.Timedelta(days=365)
+                start = one_year_ago.strftime('%Y-%m-%d')
+                end = today.strftime('%Y-%m-%d')
+
+                if not eng:
+                    self.append_log('No DB engine available for aggregation; aborting')
+                    return
+
+                self.append_log(f"Starting BHAV aggregation: freq={freq} start={start} end={end}")
+
+                # progress callback to receive granular updates
+                def _progress_cb(current, total, message):
+                    try:
+                        self.append_log(f"[agg] {message}")
+                        # also update the results box with the last message
+                        def _update_box():
+                            try:
+                                self.idx_results.delete('1.0', 'end')
+                                self.idx_results.insert('end', f"{message}\nProcessed {current}/{total}\n")
+                            except Exception:
+                                pass
+                        self.root.after(0, _update_box)
+                    except Exception:
+                        pass
+
+                ab.run_aggregate(eng, start, end, freq=freq if freq in ('weekly','monthly') else 'both', progress_cb=_progress_cb)
+
+                self.append_log("BHAV aggregation finished")
+                def _show():
+                    try:
+                        self.idx_results.insert('end', f"Aggregation completed: {freq} {start}..{end}\n")
+                    except Exception:
+                        pass
+                self.root.after(0, _show)
+            except Exception as e:
+                self.append_log(f"BHAV aggregation error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def run_adv_decl_report(self):
         import reporting_adv_decl as rad
@@ -1172,10 +2070,18 @@ class ScannerGUI:
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _browse(self, var: tk.StringVar):
-        p = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files","*.csv"), ("All","*")])
-        if p:
-            var.set(p)
+    def _browse(self, var: tk.StringVar, folder: bool = False):
+        """Set `var` to a selected path. If folder=True opens a folder dialog, otherwise a save-as CSV dialog."""
+        try:
+            if folder:
+                p = filedialog.askdirectory()
+            else:
+                p = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files","*.csv"), ("All","*")])
+            if p:
+                var.set(p)
+        except Exception:
+            # ignore UI errors
+            return
 
 
 def parse_date(s: str) -> date:
