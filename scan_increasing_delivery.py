@@ -41,7 +41,7 @@ def engine():
     return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
 
 
-def scan(year=2025, series=None, out_csv=None):
+def scan(year=2025, series='EQ', out_csv=None):
     # Define date bounds for Aug and Oct of given year
     aug_start = date(year, 8, 1)
     aug_end = date(year, 8, 31)
@@ -117,7 +117,7 @@ def scan(year=2025, series=None, out_csv=None):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--year", type=int, default=2025)
-    p.add_argument("--series", type=str, default=None, help="Filter by series (e.g., EQ)")
+    p.add_argument("--series", type=str, default='EQ', help="Filter by series (e.g., EQ)")
     p.add_argument("--out", type=str, default=None, help="Write results to CSV file")
     args = p.parse_args()
     scan(year=args.year, series=args.series, out_csv=args.out)

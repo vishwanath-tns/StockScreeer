@@ -42,7 +42,7 @@ def compute_for_symbol(conn, symbol: str, windows: List[int], min_periods: int |
     # fetch OHLC for symbol
     q = text(
         "SELECT trade_date as dt, close_price as Close FROM nse_equity_bhavcopy_full "
-        "WHERE symbol=:s ORDER BY trade_date"
+        "WHERE symbol=:s AND series = 'EQ' ORDER BY trade_date"
     )
     df = pd.read_sql(q, con=conn, params={"s": symbol}, parse_dates=["dt"])  # may be empty
     if df.empty:
@@ -106,8 +106,8 @@ def main(argv: List[str] | None = None):
     with eng.begin() as conn:
         ensure_table(conn, windows)
 
-        # load symbol list
-        q = "SELECT DISTINCT symbol FROM nse_equity_bhavcopy_full ORDER BY symbol"
+        # load symbol list (EQ series only)
+        q = "SELECT DISTINCT symbol FROM nse_equity_bhavcopy_full WHERE series = 'EQ' ORDER BY symbol"
         if symbols_filter:
             # parameterize
             rows = conn.execute(text(q)).scalars().all()

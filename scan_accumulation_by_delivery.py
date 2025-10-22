@@ -105,7 +105,7 @@ def symbol_trend_metrics(df: pd.DataFrame, roll_window: int = 7, high_thresh: fl
     }
 
 
-def scan(start: date, end: date, series: Optional[str] = None, min_days: int = 10, min_slope_30d: float = 0.5,
+def scan(start: date, end: date, series: Optional[str] = 'EQ', min_days: int = 10, min_slope_30d: float = 0.5,
          high_thresh: float = 40.0, roll_window: int = 7) -> List[Dict[str, Any]]:
     eng = engine()
     q = "SELECT trade_date, symbol, series, deliv_per, deliv_qty FROM nse_equity_bhavcopy_full WHERE trade_date BETWEEN :a AND :b"
@@ -192,7 +192,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--start", type=str, default="2025-08-01")
     p.add_argument("--end", type=str, default="2025-10-10")
-    p.add_argument("--series", type=str, default=None)
+    p.add_argument("--series", type=str, default='EQ')
     p.add_argument("--min-days", type=int, default=10)
     p.add_argument("--min-slope", type=float, default=0.5, help="slope threshold in percentage points per 30 days")
     p.add_argument("--high-thresh", type=float, default=40.0, help="delivery% considered 'high' for pct_days_high metric")

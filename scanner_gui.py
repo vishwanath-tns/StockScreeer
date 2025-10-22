@@ -60,6 +60,10 @@ class ScannerGUI:
         self._build_strong_tab()
         self._build_indices_tab()
         self._build_rsi_tab()
+        self._build_fractals_tab()
+        self._build_bhav_export_tab()
+        self._build_rsi_divergences_tab()
+        self._build_52week_tab()
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -147,6 +151,17 @@ class ScannerGUI:
                 self.append_log(traceback.format_exc())
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _cancel_bhav_export(self):
+        try:
+            self._bhav_cancel['cancel'] = True
+            self.append_log('BHAV export cancellation requested')
+            try:
+                self.root.after(0, lambda: self.bhav_status.set('Cancelling...'))
+            except Exception:
+                pass
+        except Exception:
+            pass
 
     # -------- Swing tab --------
     def _build_swing_tab(self):
@@ -520,6 +535,583 @@ class ScannerGUI:
         self.cross_tree.grid(row=0, column=0, sticky="nsew")
         vscroll.grid(row=0, column=1, sticky="ns")
         hscroll.grid(row=1, column=0, sticky="ew")
+
+    def _build_fractals_tab(self):
+        f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
+        # add tab if not already present
+        try:
+            # attach to existing notebook (assumes created in __init__)
+            nb = None
+            for child in self.root.winfo_children():
+                if isinstance(child, ttk.Notebook):
+                    nb = child
+                    break
+            if nb is None:
+                nb = ttk.Notebook(self.root)
+                nb.pack(fill='both', expand=True)
+            self.fractals_frame = ttk.Frame(nb)
+            nb.add(self.fractals_frame, text='Fractals')
+            f = self.fractals_frame
+        except Exception:
+            f = self.rsi_frame
+
+        ttk.Label(f, text='Fractal RSI period').grid(row=0, column=0, sticky='w')
+        self.frac_rsi_period = tk.IntVar(value=9)
+        ttk.Entry(f, textvariable=self.frac_rsi_period, width=6).grid(row=0, column=1, sticky='w')
+
+        ttk.Label(f, text='Workers').grid(row=0, column=2, sticky='w')
+        self.frac_workers = tk.IntVar(value=4)
+        ttk.Entry(f, textvariable=self.frac_workers, width=6).grid(row=0, column=3, sticky='w')
+
+        ttk.Button(f, text='Run Fractals Scan', command=self.run_fractals_scan).grid(row=1, column=0, pady=6)
+        ttk.Button(f, text='Cancel Fractals', command=self._cancel_fractals).grid(row=1, column=1, pady=6)
+
+        self.frac_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
+        self.frac_progress.grid(row=2, column=0, columnspan=6, pady=(4,8), sticky='we')
+        self.frac_results = tk.Text(f, height=10, wrap='none')
+        self.frac_results.grid(row=3, column=0, columnspan=6, sticky='nsew')
+        f.grid_rowconfigure(3, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        # Treeview for fractals
+        cols = ('symbol', 'fractal_date', 'fractal_type', 'fractal_high', 'fractal_low', 'center_rsi')
+        tree_frame = ttk.Frame(f)
+        tree_frame.grid(row=4, column=0, columnspan=6, sticky='nsew', pady=(6,0))
+        f.grid_rowconfigure(4, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        self.frac_tree = ttk.Treeview(tree_frame, columns=cols, show='headings', height=12)
+        for c in cols:
+            self.frac_tree.heading(c, text=c)
+            self.frac_tree.column(c, width=120, anchor='w')
+        v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.frac_tree.yview)
+        h = ttk.Scrollbar(tree_frame, orient='horizontal', command=self.frac_tree.xview)
+        self.frac_tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        self.frac_tree.grid(row=0, column=0, sticky='nsew')
+        v.grid(row=0, column=1, sticky='ns')
+        h.grid(row=1, column=0, sticky='ew')
+
+        self._fractals_cancel = {'cancel': False}
+
+    def _build_rsi_divergences_tab(self):
+        f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
+        try:
+            nb = self.root.nametowidget('.!notebook')
+            nb.add(f, text='RSI Divergences')
+        except Exception:
+            pass
+
+        ttk.Label(f, text='Compare last with past N fractals').grid(row=0, column=0, sticky='w')
+        self.div_lookback = tk.IntVar(value=5)
+        ttk.Entry(f, textvariable=self.div_lookback, width=6).grid(row=0, column=1, sticky='w')
+        # SMA filter checkboxes (placed to the right)
+        ttk.Label(f, text="SMA filters:").grid(row=0, column=4, sticky='w', padx=(12,0))
+        self.div_sma_10 = tk.BooleanVar(value=False)
+        self.div_sma_20 = tk.BooleanVar(value=False)
+        self.div_sma_50 = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text='SMA10', variable=self.div_sma_10).grid(row=0, column=5, sticky='w')
+        ttk.Checkbutton(f, text='SMA20', variable=self.div_sma_20).grid(row=0, column=6, sticky='w')
+        ttk.Checkbutton(f, text='SMA50', variable=self.div_sma_50).grid(row=0, column=7, sticky='w')
+
+        ttk.Label(f, text='Limit symbols (0=all)').grid(row=0, column=2, sticky='w')
+        self.div_limit = tk.IntVar(value=0)
+        ttk.Entry(f, textvariable=self.div_limit, width=6).grid(row=0, column=3, sticky='w')
+
+        ttk.Button(f, text='Run Hidden Bullish Divergence Scan', command=self.run_divergence_scan).grid(row=1, column=0, pady=6)
+        ttk.Button(f, text='Run Hidden Bearish Divergence Scan', command=self.run_divergence_scan_bearish).grid(row=1, column=1, pady=6)
+
+        self.div_results = tk.Text(f, height=10, wrap='none')
+        self.div_results.grid(row=2, column=0, columnspan=6, sticky='nsew')
+        f.grid_rowconfigure(2, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        # treeview for signals
+        cols = ('symbol', 'signal_date', 'signal_type', 'curr_center_close', 'curr_center_rsi', 'comp_fractal_date', 'comp_center_close', 'comp_center_rsi', 'buy_above_price', 'sell_below_price')
+        tree_frame = ttk.Frame(f)
+        tree_frame.grid(row=3, column=0, columnspan=6, sticky='nsew', pady=(6,0))
+        f.grid_rowconfigure(3, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        self.div_tree = ttk.Treeview(tree_frame, columns=cols, show='headings', height=12)
+        for c in cols:
+            # make headings clickable for sorting
+            def _make_sort(col):
+                return lambda _col=col: self._sort_div_tree(_col)
+
+            self.div_tree.heading(c, text=c, command=_make_sort(c))
+            self.div_tree.column(c, width=120, anchor='w')
+        v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.div_tree.yview)
+        h = ttk.Scrollbar(tree_frame, orient='horizontal', command=self.div_tree.xview)
+        self.div_tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        self.div_tree.grid(row=0, column=0, sticky='nsew')
+        v.grid(row=0, column=1, sticky='ns')
+        h.grid(row=1, column=0, sticky='ew')
+        # open detail chart on double-click
+        try:
+            self.div_tree.bind("<Double-1>", self._on_divergence_row_double_click)
+        except Exception:
+            pass
+        # sort state (column -> asc True/False) and currently-sorted column
+        self._div_tree_sort_state = {}
+        self._div_tree_sorted_col = None
+        # cancel token for background divergence scans
+        self._div_cancel = {'cancel': False}
+
+    def _sort_div_tree(self, col_name: str):
+        """Sort the divergence Treeview by column. Toggles asc/desc on repeated clicks."""
+        try:
+            children = list(self.div_tree.get_children(''))
+            if not children:
+                return
+            # get column index from defined columns
+            cols = self.div_tree['columns']
+            try:
+                col_idx = list(cols).index(col_name)
+            except ValueError:
+                return
+
+            # extract (item, value) pairs
+            def _val(item):
+                vals = self.div_tree.item(item, 'values') or []
+                if col_idx < len(vals):
+                    return vals[col_idx]
+                return ''
+
+            # determine current order and toggle
+            asc = self._div_tree_sort_state.get(col_name, True)
+
+            # update heading visuals: clear previous column indicator
+            try:
+                prev = self._div_tree_sorted_col
+                if prev and prev != col_name:
+                    try:
+                        self.div_tree.heading(prev, text=prev)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+            try:
+                # attempt numeric sort where possible
+                keyed = [(item, float(_val(item)) if _val(item) not in (None, '') else float('-inf')) for item in children]
+            except Exception:
+                # fallback to string sort
+                keyed = [(item, str(_val(item)).lower() if _val(item) is not None else '') for item in children]
+
+            keyed.sort(key=lambda x: x[1], reverse=not asc)
+
+            # reinsert in sorted order
+            for idx, (item, _) in enumerate(keyed):
+                self.div_tree.move(item, '', idx)
+
+            # toggle state
+            self._div_tree_sort_state[col_name] = not asc
+            # set visual indicator on this column
+            try:
+                arrow = '▲' if asc else '▼'
+                self.div_tree.heading(col_name, text=f"{col_name} {arrow}")
+                self._div_tree_sorted_col = col_name
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    def _build_52week_tab(self):
+        f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
+        try:
+            nb = self.root.nametowidget('.!notebook')
+            nb.add(f, text='52 Week High/Low')
+        except Exception:
+            pass
+
+        ttk.Label(f, text='Lookback days for recent 52-week hits (N)').grid(row=0, column=0, sticky='w')
+        self.w52_lookback = tk.IntVar(value=30)
+        ttk.Entry(f, textvariable=self.w52_lookback, width=6).grid(row=0, column=1, sticky='w')
+
+        ttk.Button(f, text='Scan 52-week Highs (latest day)', command=lambda: self._run_52week_scan(mode='high', recent_n=0)).grid(row=1, column=0, pady=6)
+        ttk.Button(f, text='Scan 52-week Lows (latest day)', command=lambda: self._run_52week_scan(mode='low', recent_n=0)).grid(row=1, column=1, pady=6)
+        ttk.Button(f, text='Scan 52-week Highs/Lows (last N days)', command=lambda: self._run_52week_scan(mode='both', recent_n=self.w52_lookback.get())).grid(row=1, column=2, pady=6)
+
+        self.w52_results = tk.Text(f, height=6, wrap='none')
+        self.w52_results.grid(row=2, column=0, columnspan=6, sticky='nsew')
+        f.grid_rowconfigure(2, weight=1)
+
+        cols = ('symbol', 'type', 'signal_date', 'price', 'rsi')
+        tree_frame = ttk.Frame(f)
+        tree_frame.grid(row=3, column=0, columnspan=6, sticky='nsew', pady=(6,0))
+        f.grid_rowconfigure(3, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        self.w52_tree = ttk.Treeview(tree_frame, columns=cols, show='headings', height=12)
+        for c in cols:
+            self.w52_tree.heading(c, text=c)
+            self.w52_tree.column(c, width=100, anchor='w')
+        v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.w52_tree.yview)
+        h = ttk.Scrollbar(tree_frame, orient='horizontal', command=self.w52_tree.xview)
+        self.w52_tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        self.w52_tree.grid(row=0, column=0, sticky='nsew')
+        v.grid(row=0, column=1, sticky='ns')
+        h.grid(row=1, column=0, sticky='ew')
+
+        try:
+            self.w52_tree.bind('<Double-1>', self._on_52week_row_double_click)
+        except Exception:
+            pass
+
+    def _run_52week_scan(self, mode='high', recent_n=0):
+        # mode: 'high', 'low', 'both'; recent_n: 0 for latest day only, >0 for last N days
+        def worker():
+            try:
+                import reporting_adv_decl as rad
+                eng = rad.engine()
+                # determine latest trading day
+                with eng.connect() as conn:
+                    drow = conn.execute(text('SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full')).fetchone()
+                    latest = drow[0]
+                if not latest:
+                    self.append_log('No trade_date found in BHAV')
+                    return
+
+                # build SQL to find 52-week highs/lows
+                if recent_n and recent_n > 0:
+                    # consider signals within last N days up to latest
+                    start = (pd.to_datetime(latest) - pd.Timedelta(days=int(recent_n))).strftime('%Y-%m-%d')
+                    date_cond = f"AND trade_date BETWEEN '{start}' AND '{pd.to_datetime(latest).strftime('%Y-%m-%d')}'"
+                else:
+                    # only latest day
+                    date_cond = f"AND trade_date = '{pd.to_datetime(latest).strftime('%Y-%m-%d')}'"
+
+                results = []
+                with eng.connect() as conn:
+                    # 52-week high = high_price >= rolling 252-day max of high_price (including today)
+                    if mode in ('high', 'both'):
+                        qh = text(f"SELECT b.symbol, b.trade_date, b.close_price, b.high_price FROM nse_equity_bhavcopy_full b JOIN (SELECT symbol, MAX(high_price) as max52 FROM (SELECT symbol, high_price, trade_date FROM nse_equity_bhavcopy_full WHERE trade_date BETWEEN DATE_SUB(:latest, INTERVAL 365 DAY) AND :latest) x GROUP BY symbol) m ON b.symbol = m.symbol AND b.high_price = m.max52 WHERE 1=1 {date_cond} ORDER BY b.symbol")
+                        rows = conn.execute(qh, {"latest": pd.to_datetime(latest).strftime('%Y-%m-%d')}).fetchall()
+                        for r in rows:
+                            results.append({'symbol': r[0], 'type': '52W High', 'signal_date': pd.to_datetime(r[1]).date(), 'price': float(r[2]), 'rsi': None})
+                    if mode in ('low', 'both'):
+                        ql = text(f"SELECT b.symbol, b.trade_date, b.close_price, b.low_price FROM nse_equity_bhavcopy_full b JOIN (SELECT symbol, MIN(low_price) as min52 FROM (SELECT symbol, low_price, trade_date FROM nse_equity_bhavcopy_full WHERE trade_date BETWEEN DATE_SUB(:latest, INTERVAL 365 DAY) AND :latest) x GROUP BY symbol) m ON b.symbol = m.symbol AND b.low_price = m.min52 WHERE 1=1 {date_cond} ORDER BY b.symbol")
+                        rows = conn.execute(ql, {"latest": pd.to_datetime(latest).strftime('%Y-%m-%d')}).fetchall()
+                        for r in rows:
+                            results.append({'symbol': r[0], 'type': '52W Low', 'signal_date': pd.to_datetime(r[1]).date(), 'price': float(r[2]), 'rsi': None})
+
+                # fetch RSI for those symbols on signal date
+                syms = sorted({r['symbol'] for r in results})
+                if syms:
+                    with eng.connect() as conn:
+                        q = text("SELECT symbol, trade_date, rsi FROM nse_rsi_daily WHERE period = 14 AND symbol IN :syms")
+                        rrows = conn.execute(q, {"syms": tuple(syms)}).fetchall()
+                        rmap = {}
+                        for rr in rrows:
+                            rmap.setdefault(rr[0], {})[pd.to_datetime(rr[1]).date()] = float(rr[2]) if rr[2] is not None else None
+                        for res in results:
+                            res['rsi'] = rmap.get(res['symbol'], {}).get(res['signal_date'])
+
+                # populate tree
+                def _populate():
+                    try:
+                        for i in self.w52_tree.get_children():
+                            self.w52_tree.delete(i)
+                        for r in results:
+                            vals = (r['symbol'], r['type'], r['signal_date'].strftime('%Y-%m-%d'), r['price'], r['rsi'])
+                            self.w52_tree.insert('', 'end', values=vals)
+                    except Exception as e:
+                        self.append_log(f'Error populating 52-week tree: {e}')
+                self.root.after(0, _populate)
+            except Exception as e:
+                self.append_log(f'52-week scan error: {e}')
+                self.append_log(traceback.format_exc())
+
+        import threading
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_52week_row_double_click(self, event):
+        try:
+            item = self.w52_tree.identify_row(event.y)
+            if not item:
+                return
+            vals = self.w52_tree.item(item, 'values')
+            if not vals:
+                return
+            symbol = vals[0]
+            typ = vals[1]
+            date_s = vals[2]
+
+            def _open():
+                try:
+                    win = tk.Toplevel(self.root)
+                    win.title(f"{symbol} - 52W {typ} Detail")
+                    win.geometry('900x600')
+                    lbl = ttk.Label(win, text=f"Loading chart for {symbol}...")
+                    lbl.pack()
+
+                    try:
+                        import mplfinance as mpf
+                        import matplotlib
+                        matplotlib.use('Agg')
+                        import matplotlib.pyplot as plt
+                        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+                    except Exception:
+                        lbl.config(text='mplfinance/matplotlib not available')
+                        return
+
+                    # fetch price window
+                    import reporting_adv_decl as rad
+                    eng = rad.engine()
+                    start = (pd.to_datetime(date_s) - pd.Timedelta(days=180)).strftime('%Y-%m-%d')
+                    end = (pd.to_datetime(date_s) + pd.Timedelta(days=20)).strftime('%Y-%m-%d')
+                    q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                    with eng.connect() as conn:
+                        rows = conn.execute(q, {"s": symbol, "a": start, "b": end}).fetchall()
+                    if not rows:
+                        lbl.config(text='No price data for selected window')
+                        return
+                    df = pd.DataFrame(rows, columns=['dt','Open','High','Low','Close','Volume'])
+                    df['dt'] = pd.to_datetime(df['dt'])
+                    df = df.set_index('dt')
+
+                    # compute RSI
+                    period = 14
+                    close = df['Close']
+                    delta = close.diff()
+                    up = delta.clip(lower=0)
+                    down = -delta.clip(upper=0)
+                    ma_up = up.ewm(span=period, adjust=False).mean()
+                    ma_down = down.ewm(span=period, adjust=False).mean()
+                    rsi = 100 - (100 / (1 + (ma_up / ma_down)))
+
+                    fig = mpf.figure(style='yahoo', figsize=(10, 6))
+                    ax_price = fig.add_subplot(2,1,1)
+                    ax_rsi = fig.add_subplot(2,1,2, sharex=ax_price)
+                    try:
+                        mpf.plot(df, type='candle', ax=ax_price, volume=False, show_nontrading=False)
+                    except Exception:
+                        ax_price.plot(df.index, df['Close'])
+                    ax_rsi.plot(df.index, rsi, color='tab:orange')
+                    ax_rsi.set_ylim(0,100)
+                    ax_rsi.axhline(80, color='red', linestyle='--', alpha=0.5)
+                    ax_rsi.axhline(20, color='green', linestyle='--', alpha=0.5)
+
+                    # mark 52W level on price (use price from the tree row if present)
+                    try:
+                        price_level = float(vals[3])
+                        ax_price.axhline(price_level, color='magenta', linestyle='--', alpha=0.8)
+                        ax_price.annotate(f"{typ} {price_level}", xy=(pd.to_datetime(date_s), price_level), xytext=(5,5), textcoords='offset points', color='magenta')
+                    except Exception:
+                        pass
+
+                    fig.autofmt_xdate()
+                    canvas = FigureCanvasTkAgg(fig, master=win)
+                    canvas.draw()
+                    canvas.get_tk_widget().pack(fill='both', expand=True)
+                    try:
+                        plt.close(fig)
+                    except Exception:
+                        pass
+                    lbl.destroy()
+                except Exception as e:
+                    self.append_log(f"Error opening 52-week chart: {e}")
+
+            self.root.after(0, _open)
+        except Exception:
+            pass
+
+    def run_divergence_scan(self):
+        import rsi_divergences as rd
+
+        def worker():
+            try:
+                eng = rd._ensure_engine()
+                lookback = int(self.div_lookback.get())
+                limit = int(self.div_limit.get())
+
+                def _progress(c, t, m):
+                    try:
+                        self.append_log(f"[Divergence] {m}")
+                        def _ui():
+                            try:
+                                self.div_results.delete('1.0', 'end')
+                                self.div_results.insert('end', f"{m}\n{c}/{t}\n")
+                            except Exception:
+                                pass
+                        self.root.after(0, _ui)
+                    except Exception:
+                        pass
+
+                # collect SMA filters
+                sma_filters = []
+                try:
+                    if self.div_sma_10.get(): sma_filters.append(10)
+                    if self.div_sma_20.get(): sma_filters.append(20)
+                    if self.div_sma_50.get(): sma_filters.append(50)
+                except Exception:
+                    sma_filters = []
+
+                df = rd.scan_hidden_bullish_divergences(eng, lookback_fractals=lookback, progress_cb=_progress, limit=limit, sma_filters=sma_filters)
+                if df is None or df.empty:
+                    self.append_log('[Divergence] No signals found')
+                    return
+                # populate tree
+                def _populate():
+                    try:
+                        for i in self.div_tree.get_children():
+                            self.div_tree.delete(i)
+                        for _, r in df.iterrows():
+                            vals = (
+                                r.get('symbol'),
+                                pd.to_datetime(r.get('signal_date')).strftime('%Y-%m-%d') if pd.notna(r.get('signal_date')) else '',
+                                r.get('signal_type'),
+                                float(r.get('curr_center_close')) if pd.notna(r.get('curr_center_close')) else None,
+                                float(r.get('curr_center_rsi')) if pd.notna(r.get('curr_center_rsi')) else None,
+                                pd.to_datetime(r.get('comp_fractal_date')).strftime('%Y-%m-%d') if pd.notna(r.get('comp_fractal_date')) else '',
+                                float(r.get('comp_center_close')) if pd.notna(r.get('comp_center_close')) else None,
+                                float(r.get('comp_center_rsi')) if pd.notna(r.get('comp_center_rsi')) else None,
+                                float(r.get('buy_above_price')) if pd.notna(r.get('buy_above_price')) else None,
+                                float(r.get('sell_below_price')) if pd.notna(r.get('sell_below_price')) else None,
+                            )
+                            self.div_tree.insert('', 'end', values=vals)
+                    except Exception as e:
+                        self.append_log(f'Error populating divergence tree: {e}')
+                self.root.after(0, _populate)
+            except Exception as e:
+                self.append_log(f'Error running divergence scan: {e}')
+                self.append_log(traceback.format_exc())
+
+        import threading
+        threading.Thread(target=worker, daemon=True).start()
+
+    def run_divergence_scan_bearish(self):
+        import rsi_divergences as rd
+
+        def worker():
+            try:
+                eng = rd._ensure_engine()
+                lookback = int(self.div_lookback.get())
+                limit = int(self.div_limit.get())
+
+                def _progress(c, t, m):
+                    try:
+                        self.append_log(f"[Divergence-Bearish] {m}")
+                        def _ui():
+                            try:
+                                self.div_results.delete('1.0', 'end')
+                                self.div_results.insert('end', f"{m}\n{c}/{t}\n")
+                            except Exception:
+                                pass
+                        self.root.after(0, _ui)
+                    except Exception:
+                        pass
+
+                sma_filters = []
+                try:
+                    if self.div_sma_10.get(): sma_filters.append(10)
+                    if self.div_sma_20.get(): sma_filters.append(20)
+                    if self.div_sma_50.get(): sma_filters.append(50)
+                except Exception:
+                    sma_filters = []
+
+                df = rd.scan_hidden_bearish_divergences(eng, lookback_fractals=lookback, progress_cb=_progress, limit=limit, sma_filters=sma_filters)
+                if df is None or df.empty:
+                    self.append_log('[Divergence-Bearish] No signals found')
+                    return
+                # populate tree
+                def _populate():
+                    try:
+                        for i in self.div_tree.get_children():
+                            self.div_tree.delete(i)
+                        for _, r in df.iterrows():
+                            vals = (
+                                r.get('symbol'),
+                                pd.to_datetime(r.get('signal_date')).strftime('%Y-%m-%d') if pd.notna(r.get('signal_date')) else '',
+                                r.get('signal_type'),
+                                float(r.get('curr_center_close')) if pd.notna(r.get('curr_center_close')) else None,
+                                float(r.get('curr_center_rsi')) if pd.notna(r.get('curr_center_rsi')) else None,
+                                pd.to_datetime(r.get('comp_fractal_date')).strftime('%Y-%m-%d') if pd.notna(r.get('comp_fractal_date')) else '',
+                                float(r.get('comp_center_close')) if pd.notna(r.get('comp_center_close')) else None,
+                                float(r.get('comp_center_rsi')) if pd.notna(r.get('comp_center_rsi')) else None,
+                                float(r.get('buy_above_price')) if pd.notna(r.get('buy_above_price')) else None,
+                                float(r.get('sell_below_price')) if pd.notna(r.get('sell_below_price')) else None,
+                            )
+                            self.div_tree.insert('', 'end', values=vals)
+                    except Exception as e:
+                        self.append_log(f'Error populating divergence tree (bearish): {e}')
+                self.root.after(0, _populate)
+            except Exception as e:
+                self.append_log(f'Error running bearish divergence scan: {e}')
+                self.append_log(traceback.format_exc())
+
+        import threading
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _cancel_fractals(self):
+        try:
+            self._fractals_cancel['cancel'] = True
+            self.append_log('Fractals cancel requested')
+        except Exception:
+            pass
+
+    def run_fractals_scan(self):
+        import rsi_fractals as rf
+
+        def worker():
+            try:
+                eng = rf._ensure_engine()
+                period = int(self.frac_rsi_period.get())
+                workers = max(1, int(self.frac_workers.get()))
+                self._fractals_cancel['cancel'] = False
+
+                def _progress(c, t, m):
+                    try:
+                        self.append_log(f"[Fractal] {m}")
+                        def _ui():
+                            try:
+                                self.frac_results.delete('1.0', 'end')
+                                self.frac_results.insert('end', f"{m}\n{c}/{t}\n")
+                                if t > 0:
+                                    self.frac_progress['maximum'] = t
+                                    self.frac_progress['value'] = c
+                            except Exception:
+                                pass
+                        self.root.after(0, _ui)
+                    except Exception:
+                        pass
+
+                rf.scan_and_upsert_fractals(eng, period=period, workers=workers, progress_cb=_progress)
+                self.append_log('[Fractal] Scan finished')
+                # load last N fractals into tree
+                with eng.connect() as conn:
+                    rows = conn.execute(text('SELECT * FROM nse_fractals ORDER BY fractal_date DESC LIMIT 1000')).fetchall()
+                if not rows:
+                    return
+                df = pd.DataFrame(rows, columns=[c for c in rows[0]._fields])
+                def _populate():
+                    try:
+                        for i in self.frac_tree.get_children():
+                            self.frac_tree.delete(i)
+                        for _, r in df.iterrows():
+                            vals = (
+                                r.get('symbol'),
+                                pd.to_datetime(r.get('fractal_date')).strftime('%Y-%m-%d') if pd.notna(r.get('fractal_date')) else '',
+                                r.get('fractal_type'),
+                                float(r.get('fractal_high')) if pd.notna(r.get('fractal_high')) else None,
+                                float(r.get('fractal_low')) if pd.notna(r.get('fractal_low')) else None,
+                                float(r.get('center_rsi')) if pd.notna(r.get('center_rsi')) else None,
+                            )
+                            self.frac_tree.insert('', 'end', values=vals)
+                    except Exception as e:
+                        self.append_log(f'Error populating fractals tree: {e}')
+                self.root.after(0, _populate)
+            except Exception as e:
+                self.append_log(f'Error running fractals scan: {e}')
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def run_rsi_calc(self):
         import rsi_calculator as rc
@@ -1037,7 +1629,7 @@ class ScannerGUI:
                             return
 
                         with eng.connect() as conn:
-                            q = text("SELECT trade_date, close_price FROM nse_equity_bhavcopy_full WHERE symbol = :s AND trade_date <= :d ORDER BY trade_date DESC LIMIT 180")
+                            q = text("SELECT trade_date, close_price FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' AND trade_date <= :d ORDER BY trade_date DESC LIMIT 180")
                             rows = conn.execute(q, {"s": symbol, "d": self.rsi_end.get().strip() or date.today().strftime('%Y-%m-%d')}).fetchall()
                         if not rows:
                             lbl.config(text='No price data')
@@ -1046,21 +1638,293 @@ class ScannerGUI:
                         df['trade_date'] = pd.to_datetime(df['trade_date'])
                         df = df.sort_values('trade_date')
 
-                        fig, ax = plt.subplots(figsize=(6,3))
-                        ax.plot(df['trade_date'], df['close'], label=symbol)
-                        ax.set_title(f"{symbol} - last {len(df)} days")
-                        ax.set_xlabel('Date')
-                        ax.set_ylabel('Close')
-                        ax.grid(True)
+                        # compute RSI(14)
+                        period = 14
+                        close = df['close'].sort_index() if 'trade_date' not in df.columns else df.sort_values('trade_date')['close']
+                        # ensure index is datetime
+                        try:
+                            df['trade_date'] = pd.to_datetime(df['trade_date'])
+                        except Exception:
+                            pass
+                        close = df['close']
+                        delta = close.diff()
+                        up = delta.clip(lower=0)
+                        down = -delta.clip(upper=0)
+                        ma_up = up.ewm(span=period, adjust=False).mean()
+                        ma_down = down.ewm(span=period, adjust=False).mean()
+                        rs = ma_up / ma_down
+                        rsi = 100 - (100 / (1 + rs))
+
+                        # create two subplots: price on top, RSI below
+                        fig, (ax_price, ax_rsi) = plt.subplots(2, 1, figsize=(8, 6), sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+                        ax_price.plot(df['trade_date'], df['close'], label=symbol)
+                        ax_price.set_title(f"{symbol} - last {len(df)} days")
+                        ax_price.set_ylabel('Close')
+                        ax_price.grid(True)
+
+                        ax_rsi.plot(df['trade_date'], rsi, color='tab:orange', label='RSI(14)')
+                        ax_rsi.set_ylim(0, 100)
+                        ax_rsi.axhline(80, color='red', linestyle='--', alpha=0.7)
+                        ax_rsi.axhline(20, color='green', linestyle='--', alpha=0.4)
+                        ax_rsi.set_ylabel('RSI')
+
+                        # find latest RSI 80-cross signal (crossing from below to >=80)
+                        try:
+                            cond = (rsi.shift(1) < 80) & (rsi >= 80)
+                            sig_idxs = [i for i, v in enumerate(cond) if v]
+                            if sig_idxs:
+                                last_idx = sig_idxs[-1]
+                                sig_date = df['trade_date'].iloc[last_idx]
+                                sig_price = float(df['close'].iloc[last_idx])
+                                sig_rsi = float(rsi.iloc[last_idx])
+                                # mark on RSI
+                                ax_rsi.scatter([sig_date], [sig_rsi], color='red', s=50, zorder=5)
+                                ax_rsi.annotate(f"RSI80 {sig_rsi:.1f}", xy=(sig_date, sig_rsi), xytext=(5,5), textcoords='offset points', color='red')
+                                # mark on price
+                                ax_price.scatter([sig_date], [sig_price], color='red', s=60, zorder=5)
+                                ax_price.annotate(f"RSI80 @ {sig_price:.2f}", xy=(sig_date, sig_price), xytext=(5,5), textcoords='offset points', color='red')
+                                # draw horizontal line on price to show price level at signal
+                                ax_price.axhline(sig_price, color='red', linestyle='--', alpha=0.5)
+                        except Exception:
+                            pass
+
                         fig.autofmt_xdate()
 
                         canvas = FigureCanvasTkAgg(fig, master=win)
                         canvas.draw()
                         canvas.get_tk_widget().pack(fill='both', expand=True)
+                        try:
+                            plt.close(fig)
+                        except Exception:
+                            pass
+                        try:
+                            plt.close(fig)
+                        except Exception:
+                            pass
                     except Exception as pe:
                         lbl.config(text=f'Error plotting: {pe}')
                 except Exception:
                     pass
+            self.root.after(0, _open)
+        except Exception:
+            pass
+
+    def _on_divergence_row_double_click(self, event):
+        # show candlestick + RSI and mark the current and comparison fractal dates
+        try:
+            item = self.div_tree.identify_row(event.y)
+            if not item:
+                return
+            vals = self.div_tree.item(item, 'values')
+            if not vals:
+                return
+            symbol = vals[0]
+            # columns: ('symbol','signal_date','signal_type','curr_center_close','curr_center_rsi','comp_fractal_date',...)
+            curr_date_s = vals[1]
+            comp_date_s = vals[5]
+
+            def _open():
+                try:
+                    win = tk.Toplevel(self.root)
+                    win.title(f"{symbol} - Divergence Detail")
+                    win.geometry('900x600')
+                    lbl = ttk.Label(win, text=f"Loading chart for {symbol}...")
+                    lbl.pack()
+
+                    try:
+                        import mplfinance as mpf
+                        import matplotlib
+                        matplotlib.use('Agg')
+                        import matplotlib.pyplot as plt
+                        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+                    except Exception:
+                        lbl.config(text='mplfinance/matplotlib not available')
+                        return
+
+                    # prepare date range around fractal dates
+                    try:
+                        a = parse_date(comp_date_s) if comp_date_s else None
+                        b = parse_date(curr_date_s) if curr_date_s else None
+                    except Exception:
+                        a = None; b = None
+
+                    # expand window: 90 days before earliest, 20 days after latest
+                    try:
+                        start = (a or b) - pd.Timedelta(days=90) if (a or b) else pd.Timestamp.today() - pd.Timedelta(days=180)
+                        end = (b or a) + pd.Timedelta(days=20) if (b or a) else pd.Timestamp.today()
+                        start_s = start.strftime('%Y-%m-%d')
+                        end_s = end.strftime('%Y-%m-%d')
+                    except Exception:
+                        start_s = None; end_s = None
+
+                    # fetch OHLCV
+                    try:
+                        import reporting_adv_decl as rad
+                        from sqlalchemy import text
+                        eng = rad.engine()
+                    except Exception:
+                        eng = None
+                    if not eng:
+                        lbl.config(text='No DB engine available')
+                        return
+
+                    q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                    with eng.connect() as conn:
+                        rows = conn.execute(q, {"s": symbol, "a": start_s, "b": end_s}).fetchall()
+                    if not rows:
+                        lbl.config(text='No price data for selected window')
+                        return
+
+                    df = pd.DataFrame(rows, columns=['dt','Open','High','Low','Close','Volume'])
+                    df['dt'] = pd.to_datetime(df['dt'])
+                    df = df.set_index('dt')
+
+                    # compute RSI (14)
+                    period = 14
+                    close = df['Close']
+                    delta = close.diff()
+                    up = delta.clip(lower=0)
+                    down = -delta.clip(upper=0)
+                    ma_up = up.ewm(span=period, adjust=False).mean()
+                    ma_down = down.ewm(span=period, adjust=False).mean()
+                    rs = ma_up / ma_down
+                    rsi = 100 - (100 / (1 + rs))
+
+                    # create figure with two subplots
+                    fig = mpf.figure(style='yahoo', figsize=(10, 6))
+                    ax_price = fig.add_subplot(2, 1, 1)
+                    ax_rsi = fig.add_subplot(2, 1, 2, sharex=ax_price)
+
+                    try:
+                        mpf.plot(df, type='candle', ax=ax_price, volume=False, show_nontrading=False)
+                    except Exception:
+                        # fallback simpler plot
+                        ax_price.plot(df.index, df['Close'], label=symbol)
+
+                    ax_rsi.plot(df.index, rsi, color='tab:orange')
+                    ax_rsi.set_ylim(0, 100)
+                    ax_rsi.axhline(30, color='green', linestyle='--', alpha=0.5)
+                    ax_rsi.axhline(70, color='red', linestyle='--', alpha=0.5)
+
+                    # Overlay selected SMAs on the price chart. Prefer precomputed values from moving_averages,
+                    # otherwise compute from the Close series.
+                    try:
+                        sma_windows = []
+                        try:
+                            if self.div_sma_10.get(): sma_windows.append(10)
+                            if self.div_sma_20.get(): sma_windows.append(20)
+                            if self.div_sma_50.get(): sma_windows.append(50)
+                        except Exception:
+                            sma_windows = []
+
+                        if sma_windows:
+                            # try reading moving_averages for this symbol and date range
+                            try:
+                                ma_cols = ', '.join([f'sma_{w}' for w in sma_windows])
+                                qma = text(f"SELECT trade_date, {ma_cols} FROM moving_averages WHERE symbol = :s AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                                with eng.connect() as conn:
+                                    ma_rows = conn.execute(qma, {"s": symbol, "a": start_s, "b": end_s}).fetchall()
+                                if ma_rows:
+                                    ma_df = pd.DataFrame(ma_rows, columns=['trade_date'] + [f'sma_{w}' for w in sma_windows])
+                                    ma_df['trade_date'] = pd.to_datetime(ma_df['trade_date'])
+                                    ma_df = ma_df.set_index('trade_date')
+                                    # align to price df index (forward-fill missing)
+                                    ma_df = ma_df.reindex(df.index, method='ffill')
+                                    colors = {10: 'tab:blue', 20: 'tab:green', 50: 'tab:purple'}
+                                    for w in sma_windows:
+                                        col = f'sma_{w}'
+                                        if col in ma_df.columns:
+                                            ax_price.plot(ma_df.index, ma_df[col], label=f'SMA{w}', color=colors.get(w, None), linewidth=1.25)
+                                else:
+                                    raise Exception('no_ma')
+                            except Exception:
+                                # fallback: compute rolling SMA from Close
+                                colors = {10: 'tab:blue', 20: 'tab:green', 50: 'tab:purple'}
+                                for w in sma_windows:
+                                    sma_series = df['Close'].rolling(window=w).mean()
+                                    ax_price.plot(df.index, sma_series, label=f'SMA{w}', color=colors.get(w, None), linewidth=1.0, linestyle='--')
+                            try:
+                                ax_price.legend(loc='upper left')
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
+                    # mark fractal dates
+                    def _mark_date(dt_s, price_ax, rsi_ax, label, color='blue'):
+                        try:
+                            if not dt_s:
+                                return
+                            dt = pd.to_datetime(dt_s)
+                            if dt not in df.index:
+                                # find nearest
+                                nearest = df.index.get_indexer([dt], method='nearest')
+                                if len(nearest) and nearest[0] >= 0:
+                                    dt = df.index[nearest[0]]
+                                else:
+                                    return
+                            price = df.at[dt, 'Close']
+                            rsi_val = float(rsi.loc[dt]) if dt in rsi.index else None
+                            price_ax.scatter([dt], [price], color=color, s=60, zorder=5)
+                            price_ax.annotate(label, xy=(dt, price), xytext=(5,5), textcoords='offset points', color=color)
+                            if rsi_val is not None:
+                                rsi_ax.scatter([dt], [rsi_val], color=color, s=40, zorder=5)
+                                rsi_ax.annotate(f"{rsi_val:.1f}", xy=(dt, rsi_val), xytext=(5,5), textcoords='offset points', color=color)
+                        except Exception:
+                            pass
+
+                    _mark_date(comp_date_s, ax_price, ax_rsi, 'comp', color='purple')
+                    _mark_date(curr_date_s, ax_price, ax_rsi, 'curr', color='blue')
+
+                    # draw connecting line on RSI between comp and curr (if both available)
+                    try:
+                        if comp_date_s and curr_date_s:
+                            dtc = pd.to_datetime(comp_date_s)
+                            dtt = pd.to_datetime(curr_date_s)
+                            # find nearest available dates in df
+                            idx_c = df.index.get_indexer([dtc], method='nearest')
+                            idx_t = df.index.get_indexer([dtt], method='nearest')
+                            if len(idx_c) and len(idx_t) and idx_c[0] >= 0 and idx_t[0] >= 0:
+                                dta = df.index[idx_c[0]]
+                                dtb = df.index[idx_t[0]]
+                                if dta in rsi.index and dtb in rsi.index:
+                                    rsi_a = float(rsi.loc[dta])
+                                    rsi_b = float(rsi.loc[dtb])
+                                    ax_rsi.plot([dta, dtb], [rsi_a, rsi_b], color='black', linestyle='-', linewidth=1.5, alpha=0.8)
+                    except Exception:
+                        pass
+
+                    # draw connecting line on price between comp and curr (if both available)
+                    try:
+                        if comp_date_s and curr_date_s:
+                            dtc = pd.to_datetime(comp_date_s)
+                            dtt = pd.to_datetime(curr_date_s)
+                            idx_c = df.index.get_indexer([dtc], method='nearest')
+                            idx_t = df.index.get_indexer([dtt], method='nearest')
+                            if len(idx_c) and len(idx_t) and idx_c[0] >= 0 and idx_t[0] >= 0:
+                                dta = df.index[idx_c[0]]
+                                dtb = df.index[idx_t[0]]
+                                if dta in df.index and dtb in df.index:
+                                    price_a = float(df.at[dta, 'Close'])
+                                    price_b = float(df.at[dtb, 'Close'])
+                                    ax_price.plot([dta, dtb], [price_a, price_b], color='black', linestyle='--', linewidth=1.25, alpha=0.8)
+                    except Exception:
+                        pass
+
+                    fig.autofmt_xdate()
+
+                    # embed in Tk
+                    canvas = FigureCanvasTkAgg(fig, master=win)
+                    canvas.draw()
+                    canvas.get_tk_widget().pack(fill='both', expand=True)
+                    try:
+                        plt.close(fig)
+                    except Exception:
+                        pass
+                    lbl.destroy()
+                except Exception as e:
+                    self.append_log(f"Error opening divergence chart: {e}")
+
             self.root.after(0, _open)
         except Exception:
             pass
@@ -1406,7 +2270,7 @@ class ScannerGUI:
                 from sqlalchemy import text
                 eng = rad.engine()
                 with eng.connect() as conn:
-                    rows = conn.execute(text("SELECT DISTINCT symbol FROM nse_equity_bhavcopy_full ORDER BY symbol"))
+                    rows = conn.execute(text("SELECT DISTINCT symbol FROM nse_equity_bhavcopy_full WHERE series = 'EQ' ORDER BY symbol"))
                     syms = [r[0] for r in rows if r[0]]
                 def _set():
                     try:
@@ -1420,6 +2284,155 @@ class ScannerGUI:
                 self.append_log(f"Could not load symbol list: {e}")
 
         threading.Thread(target=_load_symbols, daemon=True).start()
+
+    # -------- BHAV Export tab --------
+    def _build_bhav_export_tab(self):
+        f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
+        try:
+            # insert near the end
+            nb = self.root.nametowidget('.!notebook')
+            nb.add(f, text="BHAV Export")
+        except Exception:
+            pass
+
+        ttk.Label(f, text="Series").grid(row=0, column=0, sticky="w")
+        self.bhav_series = tk.StringVar(value="EQ")
+        ttk.Entry(f, textvariable=self.bhav_series, width=8).grid(row=0, column=1)
+
+        ttk.Label(f, text="Date from (YYYY-MM-DD)").grid(row=1, column=0, sticky="w")
+        self.bhav_from = tk.StringVar(value="")
+        ttk.Entry(f, textvariable=self.bhav_from, width=12).grid(row=1, column=1)
+        ttk.Label(f, text="Date to (YYYY-MM-DD)").grid(row=1, column=2, sticky="w")
+        self.bhav_to = tk.StringVar(value="")
+        ttk.Entry(f, textvariable=self.bhav_to, width=12).grid(row=1, column=3)
+
+        ttk.Label(f, text="Target folder").grid(row=2, column=0, sticky="w")
+        self.bhav_folder = tk.StringVar(value="")
+        ttk.Entry(f, textvariable=self.bhav_folder, width=40).grid(row=2, column=1, columnspan=2)
+        ttk.Button(f, text="Browse", command=lambda: self._browse(self.bhav_folder)).grid(row=2, column=3)
+
+        self.bhav_per_symbol = tk.BooleanVar(value=True)
+        ttk.Checkbutton(f, text="Export one CSV per symbol (Symbol.csv)", variable=self.bhav_per_symbol).grid(row=3, column=0, columnspan=3, sticky="w")
+
+        # progress bar and cancel
+        self.bhav_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
+        self.bhav_progress.grid(row=4, column=0, columnspan=3, pady=(6,2))
+        self.bhav_status = tk.StringVar(value="Idle")
+        ttk.Label(f, textvariable=self.bhav_status).grid(row=4, column=3, sticky='w')
+
+        self._bhav_cancel = {'cancel': False}
+        ttk.Button(f, text="Run BHAV Export", command=self.run_bhav_export).grid(row=5, column=0, pady=8)
+        ttk.Button(f, text="Cancel", command=self._cancel_bhav_export).grid(row=5, column=1, pady=8)
+
+    def run_bhav_export(self):
+        def worker():
+            try:
+                folder = self.bhav_folder.get().strip()
+                if not folder:
+                    messagebox.showerror("Folder required", "Please select a target folder to save BHAV CSVs")
+                    return
+                outp = Path(folder)
+                outp.mkdir(parents=True, exist_ok=True)
+
+                series = (self.bhav_series.get() or 'EQ').strip()
+                dt_from = self.bhav_from.get().strip() or None
+                dt_to = self.bhav_to.get().strip() or None
+
+                # build query to fetch distinct symbols for the chosen series
+                from sqlalchemy import create_engine
+                try:
+                    # prefer existing engine helper
+                    from import_nifty_index import build_engine
+                    eng = build_engine()
+                except Exception:
+                    try:
+                        from rsi_cross_scanner import _ensure_engine
+                        eng = _ensure_engine()
+                    except Exception:
+                        eng = None
+
+                if not eng:
+                    messagebox.showerror("DB engine", "No DB engine available to fetch BHAV data")
+                    return
+
+                self.append_log(f"Starting BHAV export (series={series}) to {folder}")
+                with eng.connect() as conn:
+                    # fetch symbols for the series
+                    rows = conn.execute(text("SELECT DISTINCT symbol FROM nse_equity_bhavcopy_full WHERE series = :s ORDER BY symbol"), {"s": series}).fetchall()
+                    syms = [r[0] for r in rows if r[0]]
+
+                total = len(syms)
+                self.append_log(f"Found {total} symbols for series {series}")
+                # initialize progress
+                try:
+                    self.root.after(0, lambda: self.bhav_progress.configure(maximum=total, value=0))
+                    self.root.after(0, lambda: self.bhav_status.set(f"0/{total}"))
+                    self._bhav_cancel['cancel'] = False
+                except Exception:
+                    pass
+
+                import csv
+                with eng.connect() as conn:
+                    for i, sym in enumerate(syms, start=1):
+                        if self._bhav_cancel.get('cancel'):
+                            self.append_log('BHAV export cancelled by user')
+                            break
+                        # fetch rows for symbol with optional date filters
+                        q = "SELECT trade_date, symbol, series, open_price, high_price, low_price, close_price, ttl_trd_qnty FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = :ser"
+                        params = {"s": sym, "ser": series}
+                        if dt_from and dt_to:
+                            q += " AND trade_date BETWEEN :a AND :b"
+                            params.update({"a": dt_from, "b": dt_to})
+                        elif dt_from:
+                            q += " AND trade_date >= :a"
+                            params.update({"a": dt_from})
+                        elif dt_to:
+                            q += " AND trade_date <= :b"
+                            params.update({"b": dt_to})
+                        q += " ORDER BY trade_date"
+
+                        rows = conn.execute(text(q), params).fetchall()
+                        if not rows:
+                            continue
+                        # write per-symbol CSV with requested column order
+                        fname = outp.joinpath(f"{sym}.csv")
+                        header = ["Symbol", "Date", "Series", "Open", "High", "Low", "Close", "ttl_traded_qnty"]
+                        with open(fname, 'w', newline='', encoding='utf-8') as fh:
+                            writer = csv.writer(fh)
+                            writer.writerow(header)
+                            for r in rows:
+                                # r: (trade_date, symbol, series, open_price, high_price, low_price, close_price, ttl_trd_qnty)
+                                dt = r[0]
+                                symv = r[1]
+                                serv = r[2]
+                                op = r[3]
+                                hi = r[4]
+                                lo = r[5]
+                                cl = r[6]
+                                qty = r[7]
+                                # format date as ISO (YYYY-MM-DD)
+                                try:
+                                    dts = pd.to_datetime(dt).date().isoformat()
+                                except Exception:
+                                    dts = str(dt)
+                                writer.writerow([symv, dts, serv, op, hi, lo, cl, qty])
+
+                        self.append_log(f"[{i}/{total}] Wrote {len(rows)} rows -> {fname}")
+                        try:
+                            self.root.after(0, lambda v=i: self.bhav_progress.configure(value=v))
+                            self.root.after(0, lambda v=i, t=total: self.bhav_status.set(f"{v}/{t}"))
+                        except Exception:
+                            pass
+
+                if not self._bhav_cancel.get('cancel'):
+                    self.append_log("BHAV export completed")
+                else:
+                    self.append_log("BHAV export stopped (cancelled)")
+            except Exception as e:
+                self.append_log(f"BHAV export error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _build_sma_tab(self):
         f = self.sma_frame

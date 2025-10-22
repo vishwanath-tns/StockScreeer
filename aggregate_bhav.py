@@ -68,10 +68,10 @@ def _ensure_engine():
 def fetch_daily_range(conn, start: str, end: str, symbols: Optional[List[str]] = None) -> pd.DataFrame:
     """Fetch daily OHLCV for the date range. Returns DataFrame with columns: trade_date, symbol, open, high, low, close, volume"""
     if symbols:
-        q = text("SELECT trade_date, symbol, open_price, high_price, low_price, close_price, ttl_trd_qnty FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND trade_date BETWEEN :a AND :b ORDER BY trade_date, symbol")
+        q = text("SELECT trade_date, symbol, open_price, high_price, low_price, close_price, ttl_trd_qnty FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date, symbol")
         rows = conn.execute(q, {"syms": tuple(symbols), "a": start, "b": end}).fetchall()
     else:
-        q = text("SELECT trade_date, symbol, open_price, high_price, low_price, close_price, ttl_trd_qnty FROM nse_equity_bhavcopy_full WHERE trade_date BETWEEN :a AND :b ORDER BY trade_date, symbol")
+        q = text("SELECT trade_date, symbol, open_price, high_price, low_price, close_price, ttl_trd_qnty FROM nse_equity_bhavcopy_full WHERE series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date, symbol")
         rows = conn.execute(q, {"a": start, "b": end}).fetchall()
 
     if not rows:

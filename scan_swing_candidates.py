@@ -86,8 +86,8 @@ def compute_metrics(df: pd.DataFrame) -> Optional[Dict[str, Any]]:
     }
 
 
-def scan(start: date, end: date, series: Optional[str], min_turnover_lacs: float, min_qty: int,
-         min_vol: float, max_vol: float, require_momentum: bool) -> List[Dict[str, Any]]:
+def scan(start: date, end: date, series: Optional[str] = 'EQ', min_turnover_lacs: float = 5.0, min_qty: int = 10000,
+         min_vol: float = 0.005, max_vol: float = 0.06, require_momentum: bool = False) -> List[Dict[str, Any]]:
     q = """
     SELECT trade_date, symbol, series, close_price, ttl_trd_qnty, turnover_lacs
     FROM nse_equity_bhavcopy_full
@@ -156,7 +156,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--start", type=str, default="2025-08-01")
     p.add_argument("--end", type=str, default="2025-10-10")
-    p.add_argument("--series", type=str, default=None)
+    p.add_argument("--series", type=str, default='EQ')
     p.add_argument("--min-turnover-lacs", type=float, default=5.0, help="Minimum average turnover_lacs (1 lac = 100k) — default 5.0")
     p.add_argument("--min-qty", type=int, default=10000, help="Minimum average traded quantity per day")
     p.add_argument("--min-vol", type=float, default=0.005, help="Minimum daily return std (e.g., 0.005=0.5%)")

@@ -90,14 +90,14 @@ def compute_rsi(series: pd.Series, period: int = 9) -> pd.Series:
 def fetch_all_closes(conn, start: Optional[str] = None, end: Optional[str] = None, symbols: Optional[List[str]] = None) -> pd.DataFrame:
     """Fetch trade_date,symbol,close_price from BHAV table for the optional range and symbols."""
     if symbols:
-        q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
+        q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
         rows = conn.execute(q, {"syms": tuple(symbols), "a": start, "b": end}).fetchall()
     else:
         if start and end:
-            q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
+            q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
             rows = conn.execute(q, {"a": start, "b": end}).fetchall()
         else:
-            q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full ORDER BY symbol, trade_date")
+            q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' ORDER BY symbol, trade_date")
             rows = conn.execute(q).fetchall()
 
     if not rows:

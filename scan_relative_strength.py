@@ -74,7 +74,7 @@ def fetch_index_series(conn, index_name: str, start: str, end: str) -> pd.Series
 
 
 def fetch_stock_closes(conn, symbol: str, start: str, end: str) -> pd.Series:
-    q = text("SELECT trade_date, close_price FROM nse_equity_bhavcopy_full WHERE symbol=:s AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+    q = text("SELECT trade_date, close_price FROM nse_equity_bhavcopy_full WHERE symbol=:s AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
     rows = conn.execute(q, {"s": symbol, "a": start, "b": end}).fetchall()
     if not rows:
         return pd.Series(dtype=float)
@@ -163,10 +163,10 @@ def compute_relative_strength_bulk(conn, index_name: str, as_of: datetime.date, 
     # fetch stock closes in one query
     if symbols:
         # parameterize symbol list
-        q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+        q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
         rows = conn.execute(q, {"syms": tuple(symbols), "a": start.isoformat(), "b": end.isoformat()}).fetchall()
     else:
-        q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE trade_date BETWEEN :a AND :b ORDER BY trade_date")
+        q = text("SELECT trade_date, symbol, close_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
         rows = conn.execute(q, {"a": start.isoformat(), "b": end.isoformat()}).fetchall()
 
     if not rows:

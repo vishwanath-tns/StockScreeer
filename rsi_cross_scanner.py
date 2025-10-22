@@ -55,10 +55,10 @@ def fetch_bhav_range(conn, start: str, end: str, symbols: Optional[List[str]] = 
     Returns DataFrame with trade_date (datetime), symbol, close, high.
     """
     if symbols:
-        q = text("SELECT trade_date, symbol, close_price, high_price FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
+        q = text("SELECT trade_date, symbol, close_price, high_price FROM nse_equity_bhavcopy_full WHERE symbol IN :syms AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
         rows = conn.execute(q, {"syms": tuple(symbols), "a": start, "b": end}).fetchall()
     else:
-        q = text("SELECT trade_date, symbol, close_price, high_price FROM nse_equity_bhavcopy_full WHERE trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
+        q = text("SELECT trade_date, symbol, close_price, high_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY symbol, trade_date")
         rows = conn.execute(q, {"a": start, "b": end}).fetchall()
 
     if not rows:
@@ -304,12 +304,12 @@ def stocks_trading_above_cross(engine, as_of: Optional[str] = None, cross_type: 
     """Return symbols whose latest crossover (of cross_type) has high < today's close (as_of)."""
     if as_of is None:
         as_of = date.today().strftime('%Y-%m-%d')
-    q = text("""
-    SELECT c.symbol, c.trade_date as cross_date, c.high as cross_high, b.close_price as asof_close
-    FROM nse_rsi_crosses c
-    JOIN (
-      SELECT symbol, close_price FROM nse_equity_bhavcopy_full WHERE trade_date = :asof
-    ) b ON b.symbol = c.symbol
+        q = text("""
+        SELECT c.symbol, c.trade_date as cross_date, c.high as cross_high, b.close_price as asof_close
+        FROM nse_rsi_crosses c
+        JOIN (
+            SELECT symbol, close_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' AND trade_date = :asof
+        ) b ON b.symbol = c.symbol
     WHERE c.cross_type = :ct
       AND c.trade_date = (
          SELECT MAX(trade_date) FROM nse_rsi_crosses cx WHERE cx.symbol = c.symbol AND cx.cross_type = c.cross_type
@@ -334,24 +334,24 @@ def stocks_trading_above_cross_window(engine, as_of: Optional[str] = None, days:
     if as_of is None:
         as_of = date.today().strftime('%Y-%m-%d')
 
-    # window start/end
-    end_dt = pd.to_datetime(as_of).date()
-    start_dt = end_dt - timedelta(days=days)
+        # window start/end
+        end_dt = pd.to_datetime(as_of).date()
+        start_dt = end_dt - timedelta(days=days)
 
-    # Return rows for each cross event in the window where the as-of close is greater
-    # than the cross event's high. This allows matching any cross candle, not just the max.
-    q = text("""
-    SELECT c.symbol, c.trade_date as cross_date, c.high as cross_high, b.close_price as asof_close
-    FROM nse_rsi_crosses c
-    JOIN (
-      SELECT symbol, close_price FROM nse_equity_bhavcopy_full WHERE trade_date = :asof
-    ) b ON b.symbol COLLATE utf8mb4_unicode_ci = c.symbol COLLATE utf8mb4_unicode_ci
-    WHERE c.cross_type = :ct
-      AND c.period = :p
-      AND c.trade_date BETWEEN :a AND :b
-      AND CAST(b.close_price AS DECIMAL(18,6)) > CAST(c.high AS DECIMAL(18,6))
-    ORDER BY (CAST(b.close_price AS DECIMAL(18,6)) - CAST(c.high AS DECIMAL(18,6))) DESC
-    """)
+        # Return rows for each cross event in the window where the as-of close is greater
+        # than the cross event's high. This allows matching any cross candle, not just the max.
+        q = text("""
+        SELECT c.symbol, c.trade_date as cross_date, c.high as cross_high, b.close_price as asof_close
+        FROM nse_rsi_crosses c
+        JOIN (
+            SELECT symbol, close_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' AND trade_date = :asof
+        ) b ON b.symbol COLLATE utf8mb4_unicode_ci = c.symbol COLLATE utf8mb4_unicode_ci
+        WHERE c.cross_type = :ct
+            AND c.period = :p
+            AND c.trade_date BETWEEN :a AND :b
+            AND CAST(b.close_price AS DECIMAL(18,6)) > CAST(c.high AS DECIMAL(18,6))
+        ORDER BY (CAST(b.close_price AS DECIMAL(18,6)) - CAST(c.high AS DECIMAL(18,6))) DESC
+        """)
 
     params = {
         "ct": cross_type,
