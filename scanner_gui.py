@@ -38,6 +38,7 @@ class ScannerGUI:
         self.strong_frame = ttk.Frame(nb)
         self.indices_frame = ttk.Frame(nb)
         self.rsi_frame = ttk.Frame(nb)
+        self.most_active_frame = ttk.Frame(nb)
 
         nb.add(self.accum_frame, text="Accumulation Scanner")
         nb.add(self.swing_frame, text="Swing Scanner")
@@ -49,6 +50,7 @@ class ScannerGUI:
         nb.add(self.strong_frame, text="Strong Uptrend")
         nb.add(self.indices_frame, text="Indices Import")
         nb.add(self.rsi_frame, text="RSI Calculator")
+        nb.add(self.most_active_frame, text="Most Active")
 
         self._build_accum_tab()
         self._build_swing_tab()
@@ -60,10 +62,13 @@ class ScannerGUI:
         self._build_strong_tab()
         self._build_indices_tab()
         self._build_rsi_tab()
+        self._build_most_active_tab()
+        self._build_52week_tab()
+        self._build_52week_new_tab()
+        self._build_minervini_tab()
         self._build_fractals_tab()
         self._build_bhav_export_tab()
         self._build_rsi_divergences_tab()
-        self._build_52week_tab()
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -97,7 +102,7 @@ class ScannerGUI:
         self.acc_start = tk.StringVar(value="2025-08-01")
         self.acc_end = tk.StringVar(value="2025-10-10")
         ttk.Entry(f, textvariable=self.acc_start, width=12).grid(row=0, column=1)
-        ttk.Entry(f, textvariable=self.acc_end, width=12).grid(row=0, column=2)
+    
 
         ttk.Label(f, text="Series").grid(row=1, column=0, sticky="w")
         self.acc_series = tk.StringVar(value="EQ")
@@ -661,6 +666,92 @@ class ScannerGUI:
         # cancel token for background divergence scans
         self._div_cancel = {'cancel': False}
 
+    def _build_most_active_tab(self):
+        """Build the Most Active tab: choose date and Top-N, show symbols ordered by turnover_lacs."""
+        f = self.most_active_frame
+        ttk.Label(f, text="As-of (YYYY-MM-DD, empty = latest)").grid(row=0, column=0, sticky="w")
+        self.ma_asof = tk.StringVar(value="")
+        ttk.Entry(f, textvariable=self.ma_asof, width=12).grid(row=0, column=1, sticky="w")
+
+        ttk.Label(f, text="Top N").grid(row=0, column=2, sticky="w")
+        self.ma_topn = tk.IntVar(value=20)
+        ttk.Combobox(f, textvariable=self.ma_topn, values=[20,50,100,200], width=8).grid(row=0, column=3)
+
+        ttk.Button(f, text="Show Most Active", command=self._show_most_active).grid(row=0, column=4, pady=6)
+
+        # results treeview
+        cols = ("symbol", "series", "trade_date", "close_price", "turnover_lacs", "ttl_trd_qnty")
+        tree_frame = ttk.Frame(f)
+        tree_frame.grid(row=1, column=0, columnspan=6, sticky="nsew", pady=(6,0))
+        f.grid_rowconfigure(1, weight=1)
+        f.grid_columnconfigure(0, weight=1)
+
+        self.ma_tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=12)
+        for c in cols:
+            self.ma_tree.heading(c, text=c)
+            self.ma_tree.column(c, width=120, anchor="w")
+
+        # double-click to open detail chart
+        try:
+            self.ma_tree.bind("<Double-1>", self._on_most_active_row_double_click)
+        except Exception:
+            pass
+
+        v = ttk.Scrollbar(tree_frame, orient="vertical", command=self.ma_tree.yview)
+        h = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.ma_tree.xview)
+        self.ma_tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        self.ma_tree.grid(row=0, column=0, sticky="nsew")
+        v.grid(row=0, column=1, sticky="ns")
+        h.grid(row=1, column=0, sticky="ew")
+
+    def _show_most_active(self):
+        """Query DB for top-N symbols by turnover_lacs for given date and populate the treeview."""
+        def worker():
+            try:
+                import reporting_adv_decl as rad
+                from sqlalchemy import text
+                eng = rad.engine()
+                asof = self.ma_asof.get().strip() or None
+                topn = int(self.ma_topn.get() or 20)
+
+                with eng.connect() as conn:
+                    if not asof:
+                        row = conn.execute(text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full WHERE series='EQ'"))
+                        latest = row.fetchone()[0]
+                        if latest is None:
+                            self.append_log('No trade_date found in BHAV table')
+                            return
+                        asof = pd.to_datetime(latest).strftime('%Y-%m-%d')
+
+                    q = text("SELECT symbol, series, trade_date, close_price, turnover_lacs, ttl_trd_qnty FROM nse_equity_bhavcopy_full WHERE trade_date = :d AND series='EQ' ORDER BY turnover_lacs DESC LIMIT :n")
+                    rows = conn.execute(q, {"d": asof, "n": topn}).fetchall()
+
+                # schedule UI update
+                def _populate():
+                    try:
+                        for i in self.ma_tree.get_children():
+                            self.ma_tree.delete(i)
+                        for r in rows:
+                            # r: (symbol, series, trade_date, close_price, turnover_lacs, ttl_trd_qnty)
+                            try:
+                                dt = pd.to_datetime(r[2]).strftime('%Y-%m-%d')
+                            except Exception:
+                                dt = str(r[2])
+                            vals = (r[0], r[1], dt, float(r[3]) if r[3] is not None else None, float(r[4]) if r[4] is not None else None, int(r[5]) if r[5] is not None else None)
+                            self.ma_tree.insert('', 'end', values=vals)
+                    except Exception as e:
+                        self.append_log(f"Error populating Most Active tree: {e}")
+
+                self.root.after(0, _populate)
+            except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                self.append_log(f"Most Active error: {e}\n{tb}")
+
+        threading.Thread(target=worker, daemon=True).start()
+
     def _sort_div_tree(self, col_name: str):
         """Sort the divergence Treeview by column. Toggles asc/desc on repeated clicks."""
         try:
@@ -735,10 +826,18 @@ class ScannerGUI:
         ttk.Button(f, text='Scan 52-week Highs (latest day)', command=lambda: self._run_52week_scan(mode='high', recent_n=0)).grid(row=1, column=0, pady=6)
         ttk.Button(f, text='Scan 52-week Lows (latest day)', command=lambda: self._run_52week_scan(mode='low', recent_n=0)).grid(row=1, column=1, pady=6)
         ttk.Button(f, text='Scan 52-week Highs/Lows (last N days)', command=lambda: self._run_52week_scan(mode='both', recent_n=self.w52_lookback.get())).grid(row=1, column=2, pady=6)
+        ttk.Button(f, text='Upsert daily counts', command=self._upsert_daily_counts_gui).grid(row=1, column=3, pady=6)
+        ttk.Button(f, text='Show counts chart', command=self._plot_daily_counts).grid(row=1, column=4, pady=6)
+        ttk.Button(f, text='Backfill last 30 days counts', command=self._backfill_30_days_counts).grid(row=1, column=5, pady=6)
+        ttk.Button(f, text='Backfill full counts', command=self._backfill_full_counts).grid(row=1, column=6, pady=6)
 
         self.w52_results = tk.Text(f, height=6, wrap='none')
         self.w52_results.grid(row=2, column=0, columnspan=6, sticky='nsew')
         f.grid_rowconfigure(2, weight=1)
+
+        # progress bar for backfill operations
+        self.w52_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
+        self.w52_progress.grid(row=4, column=0, columnspan=6, pady=(4,6), sticky='we')
 
         cols = ('symbol', 'type', 'signal_date', 'price', 'rsi')
         tree_frame = ttk.Frame(f)
@@ -761,6 +860,422 @@ class ScannerGUI:
 
         try:
             self.w52_tree.bind('<Double-1>', self._on_52week_row_double_click)
+        except Exception:
+            pass
+
+        # chart area for daily counts
+        self.w52_chart_frame = ttk.Frame(f)
+        self.w52_chart_frame.grid(row=5, column=0, columnspan=6, sticky='nsew', pady=(6,0))
+        f.grid_rowconfigure(5, weight=1)
+        self.w52_counts_canvas = None
+
+    def _build_52week_new_tab(self):
+        f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
+        try:
+            nb = self.root.nametowidget('.!notebook')
+            nb.add(f, text='52W Counts (New)')
+        except Exception:
+            pass
+
+        ttk.Label(f, text='As-of (YYYY-MM-DD, empty = latest)').grid(row=0, column=0, sticky='w')
+        self.w52v2_asof = tk.StringVar(value='')
+        ttk.Entry(f, textvariable=self.w52v2_asof, width=12).grid(row=0, column=1, sticky='w')
+
+        ttk.Label(f, text='Workers (parallel backfill)').grid(row=0, column=2, sticky='w')
+        self.w52v2_workers = tk.IntVar(value=4)
+        ttk.Entry(f, textvariable=self.w52v2_workers, width=6).grid(row=0, column=3, sticky='w')
+
+        ttk.Button(f, text='Compute & Upsert (single day)', command=self._w52v2_compute_one).grid(row=1, column=0, pady=6)
+        ttk.Button(f, text='Backfill last N days', command=self._w52v2_backfill_last_n).grid(row=1, column=1, pady=6)
+        ttk.Button(f, text='Backfill full (all dates)', command=self._w52v2_backfill_full).grid(row=1, column=2, pady=6)
+
+        self.w52v2_results = tk.Text(f, height=6, wrap='none')
+        self.w52v2_results.grid(row=2, column=0, columnspan=6, sticky='nsew')
+        f.grid_rowconfigure(2, weight=1)
+
+        self.w52v2_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
+        self.w52v2_progress.grid(row=3, column=0, columnspan=6, pady=(4,6), sticky='we')
+
+    def _w52v2_compute_one(self):
+        def worker():
+            try:
+                import week52_v2 as wv
+                import reporting_adv_decl as rad
+                eng = rad.engine()
+                asof = self.w52v2_asof.get().strip() or None
+                import datetime
+                ao = None
+                if asof:
+                    ao = datetime.datetime.strptime(asof, '%Y-%m-%d').date()
+                with eng.connect() as conn:
+                    res = wv.compute_and_upsert_counts(conn, as_of=ao) if hasattr(wv, 'compute_and_upsert_counts') else wv.compute_and_upsert_counts(eng, as_of=ao)
+                msg = f"Upserted counts for {res['date']}: high={res['count_high']} low={res['count_low']}"
+                self.append_log(msg)
+                try:
+                    self.w52v2_results.insert('end', msg + '\n')
+                except Exception:
+                    pass
+            except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                self.append_log(f"52Wv2 compute error: {e}\n{tb}")
+                try:
+                    self.w52v2_results.insert('end', f"Error: {e}\n{tb}\n")
+                except Exception:
+                    pass
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _w52v2_backfill_last_n(self):
+        def worker():
+            try:
+                import week52_v2 as wv
+                import reporting_adv_decl as rad
+                eng = rad.engine()
+                # prompt for N via existing lookback control if present, else default 30
+                try:
+                    n = int(self.w52_lookback.get())
+                except Exception:
+                    n = 30
+                # get latest N dates
+                with eng.connect() as conn:
+                    rows = conn.execute(text("SELECT DISTINCT trade_date FROM nse_equity_bhavcopy_full WHERE series='EQ' ORDER BY trade_date DESC LIMIT :n"), {"n": n}).fetchall()
+                    dates = [r[0] for r in rows]
+                total = len(dates)
+                attempted = succeeded = failed = 0
+                for idx, d in enumerate(reversed(dates), start=1):
+                    try:
+                        with eng.connect() as conn:
+                            res = wv.compute_and_upsert_counts(conn, as_of=d)
+                        msg = f"Backfilled {idx}/{total}: {res['date']} -> high={res['count_high']} low={res['count_low']}"
+                        attempted += 1
+                        succeeded += 1
+                    except Exception as e:
+                        attempted += 1
+                        failed += 1
+                        msg = f"Backfill error for {d}: {e}"
+                    self.append_log(msg)
+                    try:
+                        self.w52v2_results.insert('end', msg + '\n')
+                    except Exception:
+                        pass
+                self.append_log('Backfill (last N) complete')
+            except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                self.append_log(f"Backfill error: {e}\n{tb}")
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _w52v2_backfill_full(self):
+        def worker():
+            try:
+                import week52_v2 as wv
+                import reporting_adv_decl as rad
+                eng = rad.engine()
+                workers = max(1, int(self.w52v2_workers.get() or 1))
+
+                def progress(attempted, total):
+                    try:
+                        if total and total > 0:
+                            self.w52v2_progress['maximum'] = total
+                        self.w52v2_progress['value'] = attempted
+                        self.append_log(f"Backfill progress: {attempted}/{total}")
+                    except Exception:
+                        pass
+
+                res = wv.backfill_counts(eng, lookback_days=365, progress_cb=progress, parallel_workers=workers)
+                msg = f"Backfill finished: attempted={res.get('attempted')} succeeded={res.get('succeeded')} failed={res.get('failed')}"
+                self.append_log(msg)
+                try:
+                    self.w52v2_results.insert('end', msg + '\n')
+                except Exception:
+                    pass
+            except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                self.append_log(f"Full backfill error: {e}\n{tb}")
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _build_minervini_tab(self):
+        f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
+        try:
+            nb = self.root.nametowidget('.!notebook')
+            nb.add(f, text='Minervini Template')
+        except Exception:
+            pass
+
+        ttk.Label(f, text='As-of (YYYY-MM-DD)').grid(row=0, column=0, sticky='w')
+        self.min_asof = tk.StringVar(value='')
+        ttk.Entry(f, textvariable=self.min_asof, width=12).grid(row=0, column=1, sticky='w')
+
+        ttk.Label(f, text='RS Index').grid(row=0, column=2, sticky='w')
+        self.min_rs_index = tk.StringVar(value='NIFTY 50')
+        ttk.Entry(f, textvariable=self.min_rs_index, width=18).grid(row=0, column=3, sticky='w')
+
+        ttk.Label(f, text='RS lookback days').grid(row=1, column=0, sticky='w')
+        self.min_rs_lookback = tk.IntVar(value=252)
+        ttk.Entry(f, textvariable=self.min_rs_lookback, width=8).grid(row=1, column=1, sticky='w')
+
+        # Verbose option
+        self.min_verbose = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text='Verbose (per-symbol)', variable=self.min_verbose).grid(row=1, column=4, sticky='w')
+
+        ttk.Label(f, text='Limit (0=all)').grid(row=1, column=2, sticky='w')
+        self.min_limit = tk.IntVar(value=0)
+        ttk.Entry(f, textvariable=self.min_limit, width=8).grid(row=1, column=3, sticky='w')
+
+        ttk.Button(f, text='Run Minervini Scan', command=self.run_minervini_scan).grid(row=2, column=0, pady=6)
+        ttk.Label(f, text='CSV out').grid(row=2, column=1, sticky='w')
+        self.min_out = tk.StringVar(value='')
+        ttk.Entry(f, textvariable=self.min_out, width=30).grid(row=2, column=2, columnspan=2)
+        ttk.Button(f, text='Browse', command=lambda: self._browse(self.min_out)).grid(row=2, column=4)
+        # Ensure SMAs button
+        ttk.Button(f, text='Ensure SMAs', command=self._ensure_smas_gui).grid(row=2, column=5, padx=6)
+
+        # results area
+        self.min_results = tk.Text(f, height=6, wrap='none')
+        self.min_results.grid(row=3, column=0, columnspan=6, sticky='nsew')
+        f.grid_rowconfigure(3, weight=1)
+
+        cols = ('symbol', 'date', 'close', 'sma_50', 'sma_150', 'sma_200', 'rs_pct', '52w_low', '52w_high')
+        tree_frame = ttk.Frame(f)
+        tree_frame.grid(row=4, column=0, columnspan=6, sticky='nsew', pady=(6,0))
+        f.grid_rowconfigure(4, weight=1)
+        f.grid_columnconfigure(5, weight=1)
+
+        self.min_tree = ttk.Treeview(tree_frame, columns=cols, show='headings', height=12)
+        for c in cols:
+            self.min_tree.heading(c, text=c)
+            self.min_tree.column(c, width=110, anchor='w')
+        v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.min_tree.yview)
+        h = ttk.Scrollbar(tree_frame, orient='horizontal', command=self.min_tree.xview)
+        self.min_tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        self.min_tree.grid(row=0, column=0, sticky='nsew')
+        v.grid(row=0, column=1, sticky='ns')
+        h.grid(row=1, column=0, sticky='ew')
+
+        try:
+            self.min_tree.bind('<Double-1>', self._on_minervini_row_double_click)
+        except Exception:
+            pass
+
+    def run_minervini_scan(self):
+        import minervini_screener as ms
+
+        def worker():
+            try:
+                self.append_log('Starting Minervini scan...')
+                asof = self.min_asof.get().strip() or None
+                asof_arg = asof if asof else None
+                limit = int(self.min_limit.get())
+                lookback = int(self.min_rs_lookback.get())
+                res = ms.screen_minervini(as_of=pd.to_datetime(asof_arg).date() if asof_arg else None,
+                                         index_name=self.min_rs_index.get(), rs_lookback_days=lookback, limit=limit, verbose=self.min_verbose.get())
+                if self.min_verbose.get():
+                    df, vrows = res
+                else:
+                    df = res
+                    vrows = []
+                if df is None or df.empty:
+                    self.append_log('Minervini: no candidates found')
+                    # still display verbose logs if any
+                    if vrows:
+                        def _show_verbose():
+                            try:
+                                self.min_results.delete('1.0', 'end')
+                                for vr in vrows:
+                                    self.min_results.insert('end', f"{vr['symbol']}: {', '.join(vr['steps'])}\n")
+                            except Exception:
+                                pass
+                        self.root.after(0, _show_verbose)
+                    return
+                # populate tree
+                def _populate():
+                    try:
+                        for i in self.min_tree.get_children():
+                            self.min_tree.delete(i)
+                        for _, r in df.iterrows():
+                            vals = (
+                                r.get('symbol'),
+                                pd.to_datetime(r.get('date')).strftime('%Y-%m-%d') if pd.notna(r.get('date')) else '',
+                                float(r.get('close')) if pd.notna(r.get('close')) else None,
+                                float(r.get('sma_50')) if pd.notna(r.get('sma_50')) else None,
+                                float(r.get('sma_150')) if pd.notna(r.get('sma_150')) else None,
+                                float(r.get('sma_200')) if pd.notna(r.get('sma_200')) else None,
+                                float(r.get('rs_percentile')) if pd.notna(r.get('rs_percentile')) else None,
+                                float(r.get('52w_low')) if pd.notna(r.get('52w_low')) else None,
+                                float(r.get('52w_high')) if pd.notna(r.get('52w_high')) else None,
+                            )
+                            self.min_tree.insert('', 'end', values=vals)
+                        # if verbose, append per-symbol logs below the tree
+                        if vrows:
+                            text_lines = []
+                            for vr in vrows:
+                                text_lines.append(f"{vr['symbol']}: {', '.join(vr['steps'])}")
+                            self.min_results.delete('1.0', 'end')
+                            self.min_results.insert('end', '\n'.join(text_lines))
+                        out = self.min_out.get().strip()
+                        if out:
+                            df.to_csv(out, index=False)
+                            self.append_log(f'Wrote CSV: {out}')
+                    except Exception as e:
+                        self.append_log(f'Error populating Minervini tree: {e}')
+                self.root.after(0, _populate)
+            except Exception as e:
+                self.append_log(f'Minervini scan error: {e}')
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _ensure_smas_gui(self):
+        """Run the SMA ensure helper and report results in the Minervini tab."""
+        import minervini_screener as ms
+
+        def worker():
+            try:
+                eng = ms.engine()
+                with eng.connect() as conn:
+                    # windows we'll ensure
+                    wins = [50, 150, 200]
+                    # first ensure columns, then compute missing rows
+                    report = ms._ensure_sma_columns(conn, wins)
+                    compute_report = ms.ensure_and_compute_smas(conn, wins, as_of=None, symbols=None, limit=0)
+
+                # populate results
+                msg_lines = []
+                msg_lines.append(f"Existing columns: {', '.join(report.get('existing_columns', []))}")
+                if report.get('added'):
+                    msg_lines.append(f"Added columns: {', '.join(report['added'])}")
+                if report.get('errors'):
+                    for e in report['errors']:
+                        msg_lines.append(f"Error adding {e.get('column')}: {e.get('error')}")
+                # compute report
+                msg_lines.append(f"Computed SMA for {len(compute_report.get('computed', []))} symbols")
+                if compute_report.get('compute_errors'):
+                    msg_lines.append(f"Compute errors: {len(compute_report.get('compute_errors', []))} (see log)")
+
+                out = '\n'.join(msg_lines)
+                def _ui():
+                    try:
+                        self.min_results.delete('1.0', 'end')
+                        self.min_results.insert('end', out)
+                        self.append_log('Ensure SMAs: done')
+                    except Exception:
+                        pass
+                self.root.after(0, _ui)
+            except Exception as e:
+                self.append_log(f'Ensure SMAs error: {e}')
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_minervini_row_double_click(self, event):
+        try:
+            item = self.min_tree.identify_row(event.y)
+            if not item:
+                return
+            vals = self.min_tree.item(item, 'values')
+            if not vals:
+                return
+            symbol = vals[0]
+            date_s = vals[1]
+
+            def _open():
+                try:
+                    win = tk.Toplevel(self.root)
+                    win.title(f"{symbol} - Minervini Detail")
+                    win.geometry('900x600')
+                    lbl = ttk.Label(win, text=f"Loading chart for {symbol}...")
+                    lbl.pack()
+
+                    try:
+                        import mplfinance as mpf
+                        import matplotlib
+                        # use the TkAgg backend for embedding in Tkinter so plots render interactively
+                        try:
+                            matplotlib.use('TkAgg')
+                        except Exception:
+                            # fallback to Agg if TkAgg unavailable
+                            matplotlib.use('Agg')
+                        import matplotlib.pyplot as plt
+                        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+                    except Exception:
+                        lbl.config(text='mplfinance/matplotlib not available')
+                        return
+
+                    import reporting_adv_decl as rad
+                    eng = rad.engine()
+                    start = (pd.to_datetime(date_s) - pd.Timedelta(days=180)).strftime('%Y-%m-%d')
+                    end = (pd.to_datetime(date_s) + pd.Timedelta(days=20)).strftime('%Y-%m-%d')
+                    q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                    with eng.connect() as conn:
+                        rows = conn.execute(q, {"s": symbol, "a": start, "b": end}).fetchall()
+                    if not rows:
+                        lbl.config(text='No price data for selected window')
+                        return
+                    df = pd.DataFrame(rows, columns=['dt','Open','High','Low','Close','Volume'])
+                    df['dt'] = pd.to_datetime(df['dt'])
+                    df = df.set_index('dt')
+
+                    # compute RSI
+                    period = 14
+                    close = df['Close']
+                    delta = close.diff()
+                    up = delta.clip(lower=0)
+                    down = -delta.clip(upper=0)
+                    ma_up = up.ewm(span=period, adjust=False).mean()
+                    ma_down = down.ewm(span=period, adjust=False).mean()
+                    rsi = 100 - (100 / (1 + (ma_up / ma_down)))
+
+                    # fetch SMA series for overlay if available
+                    with eng.connect() as conn:
+                        qmv = text("SELECT trade_date, sma_50, sma_150, sma_200 FROM moving_averages WHERE symbol = :s AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                        mvrows = conn.execute(qmv, {"s": symbol, "a": start, "b": end}).fetchall()
+                    mv_df = pd.DataFrame(mvrows, columns=['trade_date','sma_50','sma_150','sma_200']) if mvrows else pd.DataFrame()
+                    if not mv_df.empty:
+                        mv_df['trade_date'] = pd.to_datetime(mv_df['trade_date'])
+                        mv_df = mv_df.set_index('trade_date')
+
+                    fig = mpf.figure(style='yahoo', figsize=(10, 6))
+                    ax_price = fig.add_subplot(2,1,1)
+                    ax_rsi = fig.add_subplot(2,1,2, sharex=ax_price)
+                    try:
+                        mpf.plot(df, type='candle', ax=ax_price, volume=False, show_nontrading=False)
+                    except Exception:
+                        ax_price.plot(df.index, df['Close'])
+
+                    # plot SMA overlays if present
+                    try:
+                        if not mv_df.empty and 'sma_50' in mv_df.columns:
+                            ax_price.plot(mv_df.index, mv_df['sma_50'], label='SMA50', color='tab:blue')
+                        if not mv_df.empty and 'sma_150' in mv_df.columns:
+                            ax_price.plot(mv_df.index, mv_df['sma_150'], label='SMA150', color='tab:green')
+                        if not mv_df.empty and 'sma_200' in mv_df.columns:
+                            ax_price.plot(mv_df.index, mv_df['sma_200'], label='SMA200', color='tab:purple')
+                        ax_price.legend()
+                    except Exception:
+                        pass
+
+                    ax_rsi.plot(df.index, rsi, color='tab:orange')
+                    ax_rsi.set_ylim(0,100)
+                    ax_rsi.axhline(80, color='red', linestyle='--', alpha=0.5)
+                    ax_rsi.axhline(20, color='green', linestyle='--', alpha=0.5)
+
+                    fig.autofmt_xdate()
+                    canvas = FigureCanvasTkAgg(fig, master=win)
+                    canvas.draw()
+                    canvas.get_tk_widget().pack(fill='both', expand=True)
+                    try:
+                        plt.close(fig)
+                    except Exception:
+                        pass
+                    lbl.destroy()
+                except Exception as e:
+                    self.append_log(f"Error opening Minervini chart: {e}")
+
+            self.root.after(0, _open)
         except Exception:
             pass
 
@@ -831,6 +1346,195 @@ class ScannerGUI:
         import threading
         threading.Thread(target=worker, daemon=True).start()
 
+    def _upsert_daily_counts_gui(self):
+        def worker():
+            try:
+                # Use the newer week52_v2 implementation which opens fresh connections per write
+                import week52_v2 as wv
+                import reporting_adv_decl as rad
+                eng = rad.engine()
+                try:
+                    res = wv.compute_and_upsert_counts(eng, as_of=None)
+                    msg = f"Upserted daily counts for {res['date']}: high={res['count_high']}, low={res['count_low']}"
+                    self.append_log(msg)
+                except Exception as e:
+                    import traceback
+                    tb = traceback.format_exc()
+                    msg = f"Upsert failed: {e}\n{tb}"
+                    self.append_log(msg)
+                def _ui():
+                    try:
+                        self.w52_results.insert('end', msg + '\n')
+                    except Exception:
+                        pass
+                self.root.after(0, _ui)
+            except Exception as e:
+                self.append_log(f'Error upserting daily counts: {e}')
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _plot_daily_counts(self):
+        try:
+            import matplotlib
+            try:
+                matplotlib.use('TkAgg')
+            except Exception:
+                matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        except Exception:
+            self.append_log('matplotlib not available for plotting')
+            return
+
+        def worker():
+            try:
+                import reporting_adv_decl as rad
+                eng = rad.engine()
+                q = text('SELECT dt, count_high, count_low FROM daily_52w_counts ORDER BY dt')
+                with eng.connect() as conn:
+                    df = pd.read_sql(q, con=conn, parse_dates=['dt'])
+                if df.empty:
+                    self.append_log('No daily_52w_counts data to plot')
+                    return
+
+                fig, axes = plt.subplots(2, 1, figsize=(8,6), sharex=True)
+                axes[0].plot(df['dt'], df['count_high'], label='52w Highs')
+                axes[0].set_ylabel('count_high')
+                axes[0].legend()
+                axes[1].plot(df['dt'], df['count_low'], label='>=30% above 52w low', color='orange')
+                axes[1].set_ylabel('count_low')
+                axes[1].legend()
+
+                def _ui():
+                    try:
+                        for w in self.w52_chart_frame.winfo_children():
+                            w.destroy()
+                        canvas = FigureCanvasTkAgg(fig, master=self.w52_chart_frame)
+                        canvas.draw()
+                        canvas.get_tk_widget().pack(fill='both', expand=True)
+                        try:
+                            plt.close(fig)
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        self.append_log(f'Error embedding counts chart: {e}')
+                self.root.after(0, _ui)
+            except Exception as e:
+                self.append_log(f'Plot daily counts error: {e}')
+                self.append_log(traceback.format_exc())
+
+        import threading
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _backfill_30_days_counts(self):
+        def worker():
+            try:
+                import reporting_adv_decl as rad
+                import week52_scanner as w52
+                eng = rad.engine()
+                # determine available trading dates (use BHAV table)
+                with eng.connect() as conn:
+                    rows = conn.execute(text("SELECT DISTINCT trade_date FROM nse_equity_bhavcopy_full WHERE series='EQ' ORDER BY trade_date DESC LIMIT 60")).fetchall()
+                    dates = [r[0] for r in rows]
+                if not dates:
+                    self.append_log('No BHAV dates found to backfill')
+                    return
+                # take last 30 available dates (most recent)
+                dates = dates[:30]
+                total = len(dates)
+                for idx, d in enumerate(reversed(dates), start=1):
+                    try:
+                        with eng.connect() as conn:
+                            res = w52.upsert_daily_52w_counts(conn, d)
+                        msg = f"Backfilled {idx}/{total}: {res['date']} -> high={res['count_high']}, low={res['count_low']}"
+                        self.append_log(msg)
+                    except Exception as e:
+                        import traceback
+                        tb = traceback.format_exc()
+                        msg = f"Backfill error for {d}: {e}\n{tb}"
+                        self.append_log(msg)
+                    try:
+                        self.w52_results.insert('end', msg + '\n')
+                    except Exception:
+                        pass
+                self.append_log('Backfill complete')
+            except Exception as e:
+                self.append_log(f'Backfill error: {e}')
+                self.append_log(traceback.format_exc())
+
+        import threading
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _backfill_full_counts(self):
+        """Backfill daily_52w_counts for all available BHAV trade dates using default lookback 365 days."""
+        def worker():
+            try:
+                import reporting_adv_decl as rad
+                import week52_scanner as w52
+                eng = rad.engine()
+
+                # progress callback: (attempted, total)
+                def _progress(attempted, total):
+                    try:
+                        def _ui():
+                            try:
+                                # set maximum once
+                                if total and total > 0:
+                                    self.w52_progress['maximum'] = total
+                                self.w52_progress['value'] = attempted
+                                self.append_log(f"Backfill progress: {attempted}/{total}")
+                                try:
+                                    self.w52_results.insert('end', f"Progress: {attempted}/{total}\n")
+                                except Exception:
+                                    pass
+                            except Exception:
+                                pass
+                        self.root.after(0, _ui)
+                    except Exception:
+                        pass
+
+                with eng.connect() as conn:
+                    self.append_log('Starting full backfill of daily 52-week counts (lookback_days=365)')
+                    # ensure progress reset
+                    def _reset():
+                        try:
+                            self.w52_progress['value'] = 0
+                            self.w52_progress['maximum'] = 0
+                        except Exception:
+                            pass
+                    self.root.after(0, _reset)
+
+                    res = w52.backfill_daily_52w_counts_range(conn, lookback_days=365, progress_cb=_progress)
+
+                msg = f"Backfill finished: attempted={res.get('attempted')} succeeded={res.get('succeeded')} failed={res.get('failed')}"
+                self.append_log(msg)
+                try:
+                    self.w52_results.insert('end', msg + '\n')
+                except Exception:
+                    pass
+                # ensure progressbar is full on completion
+                def _done_ui():
+                    try:
+                        if res.get('attempted'):
+                            self.w52_progress['value'] = res.get('attempted')
+                            self.w52_progress['maximum'] = res.get('attempted')
+                    except Exception:
+                        pass
+                self.root.after(0, _done_ui)
+            except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                msg = f"Full backfill error: {e}\n{tb}"
+                self.append_log(msg)
+                try:
+                    self.w52_results.insert('end', msg + '\n')
+                except Exception:
+                    pass
+
+        import threading
+        threading.Thread(target=worker, daemon=True).start()
+
     def _on_52week_row_double_click(self, event):
         try:
             item = self.w52_tree.identify_row(event.y)
@@ -854,7 +1558,10 @@ class ScannerGUI:
                     try:
                         import mplfinance as mpf
                         import matplotlib
-                        matplotlib.use('Agg')
+                        try:
+                            matplotlib.use('TkAgg')
+                        except Exception:
+                            matplotlib.use('Agg')
                         import matplotlib.pyplot as plt
                         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
                     except Exception:
@@ -917,6 +1624,324 @@ class ScannerGUI:
                     lbl.destroy()
                 except Exception as e:
                     self.append_log(f"Error opening 52-week chart: {e}")
+
+            self.root.after(0, _open)
+        except Exception:
+            pass
+
+    def _on_most_active_row_double_click(self, event):
+        try:
+            item = self.ma_tree.identify_row(event.y)
+            if not item:
+                return
+            vals = self.ma_tree.item(item, 'values')
+            if not vals:
+                return
+            symbol = vals[0]
+            date_s = vals[2]
+
+            def _open():
+                try:
+                    win = tk.Toplevel(self.root)
+                    win.title(f"{symbol} - Most Active Detail")
+                    win.geometry('1000x700')
+                    lbl = ttk.Label(win, text=f"Loading chart for {symbol}...")
+                    lbl.pack()
+
+                    # plotting imports
+                    try:
+                        import mplfinance as mpf
+                        import matplotlib
+                        try:
+                            matplotlib.use('TkAgg')
+                        except Exception:
+                            matplotlib.use('Agg')
+                        import matplotlib.pyplot as plt
+                        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+                    except Exception:
+                        lbl.config(text='mplfinance/matplotlib not available')
+                        return
+
+                    import reporting_adv_decl as rad
+                    eng = rad.engine()
+
+                    # prepare window around selected date
+                    try:
+                        as_dt = pd.to_datetime(date_s)
+                    except Exception:
+                        as_dt = pd.Timestamp.today()
+                    start = (as_dt - pd.Timedelta(days=180)).strftime('%Y-%m-%d')
+                    end = (as_dt + pd.Timedelta(days=20)).strftime('%Y-%m-%d')
+
+                    q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume, turnover_lacs FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                    with eng.connect() as conn:
+                        rows = conn.execute(q, {"s": symbol, "a": start, "b": end}).fetchall()
+                    if not rows:
+                        lbl.config(text='No price data for selected window')
+                        return
+
+                    df = pd.DataFrame(rows, columns=['dt','Open','High','Low','Close','Volume','turnover_lacs'])
+                    df['dt'] = pd.to_datetime(df['dt'])
+                    df = df.set_index('dt')
+
+                    # DEBUG: log raw dataframe shape, columns and a small sample to diagnose missing price data
+                    try:
+                        try:
+                            cols = list(df.columns)
+                        except Exception:
+                            cols = None
+                        self.append_log(f"[MostActivePlot] raw_rows={len(df)} columns={cols} index_dtype={getattr(df.index, 'dtype', type(df.index))} is_unique={getattr(df.index, 'is_unique', None)}")
+                        try:
+                            # show first few Close/turnover values (convert to Python types for logging)
+                            sample = df.loc[:, [c for c in ('Close', 'turnover_lacs') if c in df.columns]].head(8)
+                            s_close = sample['Close'].apply(lambda x: None if pd.isna(x) else float(x)).tolist() if 'Close' in sample.columns else []
+                            s_turn = sample['turnover_lacs'].apply(lambda x: None if pd.isna(x) else float(x)).tolist() if 'turnover_lacs' in sample.columns else []
+                            self.append_log(f"[MostActivePlot] sample_close={s_close} sample_turnover={s_turn}")
+                            self.append_log(f"[MostActivePlot] non-null Close count={int(df['Close'].count()) if 'Close' in df.columns else 0}")
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+
+                    # compute RSI. Use period=9 as requested
+                    period = 9
+                    close = df['Close']
+                    delta = close.diff()
+                    up = delta.clip(lower=0)
+                    down = -delta.clip(upper=0)
+                    import numpy as np
+                    if period and period > 0:
+                        ma_up = up.ewm(span=period, adjust=False).mean()
+                        ma_down = down.ewm(span=period, adjust=False).mean()
+                    else:
+                        # period <= 0 interpreted as no smoothing: use raw up/down values (equivalent to ewm span=1)
+                        ma_up = up
+                        ma_down = down
+
+                    # avoid division by zero; compute RS and RSI safely
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        rs = ma_up / ma_down.replace({0: np.nan})
+                        rsi = 100 - (100 / (1 + rs))
+                        # when ma_down == 0 and ma_up > 0 -> RSI = 100; when ma_up == 0 -> RSI = 0
+                        rsi = rsi.fillna(0)
+
+                    # create figure with 3 rows: price (candles), turnover bar, RSI
+                    fig = plt.figure(figsize=(10, 7))
+                    gs = fig.add_gridspec(3, 1, height_ratios=[3, 1, 1], hspace=0.05)
+                    ax_price = fig.add_subplot(gs[0, 0])
+                    ax_turn = fig.add_subplot(gs[1, 0], sharex=ax_price)
+                    ax_rsi = fig.add_subplot(gs[2, 0], sharex=ax_price)
+
+                    try:
+                        # Clean, robust plotting for price: try plot_df['Close'] then common fallbacks.
+                        try:
+                            df.index = pd.DatetimeIndex(df.index)
+                        except Exception:
+                            df.index = pd.to_datetime(df.index, errors='coerce')
+
+                        plot_df = df.copy()
+                        # select a close-like column safely (avoid Series truthiness with `or`)
+                        try:
+                            if 'Close' in plot_df.columns:
+                                close_series = plot_df['Close']
+                            elif 'close' in plot_df.columns:
+                                close_series = plot_df['close']
+                            else:
+                                close_series = None
+                        except Exception:
+                            close_series = None
+                        if close_series is not None:
+                            plot_df['Close'] = pd.to_numeric(close_series, errors='coerce')
+                        else:
+                            plot_df['Close'] = pd.Series(dtype='float', index=plot_df.index)
+                        plot_df = plot_df.dropna(subset=['Close']).sort_index()
+
+                        try:
+                            idx = plot_df.index
+                            self.append_log(f"[MostActivePlot] line plot rows={len(plot_df)} index_dtype={getattr(idx, 'dtype', type(idx))} min={idx.min() if len(idx) else None} max={idx.max() if len(idx) else None} is_unique={idx.is_unique}")
+                        except Exception:
+                            pass
+
+                        try:
+                            if not plot_df.index.is_unique:
+                                self.append_log('[MostActivePlot] Index not unique; collapsing duplicate dates by taking last')
+                                plot_df = plot_df.groupby(plot_df.index).last().sort_index()
+                                self.append_log(f"[MostActivePlot] after collapse rows={len(plot_df)}")
+                        except Exception:
+                            pass
+
+                        # Plot using integer x positions so weekends/holidays do not create empty gaps
+                        used_xs = False
+                        try:
+                            import numpy as np
+
+                            if plot_df.empty:
+                                # try fallback close column from original df
+                                for col in ('Close', 'close', 'close_price', 'closePrice'):
+                                    if col in df.columns:
+                                        plot_df = pd.DataFrame({
+                                            'Close': pd.to_numeric(df[col], errors='coerce'),
+                                            'turnover_lacs': pd.to_numeric(df['turnover_lacs'], errors='coerce') if 'turnover_lacs' in df.columns else pd.Series(dtype='float')
+                                        }, index=df.index).dropna(subset=['Close']).sort_index()
+                                        break
+
+                            if plot_df.empty:
+                                ax_price.text(0.5, 0.5, 'No price data', transform=ax_price.transAxes, ha='center')
+                            else:
+                                # x positions for each available row (collapses weekends/holidays)
+                                xs = np.arange(len(plot_df))
+                                dates = plot_df.index
+                                closes = plot_df['Close'].values
+                                ax_price.plot(xs, closes, marker='o', linestyle='-', markersize=4, color='black')
+
+                                # turnover bars (use available turnover column if present)
+                                turns = None
+                                if 'turnover_lacs' in plot_df.columns:
+                                    turns_series = pd.to_numeric(plot_df['turnover_lacs'], errors='coerce')
+                                elif 'turnover_lacs' in df.columns:
+                                    turns_series = pd.to_numeric(df['turnover_lacs'], errors='coerce').reindex(plot_df.index)
+                                else:
+                                    turns_series = None
+
+                                if turns_series is not None:
+                                    # keep NaNs so we can color them gray; use 0 height for plotting
+                                    turns_vals = turns_series.fillna(0).values
+                                    # color NaN bars gray, others use blue
+                                    try:
+                                        colors = ['gray' if pd.isna(v) else 'tab:blue' for v in turns_series.values]
+                                    except Exception:
+                                        colors = 'tab:blue'
+                                    ax_turn.bar(xs, turns_vals, color=colors, width=0.6)
+                                    ax_turn.set_ylabel('turnover_lacs')
+                                else:
+                                    # fallback plot Volume if turnover not present
+                                    if 'Volume' in plot_df.columns:
+                                        vols = pd.to_numeric(plot_df['Volume'], errors='coerce').fillna(0).values
+                                        ax_turn.bar(xs, vols, color='tab:blue', width=0.6)
+                                        ax_turn.set_ylabel('qty')
+
+                                # RSI: align to xs; rsi was computed from df (same index), reindex to plot_df
+                                try:
+                                    rsi_vals = rsi.reindex(plot_df.index).values
+                                    ax_rsi.plot(xs, rsi_vals, color='tab:orange')
+                                    ax_rsi.set_ylim(0, 100)
+                                    ax_rsi.axhline(80, color='red', linestyle='--', alpha=0.5)
+                                    ax_rsi.axhline(20, color='green', linestyle='--', alpha=0.5)
+                                    ax_rsi.set_ylabel('RSI(9)')
+                                except Exception:
+                                    pass
+
+                                # format x-axis with date labels at reasonable interval
+                                try:
+                                    import matplotlib.ticker as mticker
+                                    # show up to 8 tick labels evenly spaced
+                                    max_ticks = 8
+                                    step = max(1, len(xs) // max_ticks)
+                                    ticks = xs[::step]
+                                    tick_labels = [d.strftime('%Y-%m-%d') for d in dates[::step]]
+                                    ax_price.set_xticks(ticks)
+                                    ax_price.set_xticklabels(tick_labels, rotation=45, ha='right')
+                                except Exception:
+                                    pass
+
+                                ax_price.set_ylabel('Close')
+                                ax_price.set_title(symbol)
+                                used_xs = True
+                        except Exception as e:
+                            try:
+                                self.append_log(f"Line plot failed for {symbol}: {e}")
+                            except Exception:
+                                pass
+                    except Exception as e:
+                        try:
+                            self.append_log(f"Line plot failed for {symbol}: {e}")
+                        except Exception:
+                            pass
+                        try:
+                            # fallback: pick a close-like column safely
+                            if 'Close' in df.columns:
+                                col = pd.to_numeric(df['Close'], errors='coerce')
+                            elif 'close' in df.columns:
+                                col = pd.to_numeric(df['close'], errors='coerce')
+                            elif 'close_price' in df.columns:
+                                col = pd.to_numeric(df['close_price'], errors='coerce')
+                            else:
+                                col = None
+                            if col is not None:
+                                ax_price.plot(df.index, col, marker='o', linestyle='-', markersize=4)
+                            else:
+                                try:
+                                    ax_price.text(0.5, 0.5, 'No price data', transform=ax_price.transAxes, ha='center')
+                                except Exception:
+                                    pass
+                        except Exception:
+                            try:
+                                ax_price.text(0.5, 0.5, 'No price data', transform=ax_price.transAxes, ha='center')
+                            except Exception:
+                                pass
+                    # show grid on price axis
+                    try:
+                        ax_price.grid(True, linestyle='--', alpha=0.5)
+                    except Exception:
+                        pass
+                    # turnover bar chart (only if we didn't already draw using integer xs)
+                    try:
+                        if not used_xs:
+                            if 'turnover_lacs' in df.columns:
+                                ax_turn.bar(df.index, pd.to_numeric(df['turnover_lacs'], errors='coerce'), color='tab:blue')
+                                ax_turn.set_ylabel('turnover_lacs')
+                            else:
+                                # fallback use Volume
+                                ax_turn.bar(df.index, pd.to_numeric(df['Volume'], errors='coerce'), color='tab:blue')
+                                ax_turn.set_ylabel('qty')
+                            ax_turn.grid(True, linestyle='--', alpha=0.4)
+                    except Exception:
+                        pass
+
+                    # RSI plot (only if not already plotted using integer xs)
+                    try:
+                        if not used_xs:
+                            ax_rsi.plot(df.index, rsi, color='tab:orange')
+                            ax_rsi.set_ylim(0, 100)
+                            ax_rsi.axhline(80, color='red', linestyle='--', alpha=0.5)
+                            ax_rsi.axhline(20, color='green', linestyle='--', alpha=0.5)
+                            ax_rsi.set_ylabel('RSI(9)')
+                            ax_rsi.grid(True, linestyle='--', alpha=0.4)
+                    except Exception:
+                        pass
+
+                    # highlight the selected date with vertical lines across panels
+                    try:
+                        sel_dt = pd.to_datetime(date_s)
+                        if used_xs:
+                            # map selected datetime to integer x position if it's in plot_df
+                            try:
+                                pos = None
+                                if sel_dt in plot_df.index:
+                                    # find the integer position of sel_dt in the plotted dates
+                                    pos = int(plot_df.index.get_indexer([sel_dt])[0])
+                                if pos is not None and pos >= 0:
+                                    for a in (ax_price, ax_turn, ax_rsi):
+                                        a.axvline(pos, color='magenta', linestyle='--', alpha=0.8)
+                            except Exception:
+                                pass
+                        else:
+                            for a in (ax_price, ax_turn, ax_rsi):
+                                a.axvline(sel_dt, color='magenta', linestyle='--', alpha=0.8)
+                    except Exception:
+                        pass
+
+                    fig.autofmt_xdate()
+                    canvas = FigureCanvasTkAgg(fig, master=win)
+                    canvas.draw()
+                    canvas.get_tk_widget().pack(fill='both', expand=True)
+                    try:
+                        plt.close(fig)
+                    except Exception:
+                        pass
+                    lbl.destroy()
+                except Exception as e:
+                    self.append_log(f"Error opening Most Active chart: {e}")
 
             self.root.after(0, _open)
         except Exception:
@@ -1607,7 +2632,10 @@ class ScannerGUI:
                     # fetch last 180 days of closes and plot
                     try:
                         import matplotlib
-                        matplotlib.use('Agg')
+                        try:
+                            matplotlib.use('TkAgg')
+                        except Exception:
+                            matplotlib.use('Agg')
                         import matplotlib.pyplot as plt
                         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
                     except Exception:
@@ -1734,7 +2762,10 @@ class ScannerGUI:
                     try:
                         import mplfinance as mpf
                         import matplotlib
-                        matplotlib.use('Agg')
+                        try:
+                            matplotlib.use('TkAgg')
+                        except Exception:
+                            matplotlib.use('Agg')
                         import matplotlib.pyplot as plt
                         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
                     except Exception:
@@ -2766,7 +3797,7 @@ class ScannerGUI:
                 from sqlalchemy import text
                 import reporting_adv_decl as rad
                 eng = rad.engine()
-                q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume FROM nse_equity_bhavcopy_full WHERE symbol=:s AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume FROM nse_equity_bhavcopy_full WHERE symbol=:s AND series='EQ' AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
                 with eng.connect() as conn:
                     df = pd.read_sql(q, con=conn, params={"s": sym, "a": start, "b": end}, parse_dates=["dt"]) 
                 t1 = time.perf_counter()

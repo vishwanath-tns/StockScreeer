@@ -1,4 +1,4 @@
-import os, zipfile, hashlib, threading, traceback
+import os, zipfile, hashlib, threading, traceback, logging, shutil, datetime
 from datetime import date
 from pathlib import Path
 import pandas as pd
@@ -37,6 +37,24 @@ def engine():
     )
     return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
 
+# Module logger: write detailed sync logs to a file in the repository
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    try:
+        log_path = Path(__file__).parent / "sync_bhav.log"
+        fh = logging.FileHandler(log_path, encoding='utf-8')
+        fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        fh.setFormatter(fmt)
+        sh = logging.StreamHandler()
+        sh.setFormatter(fmt)
+        logger.addHandler(fh)
+        logger.addHandler(sh)
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Logger initialized, writing to %s", str(log_path))
+    except Exception:
+        # fallback: configure basic logging to stderr
+        logging.basicConfig(level=logging.DEBUG)
+
 def already_imported(conn, trade_dt: date) -> bool:
     q = text(f"SELECT 1 FROM {LOG_TABLE} WHERE trade_date = :d LIMIT 1")
     return conn.execute(q, {"d": trade_dt}).first() is not None
@@ -51,7 +69,13 @@ def log_import(conn, trade_dt: date, file_name: str, checksum: str, rows: int):
           rows_loaded = VALUES(rows_loaded),
           loaded_at = CURRENT_TIMESTAMP
     """)
-    conn.execute(q, {"d": trade_dt, "f": file_name, "c": checksum, "r": rows})
+    try:
+        logger.debug("log_import: inserting import log for %s rows=%s checksum=%s", file_name, rows, checksum)
+        conn.execute(q, {"d": trade_dt, "f": file_name, "c": checksum, "r": rows})
+    except Exception as e:
+        logger.exception("log_import failed for %s (date=%s): %s", file_name, trade_dt, e)
+        # re-raise so caller can decide how to handle
+        raise
 
 # ------------ Parsing ------------
 COLMAP = {
@@ -95,6 +119,7 @@ def read_any(path: Path) -> pd.DataFrame:
     df.columns = [c.strip() for c in df.columns]
     missing = [c for c in COLMAP.keys() if c not in df.columns]
     if missing:
+        logger.error("read_any: missing columns %s in file %s; columns present: %s", missing, path.name, list(df.columns))
         raise ValueError(f"Missing columns {missing} in {path.name}")
     df = df[list(COLMAP.keys())].rename(columns=COLMAP)
 
@@ -120,8 +145,17 @@ def read_any(path: Path) -> pd.DataFrame:
         try: return float(s)
         except: return None
 
-    if "deliv_qty" in df:  df["deliv_qty"] = df["deliv_qty"].map(to_int_or_null)
-    if "deliv_per" in df:  df["deliv_per"] = df["deliv_per"].map(to_float_or_null)
+    # Clean numeric columns commonly present in BHAV files so DB receives NULLs instead of invalid strings
+    int_cols = ["ttl_trd_qnty", "no_of_trades", "deliv_qty"]
+    float_cols = ["prev_close", "open_price", "high_price", "low_price", "last_price", "close_price", "avg_price", "turnover_lacs", "deliv_per"]
+
+    for c in int_cols:
+        if c in df.columns:
+            df[c] = df[c].map(to_int_or_null)
+
+    for c in float_cols:
+        if c in df.columns:
+            df[c] = df[c].map(to_float_or_null)
 
     df = df.dropna(subset=["trade_date", "symbol", "series"])
     return df
@@ -129,49 +163,65 @@ def read_any(path: Path) -> pd.DataFrame:
 def extract_single_trade_date(df: pd.DataFrame) -> date:
     uniq = pd.Series(df["trade_date"].unique()).dropna()
     if len(uniq) != 1:
+        logger.error("extract_single_trade_date: expected exactly 1 trade_date, found: %s", list(uniq))
         raise ValueError(f"Expected exactly 1 trade_date in file, found: {list(uniq)}")
     return pd.to_datetime(uniq.iloc[0]).date()
 
 # ------------ Upsert ------------
 def upsert_bhav(conn, df: pd.DataFrame):
-    conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
-    conn.execute(text("CREATE TEMPORARY TABLE tmp_bhav LIKE nse_equity_bhavcopy_full;"))
+        try:
+                logger.debug("upsert_bhav: starting upsert for df rows=%d", len(df))
+                conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
+                conn.execute(text("CREATE TEMPORARY TABLE tmp_bhav LIKE nse_equity_bhavcopy_full;"))
 
-    df.to_sql(
-        name="tmp_bhav",
-        con=conn,   # same connection so temp table is visible
-        if_exists="append",
-        index=False,
-        method="multi",
-        chunksize=5000,
-    )
+                # Use pandas to_sql to bulk insert into temporary table
+                logger.debug("upsert_bhav: writing DataFrame to tmp_bhav (chunksize=5000)")
+                df.to_sql(
+                        name="tmp_bhav",
+                        con=conn,   # same connection so temp table is visible
+                        if_exists="append",
+                        index=False,
+                        method="multi",
+                        chunksize=5000,
+                )
 
-    upsert_sql = f"""
-    INSERT INTO {TABLE} (
-      trade_date, symbol, series, prev_close, open_price, high_price, low_price,
-      last_price, close_price, avg_price, ttl_trd_qnty, turnover_lacs,
-      no_of_trades, deliv_qty, deliv_per
-    )
-    SELECT trade_date, symbol, series, prev_close, open_price, high_price, low_price,
-           last_price, close_price, avg_price, ttl_trd_qnty, turnover_lacs,
-           no_of_trades, deliv_qty, deliv_per
-    FROM tmp_bhav
-    ON DUPLICATE KEY UPDATE
-      prev_close   = VALUES(prev_close),
-      open_price   = VALUES(open_price),
-      high_price   = VALUES(high_price),
-      low_price    = VALUES(low_price),
-      last_price   = VALUES(last_price),
-      close_price  = VALUES(close_price),
-      avg_price    = VALUES(avg_price),
-      ttl_trd_qnty = VALUES(ttl_trd_qnty),
-      turnover_lacs= VALUES(turnover_lacs),
-      no_of_trades = VALUES(no_of_trades),
-      deliv_qty    = VALUES(deliv_qty),
-      deliv_per    = VALUES(deliv_per);
-    """
-    conn.execute(text(upsert_sql))
-    conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
+                upsert_sql = f"""
+                INSERT INTO {TABLE} (
+                    trade_date, symbol, series, prev_close, open_price, high_price, low_price,
+                    last_price, close_price, avg_price, ttl_trd_qnty, turnover_lacs,
+                    no_of_trades, deliv_qty, deliv_per
+                )
+                SELECT trade_date, symbol, series, prev_close, open_price, high_price, low_price,
+                             last_price, close_price, avg_price, ttl_trd_qnty, turnover_lacs,
+                             no_of_trades, deliv_qty, deliv_per
+                FROM tmp_bhav
+                ON DUPLICATE KEY UPDATE
+                    prev_close   = VALUES(prev_close),
+                    open_price   = VALUES(open_price),
+                    high_price   = VALUES(high_price),
+                    low_price    = VALUES(low_price),
+                    last_price   = VALUES(last_price),
+                    close_price  = VALUES(close_price),
+                    avg_price    = VALUES(avg_price),
+                    ttl_trd_qnty = VALUES(ttl_trd_qnty),
+                    turnover_lacs= VALUES(turnover_lacs),
+                    no_of_trades = VALUES(no_of_trades),
+                    deliv_qty    = VALUES(deliv_qty),
+                    deliv_per    = VALUES(deliv_per);
+                """
+                logger.debug("upsert_bhav: executing upsert SQL")
+                conn.execute(text(upsert_sql))
+                conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
+                logger.info("upsert_bhav: successfully upserted %d rows into %s", len(df), TABLE)
+        except Exception as e:
+                logger.exception("upsert_bhav failed: rows=%s error=%s", len(df) if 'df' in locals() else None, e)
+                # attempt to drop temp table to avoid leaving temp artifacts
+                try:
+                        conn.execute(text("DROP TEMPORARY TABLE IF EXISTS tmp_bhav;"))
+                except Exception:
+                        logger.debug("upsert_bhav: failed to drop tmp_bhav after error")
+                # re-raise so caller (sync_folder) records failure
+                raise
 
 # ------------ Scanner ------------
 def discover_files(folder: Path):
@@ -179,33 +229,106 @@ def discover_files(folder: Path):
         if p.is_file() and p.suffix.lower() in VALID_EXTS:
             yield p
 
-def sync_folder(progress_cb=None, log_cb=None):
+def sync_folder(progress_cb=None, log_cb=None, dry_run: bool = False, quarantine_dir: Path | None = None, quarantine_on: str = "all"):
     eng = engine()
     processed = skipped = failed = 0
     files = list(discover_files(BHAV_FOLDER))
     total = len(files)
     if progress_cb: progress_cb(0, total)
 
+    # resolve quarantine dir default (only used when not dry_run)
+    if quarantine_dir is None and not dry_run:
+        quarantine_dir = BHAV_FOLDER / "quarantine"
+    if quarantine_dir is not None and not dry_run:
+        try:
+            quarantine_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.exception("Could not create quarantine directory %s: %s", quarantine_dir, e)
+
+    # normalize quarantine_on: allowed values: 'all', 'parsing', 'db', 'none'
+    quarantine_on = (quarantine_on or "all").lower()
+    if quarantine_on not in ("all", "parsing", "db", "none"):
+        logger.warning("Invalid quarantine_on value '%s', defaulting to 'all'", quarantine_on)
+        quarantine_on = "all"
+
     for idx, path in enumerate(sorted(files)):
         try:
             checksum = md5_of_file(path)
+            logger.info("Processing file %s (md5=%s)", path.name, checksum)
+            if log_cb: log_cb(f"Processing {path.name} (checksum={checksum})")
+
             df = read_any(path)
             trade_dt = extract_single_trade_date(df)
 
             with eng.begin() as conn:
                 if already_imported(conn, trade_dt):
                     skipped += 1
-                    if log_cb: log_cb(f"Skip {path.name}: {trade_dt} already imported")
+                    msg = f"Skip {path.name}: {trade_dt} already imported"
+                    logger.info(msg)
+                    if log_cb: log_cb(msg)
                 else:
+                    logger.debug("About to upsert bhav for %s rows=%d", path.name, len(df))
                     upsert_bhav(conn, df)
-                    log_import(conn, trade_dt, path.name, checksum, len(df))
+                    # record import in log table
+                    try:
+                        log_import(conn, trade_dt, path.name, checksum, len(df))
+                    except Exception:
+                        logger.exception("log_import failed after upsert for %s", path.name)
                     processed += 1
-                    if log_cb: log_cb(f"OK   {path.name}: {trade_dt} rows={len(df):,}")
+                    msg = f"OK   {path.name}: {trade_dt} rows={len(df):,}"
+                    logger.info(msg)
+                    if log_cb: log_cb(msg)
         except Exception as e:
             failed += 1
+            # detailed error logging to file and UI
+            logger.exception("FAIL %s: %s", path.name, e)
             if log_cb:
                 log_cb(f"FAIL {path.name}: {e}")
                 log_cb(traceback.format_exc())
+            # determine whether to quarantine this failure based on type
+            should_quarantine = False
+            reason_text = traceback.format_exc()
+            try:
+                # parsing errors are raised as ValueError in read_any and extract_single_trade_date
+                if quarantine_on == 'all':
+                    should_quarantine = True
+                elif quarantine_on == 'parsing' and isinstance(e, ValueError):
+                    should_quarantine = True
+                elif quarantine_on == 'db':
+                    # try to detect SQL/DB errors using SQLAlchemy exceptions if available
+                    try:
+                        from sqlalchemy import exc as sa_exc
+                        if isinstance(e, sa_exc.SQLAlchemyError):
+                            should_quarantine = True
+                    except Exception:
+                        # fallback: inspect exception repr for typical DB error strings
+                        s = repr(e).lower()
+                        if any(keyword in s for keyword in ('integrityerror', 'operationalerror', 'databaseerror', 'sqlalchemy')):
+                            should_quarantine = True
+            except Exception:
+                logger.exception("Error while classifying exception for quarantine decision")
+
+            # move file to quarantine and write reason file if enabled and not a dry-run
+            if not dry_run and quarantine_dir is not None and should_quarantine:
+                try:
+                    ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                    target = quarantine_dir / f"{path.name}.failed_{ts}"
+                    shutil.move(str(path), str(target))
+                    # write reason file next to quarantined file
+                    try:
+                        reason_path = target.with_name(target.name + '.reason.txt')
+                        with open(reason_path, 'w', encoding='utf-8') as fh:
+                            fh.write(reason_text)
+                        logger.debug("Wrote quarantine reason to %s", reason_path)
+                    except Exception:
+                        logger.exception("Failed to write quarantine reason file for %s", target)
+
+                    msg_q = f"Moved failed file to quarantine: {target}"
+                    logger.info(msg_q)
+                    if log_cb:
+                        log_cb(msg_q)
+                except Exception as e2:
+                    logger.exception("Failed to move %s to quarantine: %s", path.name, e2)
         if progress_cb: progress_cb(idx + 1, total)
 
     return processed, skipped, failed
