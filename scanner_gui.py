@@ -452,6 +452,10 @@ class ScannerGUI:
         f.grid_rowconfigure(5, weight=1)
         f.grid_columnconfigure(1, weight=1)
 
+        # SMA50 counts buttons
+        ttk.Button(f, text="Compute SMA50 Counts", command=self.run_sma50_scan).grid(row=8, column=0, pady=6)
+        ttk.Button(f, text="Show SMA50 Counts Chart", command=self.show_sma50_counts_chart).grid(row=8, column=1, pady=6)
+
     def _build_rsi_tab(self):
         f = self.rsi_frame
         ttk.Label(f, text="RSI period").grid(row=0, column=0, sticky="w")
@@ -570,6 +574,7 @@ class ScannerGUI:
 
         ttk.Button(f, text='Run Fractals Scan', command=self.run_fractals_scan).grid(row=1, column=0, pady=6)
         ttk.Button(f, text='Cancel Fractals', command=self._cancel_fractals).grid(row=1, column=1, pady=6)
+        ttk.Button(f, text='Show Fractal Breaks', command=self.show_fractal_breaks).grid(row=1, column=2, pady=6)
 
         self.frac_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
         self.frac_progress.grid(row=2, column=0, columnspan=6, pady=(4,8), sticky='we')
@@ -2083,13 +2088,24 @@ class ScannerGUI:
 
     def run_fractals_scan(self):
         import rsi_fractals as rf
+        # Read tkinter-controlled parameters on the main thread before starting worker
+        try:
+            period = int(self.frac_rsi_period.get())
+        except Exception:
+            period = 9
+        try:
+            workers = max(1, int(self.frac_workers.get()))
+        except Exception:
+            workers = 4
+        # reset cancel token on main thread
+        try:
+            self._fractals_cancel['cancel'] = False
+        except Exception:
+            self._fractals_cancel = {'cancel': False}
 
         def worker():
             try:
                 eng = rf._ensure_engine()
-                period = int(self.frac_rsi_period.get())
-                workers = max(1, int(self.frac_workers.get()))
-                self._fractals_cancel['cancel'] = False
 
                 def _progress(c, t, m):
                     try:
@@ -2136,6 +2152,250 @@ class ScannerGUI:
                 self.append_log(f'Error running fractals scan: {e}')
                 self.append_log(traceback.format_exc())
 
+        threading.Thread(target=worker, daemon=True).start()
+
+    def show_fractal_breaks(self):
+        """Run fractal-breaks scan and show results in a Toplevel tree. Double-click a row to open chart."""
+        import fractal_breaks as fb
+
+        def worker():
+            try:
+                eng = fb._ensure_engine()
+                df = fb.scan_fractal_breaks(eng)
+                def _open():
+                    try:
+                        win = tk.Toplevel(self.root)
+                        win.title('Fractal Breaks')
+                        # top summary frame: counts and sentiment
+                        summary_frame = ttk.Frame(win)
+                        summary_frame.grid(row=0, column=0, columnspan=2, sticky='ew', padx=4, pady=4)
+                        buy_lbl = ttk.Label(summary_frame, text='Buys: 0', foreground='green')
+                        buy_lbl.pack(side='left', padx=(0,12))
+                        sell_lbl = ttk.Label(summary_frame, text='Sells: 0', foreground='red')
+                        sell_lbl.pack(side='left', padx=(0,12))
+                        total_lbl = ttk.Label(summary_frame, text='Total: 0')
+                        total_lbl.pack(side='left', padx=(0,12))
+                        sentiment_lbl = ttk.Label(summary_frame, text='Sentiment: Neutral')
+                        sentiment_lbl.pack(side='left', padx=(6,0))
+
+                        cols = ('symbol', 'break_date', 'fractal_date', 'fractal_type', 'fractal_high', 'fractal_low', 'close_price', 'break_type')
+                        tree = ttk.Treeview(win, columns=cols, show='headings', height=20)
+                        for c in cols:
+                            tree.heading(c, text=c)
+                            tree.column(c, width=110, anchor='w')
+                        # configure tags for colored rows
+                        try:
+                            tree.tag_configure('buy', background='#dff0d8')   # light green
+                            tree.tag_configure('sell', background='#f8d7da')  # light red
+                        except Exception:
+                            pass
+
+                        v = ttk.Scrollbar(win, orient='vertical', command=tree.yview)
+                        h = ttk.Scrollbar(win, orient='horizontal', command=tree.xview)
+                        tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
+                        tree.grid(row=1, column=0, sticky='nsew')
+                        v.grid(row=1, column=1, sticky='ns')
+                        h.grid(row=2, column=0, sticky='ew')
+                        win.grid_rowconfigure(1, weight=1)
+                        win.grid_columnconfigure(0, weight=1)
+
+                        # populate rows and compute counts
+                        buy_count = 0
+                        sell_count = 0
+                        total = 0
+                        if df is None or df.empty:
+                            lbl = ttk.Label(win, text='No fractal breaks found')
+                            lbl.grid(row=3, column=0)
+                        else:
+                            for _, r in df.iterrows():
+                                vals = (
+                                    r.get('symbol'),
+                                    pd.to_datetime(r.get('break_date')).strftime('%Y-%m-%d') if pd.notna(r.get('break_date')) else '',
+                                    pd.to_datetime(r.get('fractal_date')).strftime('%Y-%m-%d') if pd.notna(r.get('fractal_date')) else '',
+                                    r.get('fractal_type'),
+                                    float(r.get('fractal_high')) if pd.notna(r.get('fractal_high')) else None,
+                                    float(r.get('fractal_low')) if pd.notna(r.get('fractal_low')) else None,
+                                    float(r.get('close_price')) if pd.notna(r.get('close_price')) else None,
+                                    r.get('break_type')
+                                )
+                                bt = (r.get('break_type') or '').strip().upper()
+                                tag = None
+                                if bt == 'BUY':
+                                    tag = 'buy'
+                                    buy_count += 1
+                                elif bt == 'SELL' or bt == 'SELL ' or bt == 'S':
+                                    tag = 'sell'
+                                    sell_count += 1
+                                total += 1
+                                try:
+                                    if tag:
+                                        tree.insert('', 'end', values=vals, tags=(tag,))
+                                    else:
+                                        tree.insert('', 'end', values=vals)
+                                except Exception:
+                                    # fallback insert
+                                    tree.insert('', 'end', values=vals)
+
+                            # update summary labels
+                            try:
+                                buy_lbl['text'] = f"Buys: {buy_count}"
+                                sell_lbl['text'] = f"Sells: {sell_count}"
+                                total_lbl['text'] = f"Total: {total}"
+                                # simple sentiment: majority determines overall
+                                if buy_count > sell_count:
+                                    sentiment = 'Bullish'
+                                elif sell_count > buy_count:
+                                    sentiment = 'Bearish'
+                                else:
+                                    sentiment = 'Neutral'
+                                sentiment_lbl['text'] = f"Sentiment: {sentiment}"
+                            except Exception:
+                                pass
+
+                        def _on_double(event):
+                            try:
+                                sel = tree.selection()
+                                if not sel:
+                                    return
+                                item = tree.item(sel[0])
+                                vals = item.get('values')
+                                symbol = vals[0]
+                                # extract fractal high/low/date if present and open chart for symbol
+                                try:
+                                    fractal_high = float(vals[4]) if vals[4] is not None and vals[4] != '' else None
+                                except Exception:
+                                    fractal_high = None
+                                try:
+                                    fractal_low = float(vals[5]) if vals[5] is not None and vals[5] != '' else None
+                                except Exception:
+                                    fractal_low = None
+                                try:
+                                    fractal_date = pd.to_datetime(vals[2]).date() if vals[2] else None
+                                except Exception:
+                                    fractal_date = None
+                                self._open_price_rsi_chart(symbol, fractal_high=fractal_high, fractal_low=fractal_low, fractal_date=fractal_date)
+                            except Exception:
+                                pass
+
+                        try:
+                            tree.bind('<Double-1>', _on_double)
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        self.append_log(f"[FractalBreaks] UI open error: {e}")
+                # ensure pandas is available in this module scope
+                import pandas as pd
+                self.root.after(0, _open)
+            except Exception as e:
+                self.append_log(f"[FractalBreaks] Scan error: {e}")
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _open_price_rsi_chart(self, symbol: str, days: int = 120, fractal_high=None, fractal_low=None, fractal_date=None):
+        """Open a Toplevel showing price (close) and RSI for the given symbol over the last `days` days.
+
+        Optional parameters fractal_high/fractal_low (floats) will be drawn as horizontal lines on the price chart.
+        fractal_date (datetime.date) if provided will be marked with a vertical line.
+        """
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        try:
+            import rsi_fractals as rf
+            eng = rf._ensure_engine()
+        except Exception:
+            try:
+                import import_nifty_index as ini
+                eng = ini.build_engine()
+            except Exception:
+                eng = None
+        if eng is None:
+            self.append_log('[FractalChart] No DB engine available')
+            return
+
+        def worker():
+            try:
+                with eng.connect() as conn:
+                    # fetch recent OHLC
+                    q = text("SELECT trade_date, close_price FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' ORDER BY trade_date DESC LIMIT :n")
+                    rows = conn.execute(q, {"s": symbol, "n": days}).fetchall()
+                if not rows:
+                    self.append_log(f"[FractalChart] No BHAV rows for {symbol}")
+                    return
+                import pandas as pd
+                df = pd.DataFrame(rows, columns=[c for c in rows[0]._fields])
+                df['trade_date'] = pd.to_datetime(df['trade_date'])
+                df = df.set_index('trade_date').sort_index()
+                df['close'] = pd.to_numeric(df['close_price'], errors='coerce')
+
+                # fetch RSI (period 9) from nse_rsi_daily
+                with eng.connect() as conn:
+                    q2 = text("SELECT trade_date, rsi FROM nse_rsi_daily WHERE symbol = :s AND period = :p AND trade_date BETWEEN :a AND :b ORDER BY trade_date")
+                    a = df.index.min().strftime('%Y-%m-%d')
+                    b = df.index.max().strftime('%Y-%m-%d')
+                    rows2 = conn.execute(q2, {"s": symbol, "p": 9, "a": a, "b": b}).fetchall()
+                rsi_df = pd.DataFrame(rows2, columns=[c for c in rows2[0]._fields]) if rows2 else pd.DataFrame()
+                if not rsi_df.empty:
+                    rsi_df['trade_date'] = pd.to_datetime(rsi_df['trade_date'])
+                    rsi_df = rsi_df.set_index('trade_date').sort_index()
+
+                # create figure
+                fig, (ax_price, ax_rsi) = plt.subplots(2, 1, figsize=(8, 6), sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+                ax_price.plot(df.index, df['close'], marker='o', linestyle='-', color='black', label='Close')
+                ax_price.set_ylabel('Close')
+                ax_price.grid(True, linestyle='--', alpha=0.4)
+                # mark fractal high/low if provided
+                try:
+                    added = False
+                    if fractal_high is not None and not pd.isna(fractal_high):
+                        ax_price.axhline(fractal_high, color='magenta', linestyle='--', alpha=0.9, label='Fractal High')
+                        added = True
+                    if fractal_low is not None and not pd.isna(fractal_low):
+                        ax_price.axhline(fractal_low, color='gray', linestyle='--', alpha=0.9, label='Fractal Low')
+                        added = True
+                    # mark fractal date vertical line if present and within plotted range
+                    if fractal_date is not None:
+                        try:
+                            # ensure fractal_date is a Timestamp or datetime.date compatible with index
+                            fd = pd.to_datetime(fractal_date)
+                            if fd in df.index:
+                                ax_price.axvline(fd, color='purple', linestyle=':', alpha=0.7)
+                                added = True
+                        except Exception:
+                            pass
+                    if added:
+                        try:
+                            ax_price.legend(loc='upper left')
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                if not rsi_df.empty:
+                    ax_rsi.plot(rsi_df.index, rsi_df['rsi'], color='tab:orange')
+                    ax_rsi.set_ylim(0, 100)
+                    ax_rsi.axhline(80, color='red', linestyle='--', alpha=0.5)
+                    ax_rsi.axhline(20, color='green', linestyle='--', alpha=0.5)
+                    ax_rsi.set_ylabel('RSI(9)')
+                    ax_rsi.grid(True, linestyle='--', alpha=0.4)
+
+                def _open():
+                    try:
+                        win = tk.Toplevel(self.root)
+                        win.title(symbol + ' - Break Detail')
+                        canvas = FigureCanvasTkAgg(fig, master=win)
+                        canvas.draw()
+                        canvas.get_tk_widget().pack(fill='both', expand=True)
+                        try:
+                            plt.close(fig)
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        self.append_log(f"[FractalChart] UI error: {e}")
+
+                self.root.after(0, _open)
+            except Exception as e:
+                self.append_log(f"[FractalChart] Error preparing chart for {symbol}: {e}")
+
+        import threading
         threading.Thread(target=worker, daemon=True).start()
 
     def run_rsi_calc(self):
@@ -2281,6 +2541,78 @@ class ScannerGUI:
             except Exception as e:
                 self.append_log(f"Cross scan error: {e}")
                 self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def run_sma50_scan(self):
+        """Run the SMA50 counts scan in a background thread and log progress to the indices results area."""
+        import sma50_scanner as ss
+
+        def worker():
+            try:
+                eng = ss._ensure_engine()
+
+                def _progress(c, t, m):
+                    try:
+                        self.append_log(f"[SMA50] {m}")
+                        def _ui():
+                            try:
+                                self.idx_results.delete('1.0', 'end')
+                                self.idx_results.insert('end', f"{m}\n{c}/{t}\n")
+                            except Exception:
+                                pass
+                        self.root.after(0, _ui)
+                    except Exception:
+                        pass
+
+                start = self.bhav_start.get().strip() or None
+                end = self.bhav_end.get().strip() or None
+                self.append_log(f"[SMA50] Starting scan workers=8 start={start} end={end}")
+                errors = ss.scan_and_upsert(eng, workers=8, progress_cb=_progress, start=start, end=end)
+                self.append_log(f"[SMA50] Finished scan with {len(errors)} errors")
+                def _done():
+                    try:
+                        self.idx_results.insert('end', f"Finished. Errors: {len(errors)}\n")
+                    except Exception:
+                        pass
+                self.root.after(0, _done)
+            except Exception as e:
+                self.append_log(f"[SMA50] Scan error: {e}")
+                self.append_log(traceback.format_exc())
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def show_sma50_counts_chart(self):
+        """Open a Toplevel and show Nifty + SMA50 counts chart using sma50_scanner.plot_counts."""
+        import sma50_scanner as ss
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+        def worker():
+            try:
+                eng = ss._ensure_engine()
+                start = self.bhav_start.get().strip() or None
+                end = self.bhav_end.get().strip() or None
+                idx = self.rs_index.get().strip() or 'NIFTY 50'
+                fig = ss.plot_counts(eng, start=start, end=end, index_name=idx)
+
+                def _open():
+                    try:
+                        win = tk.Toplevel(self.root)
+                        win.title(f"SMA50 Counts: {idx}")
+                        canvas = FigureCanvasTkAgg(fig, master=win)
+                        canvas.draw()
+                        canvas.get_tk_widget().pack(fill='both', expand=True)
+                        try:
+                            plt.close(fig)
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        self.append_log(f"[SMA50] Error showing chart: {e}")
+
+                self.root.after(0, _open)
+            except Exception as e:
+                self.append_log(f"[SMA50] Chart error: {e}")
 
         threading.Thread(target=worker, daemon=True).start()
 
