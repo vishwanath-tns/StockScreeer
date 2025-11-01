@@ -171,7 +171,8 @@ def _fetch_moving_averages(conn, as_of: datetime.date, windows: List[int]) -> pd
 
 
 def _get_latest_date(conn) -> datetime.date:
-    q = text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full")
+    # Use only series='EQ' rows when deriving the latest trading date
+    q = text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full WHERE series='EQ'")
     r = conn.execute(q).scalar()
     if r is None:
         return datetime.date.today()

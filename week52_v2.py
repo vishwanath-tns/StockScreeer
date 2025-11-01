@@ -37,7 +37,7 @@ def compute_counts_for_date(conn, as_of: datetime.date | None = None, lookback_d
     Returns dict with date, count_high, count_low
     """
     if as_of is None:
-        r = conn.execute(text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full")).scalar()
+        r = conn.execute(text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full WHERE series='EQ'")).scalar()
         if isinstance(r, datetime.datetime):
             as_of = r.date()
         else:

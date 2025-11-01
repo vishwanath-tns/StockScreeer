@@ -16,6 +16,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 from sqlalchemy import text
+import os
 
 LOG_MAX_LINES = 200
 
@@ -24,8 +25,20 @@ class ScannerGUI:
     def __init__(self, root):
         self.root = root
         root.title("Stock Screener - Scanners")
+        # Improve tab visibility: larger, bold tab labels and extra padding
+        try:
+            style = ttk.Style()
+            # Define a custom notebook/tab style so we can control borders/colours
+            style.configure('Custom.TNotebook.Tab', font=('Segoe UI', 10, 'bold'), padding=[8, 6], borderwidth=1, relief='raised', background='#ececec')
+            style.map('Custom.TNotebook.Tab',
+                      background=[('selected', '#ffffff'), ('!selected', '#e9eef2')],
+                      foreground=[('selected', 'black'), ('!selected', 'black')],
+                      expand=[('selected', [1]), ('!selected', [0])])
+            style.configure('Custom.TNotebook', background='#d0d0d0', borderwidth=0)
+        except Exception:
+            pass
 
-        nb = ttk.Notebook(root)
+        nb = ttk.Notebook(root, style='Custom.TNotebook')
         nb.pack(fill="both", expand=True, padx=8, pady=8)
 
         self.accum_frame = ttk.Frame(nb)
@@ -77,6 +90,13 @@ class ScannerGUI:
         self.log = tk.Text(root, height=10, wrap="none")
         self.log.pack(fill="both", expand=False, padx=8, pady=(0,8))
 
+        # Ensure app exits cleanly: intercept window close to attempt graceful shutdown
+        try:
+            root.protocol('WM_DELETE_WINDOW', self._on_app_close)
+        except Exception:
+            pass
+
+
     def append_log(self, msg: str):
         # Schedule UI update on the main thread to be thread-safe
         def _append():
@@ -94,6 +114,62 @@ class ScannerGUI:
         except Exception:
             # fallback if root not available
             _append()
+
+    def _on_app_close(self):
+        """Attempt a graceful shutdown of background workers, then force-exit after a short delay.
+
+        Many scanners spawn ThreadPoolExecutors which create non-daemon threads; when the
+        Tk window is closed those threads can keep the process alive. We try to set common
+        cancellation tokens and close matplotlib figures, then force-exit to ensure the
+        process terminates.
+        """
+        try:
+            self.append_log('Shutting down: requesting background tasks to cancel...')
+        except Exception:
+            pass
+        # set known cancel tokens if present
+        try:
+            if hasattr(self, 'rsi_cancel_token') and isinstance(self.rsi_cancel_token, dict):
+                self.rsi_cancel_token['cancel'] = True
+        except Exception:
+            pass
+        try:
+            if hasattr(self, '_fractals_cancel') and isinstance(self._fractals_cancel, dict):
+                self._fractals_cancel['cancel'] = True
+        except Exception:
+            pass
+        try:
+            if hasattr(self, '_div_cancel') and isinstance(self._div_cancel, dict):
+                self._div_cancel['cancel'] = True
+        except Exception:
+            pass
+        try:
+            if hasattr(self, '_bhav_cancel') and isinstance(self._bhav_cancel, dict):
+                self._bhav_cancel['cancel'] = True
+        except Exception:
+            pass
+
+        # try to close matplotlib figures
+        try:
+            import matplotlib.pyplot as _plt
+            try:
+                _plt.close('all')
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+        # destroy Tk root window and force process exit after short delay
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
+        try:
+            # allow 0.5s for threads to notice cancel; then force exit
+            self.root.after(500, lambda: os._exit(0))
+        except Exception:
+            # fallback immediate exit
+            os._exit(0)
 
     # -------- Accumulation tab --------
     def _build_accum_tab(self):
@@ -546,64 +622,68 @@ class ScannerGUI:
         hscroll.grid(row=1, column=0, sticky="ew")
 
     def _build_fractals_tab(self):
-        f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
-        # add tab if not already present
+        # Delegate building the Fractals tab to modular builder
         try:
-            # attach to existing notebook (assumes created in __init__)
-            nb = None
-            for child in self.root.winfo_children():
-                if isinstance(child, ttk.Notebook):
-                    nb = child
-                    break
-            if nb is None:
-                nb = ttk.Notebook(self.root)
-                nb.pack(fill='both', expand=True)
-            self.fractals_frame = ttk.Frame(nb)
-            nb.add(self.fractals_frame, text='Fractals')
-            f = self.fractals_frame
+            from gui.tabs.fractals import build_fractals_tab
+            build_fractals_tab(self)
         except Exception:
-            f = self.rsi_frame
+            # fallback to original inline builder if import fails
+            f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
+            try:
+                nb = None
+                for child in self.root.winfo_children():
+                    if isinstance(child, ttk.Notebook):
+                        nb = child
+                        break
+                if nb is None:
+                    nb = ttk.Notebook(self.root, style='Custom.TNotebook')
+                    nb.pack(fill='both', expand=True)
+                self.fractals_frame = ttk.Frame(nb)
+                nb.add(self.fractals_frame, text='Fractals')
+                f = self.fractals_frame
+            except Exception:
+                f = self.rsi_frame
 
-        ttk.Label(f, text='Fractal RSI period').grid(row=0, column=0, sticky='w')
-        self.frac_rsi_period = tk.IntVar(value=9)
-        ttk.Entry(f, textvariable=self.frac_rsi_period, width=6).grid(row=0, column=1, sticky='w')
+            ttk.Label(f, text='Fractal RSI period').grid(row=0, column=0, sticky='w')
+            self.frac_rsi_period = tk.IntVar(value=9)
+            ttk.Entry(f, textvariable=self.frac_rsi_period, width=6).grid(row=0, column=1, sticky='w')
 
-        ttk.Label(f, text='Workers').grid(row=0, column=2, sticky='w')
-        self.frac_workers = tk.IntVar(value=4)
-        ttk.Entry(f, textvariable=self.frac_workers, width=6).grid(row=0, column=3, sticky='w')
+            ttk.Label(f, text='Workers').grid(row=0, column=2, sticky='w')
+            self.frac_workers = tk.IntVar(value=4)
+            ttk.Entry(f, textvariable=self.frac_workers, width=6).grid(row=0, column=3, sticky='w')
 
-        ttk.Button(f, text='Run Fractals Scan', command=self.run_fractals_scan).grid(row=1, column=0, pady=6)
-        ttk.Button(f, text='Cancel Fractals', command=self._cancel_fractals).grid(row=1, column=1, pady=6)
-        ttk.Button(f, text='Show Fractal Breaks', command=self.show_fractal_breaks).grid(row=1, column=2, pady=6)
+            ttk.Button(f, text='Run Fractals Scan', command=self.run_fractals_scan).grid(row=1, column=0, pady=6)
+            ttk.Button(f, text='Cancel Fractals', command=self._cancel_fractals).grid(row=1, column=1, pady=6)
+            ttk.Button(f, text='Show Fractal Breaks', command=self.show_fractal_breaks).grid(row=1, column=2, pady=6)
 
-        self.frac_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
-        self.frac_progress.grid(row=2, column=0, columnspan=6, pady=(4,8), sticky='we')
-        self.frac_results = tk.Text(f, height=10, wrap='none')
-        self.frac_results.grid(row=3, column=0, columnspan=6, sticky='nsew')
-        f.grid_rowconfigure(3, weight=1)
-        f.grid_columnconfigure(5, weight=1)
+            self.frac_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
+            self.frac_progress.grid(row=2, column=0, columnspan=6, pady=(4,8), sticky='we')
+            self.frac_results = tk.Text(f, height=10, wrap='none')
+            self.frac_results.grid(row=3, column=0, columnspan=6, sticky='nsew')
+            f.grid_rowconfigure(3, weight=1)
+            f.grid_columnconfigure(5, weight=1)
 
-        # Treeview for fractals
-        cols = ('symbol', 'fractal_date', 'fractal_type', 'fractal_high', 'fractal_low', 'center_rsi')
-        tree_frame = ttk.Frame(f)
-        tree_frame.grid(row=4, column=0, columnspan=6, sticky='nsew', pady=(6,0))
-        f.grid_rowconfigure(4, weight=1)
-        f.grid_columnconfigure(5, weight=1)
+            # Treeview for fractals
+            cols = ('symbol', 'fractal_date', 'fractal_type', 'fractal_high', 'fractal_low', 'center_rsi')
+            tree_frame = ttk.Frame(f)
+            tree_frame.grid(row=4, column=0, columnspan=6, sticky='nsew', pady=(6,0))
+            f.grid_rowconfigure(4, weight=1)
+            f.grid_columnconfigure(5, weight=1)
 
-        self.frac_tree = ttk.Treeview(tree_frame, columns=cols, show='headings', height=12)
-        for c in cols:
-            self.frac_tree.heading(c, text=c)
-            self.frac_tree.column(c, width=120, anchor='w')
-        v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.frac_tree.yview)
-        h = ttk.Scrollbar(tree_frame, orient='horizontal', command=self.frac_tree.xview)
-        self.frac_tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
-        tree_frame.grid_rowconfigure(0, weight=1)
-        tree_frame.grid_columnconfigure(0, weight=1)
-        self.frac_tree.grid(row=0, column=0, sticky='nsew')
-        v.grid(row=0, column=1, sticky='ns')
-        h.grid(row=1, column=0, sticky='ew')
+            self.frac_tree = ttk.Treeview(tree_frame, columns=cols, show='headings', height=12)
+            for c in cols:
+                self.frac_tree.heading(c, text=c)
+                self.frac_tree.column(c, width=120, anchor='w')
+            v = ttk.Scrollbar(tree_frame, orient='vertical', command=self.frac_tree.yview)
+            h = ttk.Scrollbar(tree_frame, orient='horizontal', command=self.frac_tree.xview)
+            self.frac_tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
+            tree_frame.grid_rowconfigure(0, weight=1)
+            tree_frame.grid_columnconfigure(0, weight=1)
+            self.frac_tree.grid(row=0, column=0, sticky='nsew')
+            v.grid(row=0, column=1, sticky='ns')
+            h.grid(row=1, column=0, sticky='ew')
 
-        self._fractals_cancel = {'cancel': False}
+            self._fractals_cancel = {'cancel': False}
 
     def _build_rsi_divergences_tab(self):
         f = ttk.Frame(self.root.nametowidget('.!notebook')) if hasattr(self.root, 'nametowidget') else ttk.Frame()
@@ -1292,7 +1372,8 @@ class ScannerGUI:
                 eng = rad.engine()
                 # determine latest trading day
                 with eng.connect() as conn:
-                    drow = conn.execute(text('SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full')).fetchone()
+                    # derive latest BHAV date from EQ series only
+                    drow = conn.execute(text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full WHERE series='EQ'")).fetchone()
                     latest = drow[0]
                 if not latest:
                     self.append_log('No trade_date found in BHAV')
@@ -2156,131 +2237,33 @@ class ScannerGUI:
 
     def show_fractal_breaks(self):
         """Run fractal-breaks scan and show results in a Toplevel tree. Double-click a row to open chart."""
-        import fractal_breaks as fb
+        # Use the service layer so GUI doesn't call DB modules directly
+        try:
+            from services.fractals_service import scan_fractal_breaks
+        except Exception:
+            scan_fractal_breaks = None
 
         def worker():
             try:
-                eng = fb._ensure_engine()
-                df = fb.scan_fractal_breaks(eng)
+                df = None
+                if scan_fractal_breaks is not None:
+                    try:
+                        df = scan_fractal_breaks()
+                    except Exception:
+                        df = None
+                if df is None:
+                    # fallback to direct module call
+                    try:
+                        import fractal_breaks as fb
+                        eng = fb._ensure_engine()
+                        df = fb.scan_fractal_breaks(eng)
+                    except Exception:
+                        df = None
                 def _open():
                     try:
-                        win = tk.Toplevel(self.root)
-                        win.title('Fractal Breaks')
-                        # top summary frame: counts and sentiment
-                        summary_frame = ttk.Frame(win)
-                        summary_frame.grid(row=0, column=0, columnspan=2, sticky='ew', padx=4, pady=4)
-                        buy_lbl = ttk.Label(summary_frame, text='Buys: 0', foreground='green')
-                        buy_lbl.pack(side='left', padx=(0,12))
-                        sell_lbl = ttk.Label(summary_frame, text='Sells: 0', foreground='red')
-                        sell_lbl.pack(side='left', padx=(0,12))
-                        total_lbl = ttk.Label(summary_frame, text='Total: 0')
-                        total_lbl.pack(side='left', padx=(0,12))
-                        sentiment_lbl = ttk.Label(summary_frame, text='Sentiment: Neutral')
-                        sentiment_lbl.pack(side='left', padx=(6,0))
-
-                        cols = ('symbol', 'break_date', 'fractal_date', 'fractal_type', 'fractal_high', 'fractal_low', 'close_price', 'break_type')
-                        tree = ttk.Treeview(win, columns=cols, show='headings', height=20)
-                        for c in cols:
-                            tree.heading(c, text=c)
-                            tree.column(c, width=110, anchor='w')
-                        # configure tags for colored rows
-                        try:
-                            tree.tag_configure('buy', background='#dff0d8')   # light green
-                            tree.tag_configure('sell', background='#f8d7da')  # light red
-                        except Exception:
-                            pass
-
-                        v = ttk.Scrollbar(win, orient='vertical', command=tree.yview)
-                        h = ttk.Scrollbar(win, orient='horizontal', command=tree.xview)
-                        tree.configure(yscrollcommand=v.set, xscrollcommand=h.set)
-                        tree.grid(row=1, column=0, sticky='nsew')
-                        v.grid(row=1, column=1, sticky='ns')
-                        h.grid(row=2, column=0, sticky='ew')
-                        win.grid_rowconfigure(1, weight=1)
-                        win.grid_columnconfigure(0, weight=1)
-
-                        # populate rows and compute counts
-                        buy_count = 0
-                        sell_count = 0
-                        total = 0
-                        if df is None or df.empty:
-                            lbl = ttk.Label(win, text='No fractal breaks found')
-                            lbl.grid(row=3, column=0)
-                        else:
-                            for _, r in df.iterrows():
-                                vals = (
-                                    r.get('symbol'),
-                                    pd.to_datetime(r.get('break_date')).strftime('%Y-%m-%d') if pd.notna(r.get('break_date')) else '',
-                                    pd.to_datetime(r.get('fractal_date')).strftime('%Y-%m-%d') if pd.notna(r.get('fractal_date')) else '',
-                                    r.get('fractal_type'),
-                                    float(r.get('fractal_high')) if pd.notna(r.get('fractal_high')) else None,
-                                    float(r.get('fractal_low')) if pd.notna(r.get('fractal_low')) else None,
-                                    float(r.get('close_price')) if pd.notna(r.get('close_price')) else None,
-                                    r.get('break_type')
-                                )
-                                bt = (r.get('break_type') or '').strip().upper()
-                                tag = None
-                                if bt == 'BUY':
-                                    tag = 'buy'
-                                    buy_count += 1
-                                elif bt == 'SELL' or bt == 'SELL ' or bt == 'S':
-                                    tag = 'sell'
-                                    sell_count += 1
-                                total += 1
-                                try:
-                                    if tag:
-                                        tree.insert('', 'end', values=vals, tags=(tag,))
-                                    else:
-                                        tree.insert('', 'end', values=vals)
-                                except Exception:
-                                    # fallback insert
-                                    tree.insert('', 'end', values=vals)
-
-                            # update summary labels
-                            try:
-                                buy_lbl['text'] = f"Buys: {buy_count}"
-                                sell_lbl['text'] = f"Sells: {sell_count}"
-                                total_lbl['text'] = f"Total: {total}"
-                                # simple sentiment: majority determines overall
-                                if buy_count > sell_count:
-                                    sentiment = 'Bullish'
-                                elif sell_count > buy_count:
-                                    sentiment = 'Bearish'
-                                else:
-                                    sentiment = 'Neutral'
-                                sentiment_lbl['text'] = f"Sentiment: {sentiment}"
-                            except Exception:
-                                pass
-
-                        def _on_double(event):
-                            try:
-                                sel = tree.selection()
-                                if not sel:
-                                    return
-                                item = tree.item(sel[0])
-                                vals = item.get('values')
-                                symbol = vals[0]
-                                # extract fractal high/low/date if present and open chart for symbol
-                                try:
-                                    fractal_high = float(vals[4]) if vals[4] is not None and vals[4] != '' else None
-                                except Exception:
-                                    fractal_high = None
-                                try:
-                                    fractal_low = float(vals[5]) if vals[5] is not None and vals[5] != '' else None
-                                except Exception:
-                                    fractal_low = None
-                                try:
-                                    fractal_date = pd.to_datetime(vals[2]).date() if vals[2] else None
-                                except Exception:
-                                    fractal_date = None
-                                self._open_price_rsi_chart(symbol, fractal_high=fractal_high, fractal_low=fractal_low, fractal_date=fractal_date)
-                            except Exception:
-                                pass
-
-                        try:
-                            tree.bind('<Double-1>', _on_double)
-                        except Exception:
-                            pass
+                        # Delegate UI construction to the fractals tab module
+                        from gui.tabs.fractals import show_fractal_breaks_dialog
+                        show_fractal_breaks_dialog(self, df)
                     except Exception as e:
                         self.append_log(f"[FractalBreaks] UI open error: {e}")
                 # ensure pandas is available in this module scope
@@ -2299,6 +2282,14 @@ class ScannerGUI:
         """
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        # Prefer the tab's chart implementation (moved to gui.tabs.fractals) if available.
+        try:
+            from gui.tabs.fractals import open_price_rsi_chart as _open_in_tab
+            _open_in_tab(self, symbol, days=days, fractal_high=fractal_high, fractal_low=fractal_low, fractal_date=fractal_date)
+            return
+        except Exception:
+            # fall back to the legacy inline implementation below
+            pass
         try:
             import rsi_fractals as rf
             eng = rf._ensure_engine()

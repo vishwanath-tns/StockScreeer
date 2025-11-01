@@ -49,7 +49,8 @@ if os.environ.get('WEEK52_DEBUG') == '1':
 
 def scan_52week_thresholds(conn, as_of: datetime.date | None = None, pct_above_high: float = 0.30, pct_above_low: float = 0.30, limit: int = 0) -> pd.DataFrame:
     if as_of is None:
-        q = text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full")
+        # consider only EQ series rows when deriving the latest trade date
+        q = text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full WHERE series='EQ'")
         r = conn.execute(q).scalar()
         if isinstance(r, datetime.datetime):
             as_of = r.date()
@@ -103,7 +104,8 @@ def ensure_52week_counts_table(conn):
 
 def upsert_daily_52w_counts(conn, as_of: Optional[datetime.date] = None, lookback_days: int = 365) -> dict:
     if as_of is None:
-        q = text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full")
+        # consider only EQ series rows when deriving the latest trade date
+        q = text("SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full WHERE series='EQ'")
         r = conn.execute(q).scalar()
         if isinstance(r, datetime.datetime):
             as_of = r.date()
