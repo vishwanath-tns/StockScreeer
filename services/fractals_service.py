@@ -17,7 +17,7 @@ def scan_fractal_breaks(engine=None) -> pd.DataFrame:
     return fetch_fractal_breaks(eng)
 
 
-def fetch_price_and_rsi(symbol: str, days: int = 120, engine=None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def fetch_price_and_rsi(symbol: str, days: int = 120, period: int = 14, engine=None) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Fetch recent OHLCV and RSI for symbol for the last `days` days.
 
     Returns tuple (ohlcv_df, rsi_df) where each is a pandas.DataFrame.
@@ -29,5 +29,5 @@ def fetch_price_and_rsi(symbol: str, days: int = 120, engine=None) -> Tuple[pd.D
     # determine RSI window bounds
     start = ohlcv.index.min().strftime('%Y-%m-%d')
     end = ohlcv.index.max().strftime('%Y-%m-%d')
-    rsi_df = fetch_rsi_range(eng, symbol, period=9, start_date=start, end_date=end)
+    rsi_df = fetch_rsi_range(eng, symbol, period=period, start_date=start, end_date=end)
     return ohlcv, rsi_df

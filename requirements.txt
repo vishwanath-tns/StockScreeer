@@ -7,3 +7,7 @@ tqdm
 matplotlib
 mplfinance
 mplcursors  # optional: used for interactive hover when available
+
+# Test / client dependencies
+httpx
+pytest

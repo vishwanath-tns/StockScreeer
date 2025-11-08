@@ -3,6 +3,7 @@ These functions encapsulate SQL access so service layer doesn't run direct SQL
 spread across the GUI.
 """
 from sqlalchemy import text
+from typing import Optional
 import pandas as pd
 
 
@@ -19,13 +20,18 @@ def fetch_fractal_breaks(engine):
         return pd.DataFrame()
 
 
-def fetch_recent_ohlcv(engine, symbol: str, days: int = 120):
+def fetch_recent_ohlcv(engine, symbol: str, days: Optional[int] = 120):
     """Fetch recent OHLCV rows for symbol (sorted ascending by date).
     Returns a pandas.DataFrame with trade_date as DatetimeIndex.
     """
     with engine.connect() as conn:
-        q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume, turnover_lacs FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' ORDER BY trade_date DESC LIMIT :n")
-        rows = conn.execute(q, {"s": symbol, "n": days}).fetchall()
+        if days is None:
+            # no LIMIT clause when days is not provided
+            q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume, turnover_lacs FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' ORDER BY trade_date DESC")
+            rows = conn.execute(q, {"s": symbol}).fetchall()
+        else:
+            q = text("SELECT trade_date as dt, open_price as Open, high_price as High, low_price as Low, close_price as Close, ttl_trd_qnty as Volume, turnover_lacs FROM nse_equity_bhavcopy_full WHERE symbol = :s AND series = 'EQ' ORDER BY trade_date DESC LIMIT :n")
+            rows = conn.execute(q, {"s": symbol, "n": days}).fetchall()
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows, columns=[c for c in rows[0]._fields])

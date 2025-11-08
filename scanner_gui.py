@@ -52,6 +52,7 @@ class ScannerGUI:
         self.indices_frame = ttk.Frame(nb)
         self.rsi_frame = ttk.Frame(nb)
         self.most_active_frame = ttk.Frame(nb)
+        self.trends_frame = ttk.Frame(nb)
 
         nb.add(self.accum_frame, text="Accumulation Scanner")
         nb.add(self.swing_frame, text="Swing Scanner")
@@ -64,6 +65,7 @@ class ScannerGUI:
         nb.add(self.indices_frame, text="Indices Import")
         nb.add(self.rsi_frame, text="RSI Calculator")
         nb.add(self.most_active_frame, text="Most Active")
+        nb.add(self.trends_frame, text="Trend Analysis")
 
         self._build_accum_tab()
         self._build_swing_tab()
@@ -82,6 +84,7 @@ class ScannerGUI:
         self._build_fractals_tab()
         self._build_bhav_export_tab()
         self._build_rsi_divergences_tab()
+        self._build_trends_tab()
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -100,19 +103,31 @@ class ScannerGUI:
     def append_log(self, msg: str):
         # Schedule UI update on the main thread to be thread-safe
         def _append():
-            self.log.insert("end", msg + "\n")
-            # cap lines
-            lines = self.log.get("1.0", "end-1c").splitlines()
-            if len(lines) > LOG_MAX_LINES:
-                new = "\n".join(lines[-LOG_MAX_LINES:])
-                self.log.delete("1.0", "end")
-                self.log.insert("1.0", new)
-            self.log.see("end")
+            try:
+                if hasattr(self, 'log') and self.log:
+                    self.log.insert("end", msg + "\n")
+                    # cap lines
+                    lines = self.log.get("1.0", "end-1c").splitlines()
+                    if len(lines) > LOG_MAX_LINES:
+                        new = "\n".join(lines[-LOG_MAX_LINES:])
+                        self.log.delete("1.0", "end")
+                        self.log.insert("1.0", new)
+                    self.log.see("end")
+                else:
+                    # Log widget not ready, print to console instead
+                    print(f"LOG: {msg}")
+            except Exception as e:
+                # Fallback to console if GUI not available
+                print(f"LOG: {msg} (GUI error: {e})")
 
         try:
-            self.root.after(0, _append)
+            if hasattr(self, 'root') and self.root:
+                self.root.after(0, _append)
+            else:
+                # Root not available, call directly
+                _append()
         except Exception:
-            # fallback if root not available
+            # Root.after failed, call directly
             _append()
 
     def _on_app_close(self):
@@ -368,16 +383,30 @@ class ScannerGUI:
                 vals = ["ALL"] + [v for v in vals if v != "ALL"]
                 def _set():
                     try:
-                        self.deliv_series_cb["values"] = vals
-                        self.deliv_series.set("ALL")
+                        if hasattr(self, 'deliv_series_cb') and self.deliv_series_cb:
+                            self.deliv_series_cb["values"] = vals
+                            self.deliv_series.set("ALL")
                     except Exception:
                         pass
-                self.root.after(0, _set)
+                try:
+                    if hasattr(self, 'root') and self.root:
+                        self.root.after(0, _set)
+                    else:
+                        _set()
+                except Exception:
+                    _set()
             except Exception as e:
                 # if DB unavailable, leave default ALL and log
                 self.append_log(f"Could not load series list: {e}")
 
-        threading.Thread(target=_load_series, daemon=True).start()
+        # Start background thread after a small delay to ensure GUI is ready
+        def _start_load():
+            threading.Thread(target=_load_series, daemon=True).start()
+        
+        if hasattr(self, 'root') and self.root:
+            self.root.after(100, _start_load)  # Delay 100ms
+        else:
+            threading.Thread(target=_load_series, daemon=True).start()
 
         ttk.Label(f, text="Delivery % threshold").grid(row=2, column=0, sticky="w")
         self.deliv_thresh = tk.DoubleVar(value=20.0)
@@ -455,15 +484,29 @@ class ScannerGUI:
                 vals = ["ALL"] + [v for v in vals if v != "ALL"]
                 def _set():
                     try:
-                        self.ad_series_cb["values"] = vals
-                        self.ad_series.set("ALL")
+                        if hasattr(self, 'ad_series_cb') and self.ad_series_cb:
+                            self.ad_series_cb["values"] = vals
+                            self.ad_series.set("ALL")
                     except Exception:
                         pass
-                self.root.after(0, _set)
+                try:
+                    if hasattr(self, 'root') and self.root:
+                        self.root.after(0, _set)
+                    else:
+                        _set()
+                except Exception:
+                    _set()
             except Exception as e:
                 self.append_log(f"Could not load Adv/Decl series list: {e}")
 
-        threading.Thread(target=_load_ad_series, daemon=True).start()
+        # Start background thread after a small delay to ensure GUI is ready
+        def _start_ad_load():
+            threading.Thread(target=_load_ad_series, daemon=True).start()
+        
+        if hasattr(self, 'root') and self.root:
+            self.root.after(200, _start_ad_load)  # Delay 200ms 
+        else:
+            threading.Thread(target=_load_ad_series, daemon=True).start()
 
         ttk.Label(f, text="Report type").grid(row=2, column=0, sticky="w")
         self.ad_report_type = tk.StringVar(value="counts")
@@ -3628,16 +3671,30 @@ class ScannerGUI:
                     syms = [r[0] for r in rows if r[0]]
                 def _set():
                     try:
-                        self.candle_sym_cb["values"] = syms
-                        if syms:
-                            self.candle_symbol.set(syms[0])
+                        if hasattr(self, 'candle_sym_cb') and self.candle_sym_cb:
+                            self.candle_sym_cb["values"] = syms
+                            if syms:
+                                self.candle_symbol.set(syms[0])
                     except Exception:
                         pass
-                self.root.after(0, _set)
+                try:
+                    if hasattr(self, 'root') and self.root:
+                        self.root.after(0, _set)
+                    else:
+                        _set()
+                except Exception:
+                    _set()
             except Exception as e:
                 self.append_log(f"Could not load symbol list: {e}")
 
-        threading.Thread(target=_load_symbols, daemon=True).start()
+        # Start background thread after a small delay to ensure GUI is ready
+        def _start_symbols_load():
+            threading.Thread(target=_load_symbols, daemon=True).start()
+        
+        if hasattr(self, 'root') and self.root:
+            self.root.after(300, _start_symbols_load)  # Delay 300ms 
+        else:
+            threading.Thread(target=_load_symbols, daemon=True).start()
 
     # -------- BHAV Export tab --------
     def _build_bhav_export_tab(self):
@@ -4436,6 +4493,20 @@ class ScannerGUI:
                 self.append_log(traceback.format_exc())
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _build_trends_tab(self):
+        """Build the Trends Analysis tab using the modular trends tab."""
+        try:
+            from gui.tabs.trends import TrendsTab
+            # Create the trends tab directly in the existing frame
+            trends_tab = TrendsTab(self.trends_frame, self)
+            self.append_log("Trends Analysis tab initialized successfully")
+        except Exception as e:
+            # Fallback to a simple placeholder if import fails
+            self.append_log(f"Error building trends tab: {e}")
+            f = self.trends_frame
+            ttk.Label(f, text="Trends Analysis - Error Loading").pack(pady=20)
+            ttk.Label(f, text=f"Error: {str(e)}").pack(pady=10)
 
     def _browse(self, var: tk.StringVar, folder: bool = False):
         """Set `var` to a selected path. If folder=True opens a folder dialog, otherwise a save-as CSV dialog."""

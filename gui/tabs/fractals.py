@@ -151,6 +151,13 @@ def show_fractal_breaks_dialog(app: object, df: pd.DataFrame) -> None:
         tree.heading(c, text=c)
         tree.column(c, width=120, anchor=tk.CENTER)
 
+    # color rows by sentiment: bullish -> light green, bearish -> light red
+    try:
+        tree.tag_configure('buy', background='#dff0d8')   # light green
+        tree.tag_configure('sell', background='#f2dede')  # light red
+    except Exception:
+        pass
+
     vsb = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=tree.yview)
     hsb = ttk.Scrollbar(frame, orient=tk.HORIZONTAL, command=tree.xview)
     tree.configure(yscroll=vsb.set, xscroll=hsb.set)
@@ -162,6 +169,20 @@ def show_fractal_breaks_dialog(app: object, df: pd.DataFrame) -> None:
     frame.columnconfigure(0, weight=1)
 
     display_df = df.copy()
+    # remove duplicate signals: prefer uniqueness by symbol+fractal_date+fractal_type if available
+    try:
+        dedup_keys = [k for k in ("symbol", "fractal_date", "fractal_type", "break_date") if k in display_df.columns]
+        if dedup_keys:
+            before = len(display_df)
+            display_df = display_df.drop_duplicates(subset=dedup_keys, keep='first')
+            after = len(display_df)
+            try:
+                # schedule small log entry on main thread if app has append_log
+                root.after(0, lambda: getattr(app, 'append_log', lambda *_: None)(f"Fractal breaks: removed {before-after} duplicate rows"))
+            except Exception:
+                pass
+    except Exception:
+        pass
     # Ensure datetime columns are parsed for display
     for dcol in ("break_date", "fractal_date", "trade_date"):
         if dcol in display_df.columns:
@@ -509,11 +530,32 @@ def open_price_rsi_chart(
             try:
                 win = tk.Toplevel(root)
                 win.title(f"{symbol} chart")
+                # maximize on open: prefer native maximize on Windows (zoomed),
+                # fallback to fullscreen if zoomed isn't supported.
+                try:
+                    win.state('zoomed')
+                except Exception:
+                    try:
+                        win.attributes('-fullscreen', True)
+                    except Exception:
+                        pass
                 canvas = FigureCanvasTkAgg(fig, master=win)
                 canvas.draw()
                 canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
                 def _on_close_win():
+                    try:
+                        # if we set fullscreen, try to exit it before destroying
+                        try:
+                            win.attributes('-fullscreen', False)
+                        except Exception:
+                            pass
+                        try:
+                            win.state('normal')
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
                     try:
                         canvas.get_tk_widget().pack_forget()
                         canvas.get_tk_widget().destroy()
