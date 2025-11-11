@@ -36,6 +36,10 @@ class DashboardTab:
         self.main_frame = ttk.Frame(parent)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
+        # Shared database engine to prevent connection pool exhaustion
+        self._engine = None
+        self._engine_lock = None
+        
         # Initialize components
         self.create_dashboard()
         
@@ -528,10 +532,17 @@ class DashboardTab:
             self.parent.after(0, lambda: self.show_error(f"Background refresh failed: {e}"))
 
     def refresh_other_sections(self):
-        """Refresh RSI, trends and SMA sections in background."""
+        """Refresh RSI, trends and SMA sections in background with proper synchronization."""
         import threading
         
-        def refresh_section(section_name, refresh_method):
+        # Prevent multiple concurrent refreshes
+        if hasattr(self, '_refresh_in_progress') and self._refresh_in_progress:
+            return
+            
+        self._refresh_in_progress = True
+        
+        def refresh_section_safely(section_name, refresh_method):
+            """Refresh a section with proper error handling and synchronization."""
             try:
                 self.parent.after(0, lambda: self.last_updated_label.config(
                     text=f"🔄 Loading {section_name}..."
@@ -539,15 +550,27 @@ class DashboardTab:
                 refresh_method()
             except Exception as e:
                 print(f"Error refreshing {section_name}: {e}")
+                self.parent.after(0, lambda: self.last_updated_label.config(
+                    text=f"❌ Error loading {section_name}"
+                ))
         
-        # Refresh RSI divergences
-        threading.Thread(target=lambda: refresh_section("RSI divergences", self.refresh_rsi_divergences), daemon=True).start()
+        def refresh_all_sections():
+            """Refresh all sections sequentially to avoid connection conflicts."""
+            try:
+                # Refresh sections one at a time to avoid connection pool exhaustion
+                refresh_section_safely("RSI divergences", self.refresh_rsi_divergences)
+                refresh_section_safely("trend ratings", self.refresh_trend_ratings) 
+                refresh_section_safely("SMA trends", self.refresh_sma_trends)
+                
+                # Update last updated time
+                self.parent.after(0, lambda: self.last_updated_label.config(
+                    text=f"✅ Updated at {datetime.now().strftime('%H:%M:%S')}"
+                ))
+            finally:
+                self._refresh_in_progress = False
         
-        # Refresh trend ratings with a small delay
-        self.parent.after(500, lambda: threading.Thread(target=lambda: refresh_section("trend ratings", self.refresh_trend_ratings), daemon=True).start())
-        
-        # Refresh SMA trends with another delay  
-        self.parent.after(1000, lambda: threading.Thread(target=lambda: refresh_section("SMA trends", self.refresh_sma_trends), daemon=True).start())
+        # Run all refreshes in a single background thread
+        threading.Thread(target=refresh_all_sections, daemon=True).start()
 
     def refresh_dashboard(self):
         """Fallback refresh method for auto-refresh - uses async approach."""
@@ -738,16 +761,52 @@ Medium-term: 20 SMA vs 50 SMA crossovers
             self.sma_content_text.insert(tk.END, f"❌ Error refreshing SMA data: {e}")
     
     def get_database_engine(self):
-        """Get database engine for queries."""
-        try:
-            import reporting_adv_decl as rad
-            return rad.engine()
-        except Exception:
-            try:
-                from services.market_breadth_service import get_engine
-                return get_engine()
-            except Exception:
-                return None
+        """Get shared database engine with optimized connection pooling."""
+        import threading
+        
+        if self._engine_lock is None:
+            self._engine_lock = threading.Lock()
+            
+        with self._engine_lock:
+            if self._engine is None:
+                try:
+                    # Try using the reporting module's optimized engine
+                    import reporting_adv_decl as rad
+                    self._engine = rad.engine()
+                except Exception:
+                    try:
+                        # Fallback to market breadth service
+                        from services.market_breadth_service import get_engine
+                        self._engine = get_engine()
+                    except Exception:
+                        try:
+                            # Last resort: create optimized engine directly
+                            from sqlalchemy import create_engine
+                            import os
+                            
+                            # Database connection details
+                            host = os.getenv('MYSQL_HOST', 'localhost')
+                            port = os.getenv('MYSQL_PORT', '3306') 
+                            database = os.getenv('MYSQL_DB', 'stock_analysis')
+                            username = os.getenv('MYSQL_USER', 'root')
+                            password = os.getenv('MYSQL_PASSWORD', '')
+                            
+                            # Create optimized engine with limited connection pool
+                            connection_string = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}?charset=utf8mb4"
+                            self._engine = create_engine(
+                                connection_string,
+                                pool_size=5,           # Limit concurrent connections
+                                max_overflow=10,       # Allow some overflow
+                                pool_timeout=30,       # Timeout for getting connection
+                                pool_recycle=3600,     # Recycle connections hourly
+                                pool_pre_ping=True,    # Test connections before use
+                                echo=False
+                            )
+                        except Exception as e:
+                            print(f"Failed to create database engine: {e}")
+                            return None
+            
+            return self._engine
     
     def check_bhav_data(self, engine) -> Dict[str, Any]:
         """Check BHAV data availability."""
@@ -1551,6 +1610,17 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             print(f"Error updating RSI charts: {e}")
             import traceback
             traceback.print_exc()
+
+    def cleanup(self):
+        """Clean up resources when dashboard is destroyed."""
+        if hasattr(self, '_engine') and self._engine:
+            try:
+                self._engine.dispose()
+                print("📊 Dashboard: Database engine disposed successfully")
+            except Exception as e:
+                print(f"📊 Dashboard: Error disposing engine: {e}")
+            finally:
+                self._engine = None
 
 # Test function
 if __name__ == "__main__":
