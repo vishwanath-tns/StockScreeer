@@ -19,6 +19,12 @@ from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+try:
+    import mplcursors
+    CURSORS_AVAILABLE = True
+except ImportError:
+    CURSORS_AVAILABLE = False
+    print("mplcursors not available - chart tooltips disabled")
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
@@ -456,10 +462,56 @@ class DashboardTab:
             
             # Plot 1: Count trends
             dates = sma_data['trade_date']
-            ax1.plot(dates, sma_data['above_count'], label='Above 50 SMA', color='green', linewidth=2)
-            ax1.plot(dates, sma_data['below_count'], label='Below 50 SMA', color='red', linewidth=2)
+            line1 = ax1.plot(dates, sma_data['above_count'], label='Above 50 SMA', color='green', linewidth=2, marker='o', markersize=4)
+            line2 = ax1.plot(dates, sma_data['below_count'], label='Below 50 SMA', color='red', linewidth=2, marker='o', markersize=4)
             ax1.fill_between(dates, sma_data['above_count'], alpha=0.3, color='green')
             ax1.fill_between(dates, sma_data['below_count'], alpha=0.3, color='red')
+            
+            # Add interactive tooltips for count trends
+            if CURSORS_AVAILABLE:
+                # Create copies of data for closure
+                dates_copy = dates.copy()
+                above_counts = sma_data['above_count'].copy()
+                below_counts = sma_data['below_count'].copy()
+                
+                def format_tooltip_above(sel):
+                    try:
+                        # Find the closest data point index by distance calculation
+                        line_data = sel.artist.get_xydata()
+                        import numpy as np
+                        distances = np.sqrt((line_data[:, 0] - sel.target[0])**2 + (line_data[:, 1] - sel.target[1])**2)
+                        closest_idx = np.argmin(distances)
+                        
+                        # Get the data for this index
+                        date_str = dates_copy.iloc[closest_idx].strftime('%Y-%m-%d')
+                        count = int(above_counts.iloc[closest_idx])
+                        sel.annotation.set_text(f"Date: {date_str}\nAbove 50 SMA: {count:,} stocks")
+                    except Exception as e:
+                        print(f"Tooltip error (above): {e}")
+                        sel.annotation.set_text(f"Data point\nHover for details")
+                
+                def format_tooltip_below(sel):
+                    try:
+                        # Find the closest data point index by distance calculation  
+                        line_data = sel.artist.get_xydata()
+                        import numpy as np
+                        distances = np.sqrt((line_data[:, 0] - sel.target[0])**2 + (line_data[:, 1] - sel.target[1])**2)
+                        closest_idx = np.argmin(distances)
+                        
+                        # Get the data for this index
+                        date_str = dates_copy.iloc[closest_idx].strftime('%Y-%m-%d')
+                        count = int(below_counts.iloc[closest_idx])
+                        sel.annotation.set_text(f"Date: {date_str}\nBelow 50 SMA: {count:,} stocks")
+                    except Exception as e:
+                        print(f"Tooltip error (below): {e}")
+                        sel.annotation.set_text(f"Data point\nHover for details")
+                
+                # Get the actual Line2D objects from the plot lists
+                cursor1 = mplcursors.cursor(line1[0], hover=True)
+                cursor1.connect("add", format_tooltip_above)
+                
+                cursor2 = mplcursors.cursor(line2[0], hover=True)
+                cursor2.connect("add", format_tooltip_below)
             
             ax1.set_title('Stocks Above/Below 50-Day SMA (Last 3 Months)', fontweight='bold', fontsize=12)
             ax1.set_ylabel('Number of Stocks')
@@ -472,12 +524,48 @@ class DashboardTab:
             # Plot 2: Percentage above SMA with total count
             ax2_twin = ax2.twinx()
             
-            # Percentage line
-            line1 = ax2.plot(dates, sma_data['pct_above'], label='% Above 50 SMA', color='blue', linewidth=2)
+            # Percentage line with markers
+            line3 = ax2.plot(dates, sma_data['pct_above'], label='% Above 50 SMA', color='blue', linewidth=2, marker='o', markersize=4)
             ax2.fill_between(dates, sma_data['pct_above'], alpha=0.2, color='blue')
             ax2.set_ylabel('Percentage Above (%)', color='blue')
             ax2.tick_params(axis='y', labelcolor='blue')
             ax2.set_ylim(0, 100)
+            
+            # Add interactive tooltips for percentage chart
+            if CURSORS_AVAILABLE:
+                # Create copies of data for closure
+                pct_above_data = sma_data['pct_above'].copy()
+                above_count_data = sma_data['above_count'].copy()
+                below_count_data = sma_data['below_count'].copy()
+                total_count_data = sma_data['total_count'].copy()
+                
+                def format_tooltip_percentage(sel):
+                    try:
+                        # Find the closest data point index by distance calculation
+                        line_data = sel.artist.get_xydata()
+                        import numpy as np
+                        distances = np.sqrt((line_data[:, 0] - sel.target[0])**2 + (line_data[:, 1] - sel.target[1])**2)
+                        closest_idx = np.argmin(distances)
+                        
+                        # Get the data for this index
+                        date_str = dates_copy.iloc[closest_idx].strftime('%Y-%m-%d')
+                        pct = float(pct_above_data.iloc[closest_idx])
+                        above = int(above_count_data.iloc[closest_idx])
+                        below = int(below_count_data.iloc[closest_idx])
+                        total = int(total_count_data.iloc[closest_idx])
+                        sel.annotation.set_text(
+                            f"Date: {date_str}\n"
+                            f"Above 50 SMA: {pct:.1f}%\n"
+                            f"Above: {above:,} stocks\n"
+                            f"Below: {below:,} stocks\n"
+                            f"Total: {total:,} stocks"
+                        )
+                    except Exception as e:
+                        print(f"Tooltip error (percentage): {e}")
+                        sel.annotation.set_text(f"Data point\nHover for details")
+                
+                cursor3 = mplcursors.cursor(line3[0], hover=True)
+                cursor3.connect("add", format_tooltip_percentage)
             
             # Total count bars
             bars = ax2_twin.bar(dates, sma_data['total_count'], alpha=0.6, color='gray', width=1, label='Total Stocks')
@@ -498,6 +586,11 @@ class DashboardTab:
             summary_text = f"Latest: {latest_data['above_count']:.0f} above ({latest_data['pct_above']:.1f}%), {latest_data['below_count']:.0f} below"
             ax2.text(0.02, 0.98, summary_text, transform=ax2.transAxes, 
                     verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+            
+            # Add tooltip availability notice
+            if CURSORS_AVAILABLE:
+                ax1.text(0.02, 0.02, "💡 Hover over chart points for detailed data", 
+                        transform=ax1.transAxes, fontsize=9, style='italic', alpha=0.7)
             
             self.sma50_fig.tight_layout()
             self.sma50_canvas.draw()
