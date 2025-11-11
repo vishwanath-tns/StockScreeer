@@ -1719,14 +1719,14 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     'status': status, 'color': color,
                     'details': f"{result.symbols_count:,} symbols\\n{result.total_records:,} records",
                     'latest_date': result.latest_date, 'trading_days': result.trading_days,
-                    'symbols_count': result.symbols_count, 'total_records': result.total_records
+                    'symbols_count': result.symbols_count, 'total_records': result.total_records, 'days_behind': days_behind
                 }
             else:
                 return {'status': "❌ No Data", 'color': "red", 'details': "No RSI data found",
-                        'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0}
+                        'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0, 'days_behind': 999}
         except Exception as e:
             return {'status': "❌ Error", 'color': "red", 'details': f"Query failed: {str(e)}",
-                    'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0}
+                    'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0, 'days_behind': 999}
 
     def check_trend_data_with_connection(self, conn) -> Dict[str, Any]:
         """Check trend data availability using existing connection."""
@@ -1749,14 +1749,14 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     'status': status, 'color': color,
                     'details': f"{result.symbols_count:,} symbols\\n{result.total_records:,} records",
                     'latest_date': result.latest_date, 'trading_days': result.trading_days,
-                    'symbols_count': result.symbols_count, 'total_records': result.total_records
+                    'symbols_count': result.symbols_count, 'total_records': result.total_records, 'days_behind': days_behind
                 }
             else:
                 return {'status': "❌ No Data", 'color': "red", 'details': "No trend data found",
-                        'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0}
+                        'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0, 'days_behind': 999}
         except Exception as e:
             return {'status': "❌ Error", 'color': "red", 'details': f"Query failed: {str(e)}",
-                    'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0}
+                    'latest_date': None, 'trading_days': 0, 'symbols_count': 0, 'total_records': 0, 'days_behind': 999}
 
     def cleanup(self):
         """Clean up resources when dashboard is destroyed."""
