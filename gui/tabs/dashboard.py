@@ -1653,9 +1653,10 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         """Check SMA data availability using existing connection."""
         try:
             from sqlalchemy import text
+            # Use actual table name 'moving_averages' instead of 'nse_sma_analysis'
             query = text("""
                 SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as total_records
-                FROM nse_sma_analysis WHERE trade_date IS NOT NULL
+                FROM moving_averages WHERE trade_date IS NOT NULL
             """)
             result = conn.execute(query).fetchone()
             
@@ -1707,9 +1708,10 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         """Check trend data availability using existing connection."""
         try:
             from sqlalchemy import text
+            # Use actual table name 'trend_analysis' instead of 'nse_trend_ratings'
             query = text("""
                 SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as total_records
-                FROM nse_trend_ratings WHERE trade_date IS NOT NULL
+                FROM trend_analysis WHERE trade_date IS NOT NULL
             """)
             result = conn.execute(query).fetchone()
             
