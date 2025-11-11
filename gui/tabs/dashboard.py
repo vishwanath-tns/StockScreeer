@@ -101,7 +101,15 @@ class DashboardTab:
         details_notebook = ttk.Notebook(details_frame)
         details_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Text details tab
+        # Charts tab (first tab for immediate visual insight)
+        charts_tab = ttk.Frame(details_notebook)
+        details_notebook.add(charts_tab, text="📊 Analytics Charts")
+        
+        # Create database charts area
+        self.db_charts_frame = charts_tab
+        self.create_database_charts()
+        
+        # Text details tab (second tab for detailed information)
         text_tab = ttk.Frame(details_notebook)
         details_notebook.add(text_tab, text="📄 Status Report")
         
@@ -114,14 +122,6 @@ class DashboardTab:
         scrollbar = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.db_details_text.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.db_details_text.configure(yscrollcommand=scrollbar.set)
-        
-        # Charts tab
-        charts_tab = ttk.Frame(details_notebook)
-        details_notebook.add(charts_tab, text="📊 Analytics Charts")
-        
-        # Create database charts area
-        self.db_charts_frame = charts_tab
-        self.create_database_charts()
     
     def create_rsi_divergences_section(self):
         """Create RSI Divergences subsection."""
@@ -146,7 +146,15 @@ class DashboardTab:
         content_notebook = ttk.Notebook(content_frame)
         content_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Status report tab
+        # Charts tab for RSI divergences (first tab for immediate visual insight)
+        rsi_charts_tab = ttk.Frame(content_notebook)
+        content_notebook.add(rsi_charts_tab, text="📊 Divergence Charts")
+        
+        # Create RSI charts area
+        self.rsi_charts_frame = rsi_charts_tab
+        self.create_rsi_charts()
+        
+        # Status report tab (second tab for detailed information)
         status_tab = ttk.Frame(content_notebook)
         content_notebook.add(status_tab, text="📄 Status Summary")
         
@@ -159,14 +167,6 @@ class DashboardTab:
         rsi_scrollbar = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.rsi_content_text.yview)
         rsi_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.rsi_content_text.configure(yscrollcommand=rsi_scrollbar.set)
-        
-        # Charts tab for RSI divergences
-        rsi_charts_tab = ttk.Frame(content_notebook)
-        content_notebook.add(rsi_charts_tab, text="📊 Divergence Charts")
-        
-        # Create RSI charts area
-        self.rsi_charts_frame = rsi_charts_tab
-        self.create_rsi_charts()
     
     def create_trend_ratings_section(self):
         """Create Trend Ratings Status subsection.""" 
@@ -183,12 +183,31 @@ class DashboardTab:
         ttk.Button(header_frame, text="🔄 Refresh Trends", 
                   command=self.refresh_trend_ratings).pack(side=tk.RIGHT)
         
-        # Content area
-        content_frame = ttk.LabelFrame(trend_frame, text="Trend Ratings Distribution", padding=10)
+        # Content area with future charts support
+        content_frame = ttk.LabelFrame(trend_frame, text="Trend Ratings Analysis", padding=10)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        text_frame = ttk.Frame(content_frame)
-        text_frame.pack(fill=tk.BOTH, expand=True)
+        # Create notebook for future charts and content
+        trend_notebook = ttk.Notebook(content_frame)
+        trend_notebook.pack(fill=tk.BOTH, expand=True)
+        
+        # Charts tab (prepared for future implementation)
+        trend_charts_tab = ttk.Frame(trend_notebook)
+        trend_notebook.add(trend_charts_tab, text="📊 Rating Charts")
+        
+        # Placeholder for future charts
+        placeholder_label = ttk.Label(trend_charts_tab, 
+                                     text="📊 Trend Rating Charts\n\n🚧 Coming Soon!\n\nCharts will include:\n• Rating distribution (-3 to +3)\n• Sector-wise trends\n• Market breadth analysis\n• Trend momentum indicators", 
+                                     font=('Arial', 11), 
+                                     justify=tk.CENTER)
+        placeholder_label.pack(expand=True)
+        
+        # Status report tab  
+        status_tab = ttk.Frame(trend_notebook)
+        trend_notebook.add(status_tab, text="📄 Status Summary")
+        
+        text_frame = ttk.Frame(status_tab)
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         self.trend_content_text = tk.Text(text_frame, wrap=tk.WORD, font=('Consolas', 10))
         self.trend_content_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -212,12 +231,31 @@ class DashboardTab:
         ttk.Button(header_frame, text="🔄 Refresh SMA", 
                   command=self.refresh_sma_trends).pack(side=tk.RIGHT)
         
-        # Content area
+        # Content area with future charts support
         content_frame = ttk.LabelFrame(sma_frame, text="SMA Trend Analysis", padding=10)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        text_frame = ttk.Frame(content_frame)
-        text_frame.pack(fill=tk.BOTH, expand=True)
+        # Create notebook for future charts and content
+        sma_notebook = ttk.Notebook(content_frame)
+        sma_notebook.pack(fill=tk.BOTH, expand=True)
+        
+        # Charts tab (prepared for future implementation)
+        sma_charts_tab = ttk.Frame(sma_notebook)
+        sma_notebook.add(sma_charts_tab, text="📊 SMA Charts")
+        
+        # Placeholder for future charts
+        placeholder_label = ttk.Label(sma_charts_tab, 
+                                     text="📊 SMA Trend Charts\n\n🚧 Coming Soon!\n\nCharts will include:\n• Golden/Death cross signals\n• SMA crossover patterns\n• Price vs SMA positioning\n• Multi-timeframe analysis", 
+                                     font=('Arial', 11), 
+                                     justify=tk.CENTER)
+        placeholder_label.pack(expand=True)
+        
+        # Status report tab
+        status_tab = ttk.Frame(sma_notebook)
+        sma_notebook.add(status_tab, text="📄 Status Summary")
+        
+        text_frame = ttk.Frame(status_tab)
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         self.sma_content_text = tk.Text(text_frame, wrap=tk.WORD, font=('Consolas', 10))
         self.sma_content_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
