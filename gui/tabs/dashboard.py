@@ -252,21 +252,22 @@ class DashboardTab:
             # Get RSI divergence analysis
             analysis = self.analyze_rsi_divergences(engine)
             
-            content = f"""📈 RSI DIVERGENCE ANALYSIS
+            content = f"""📈 RSI DIVERGENCE STATUS
 {'=' * 40}
 
-📊 HIDDEN DIVERGENCES (Latest Date: {analysis['latest_date']})
-{'=' * 50}
-🔼 Hidden Bullish Divergences: {analysis['hidden_bullish_count']:,} stocks
-   └─ Price makes higher low, RSI makes lower low
-   └─ Signals potential continuation of uptrend
+📊 LATEST SIGNALS ({analysis['latest_date']})
+{'=' * 45}
+� Hidden Bullish: {analysis['hidden_bullish_count']:,} stocks
+� Hidden Bearish: {analysis['hidden_bearish_count']:,} stocks
 
-🔽 Hidden Bearish Divergences: {analysis['hidden_bearish_count']:,} stocks  
-   └─ Price makes lower high, RSI makes higher high
-   └─ Signals potential continuation of downtrend
+📈 ALL-TIME HISTORY
+{'=' * 25}  
+🟢 Total Bullish: {analysis['total_bullish']:,}
+🔴 Total Bearish: {analysis['total_bearish']:,}
+📊 Grand Total: {analysis['total_signals']:,} signals
 
-� RSI CALCULATION STATUS
-{'=' * 25}"""
+🧮 RSI CALCULATION STATUS
+{'=' * 30}"""
 
             # Add RSI timeframe status
             for tf_name, tf_data in analysis['timeframe_status'].items():
@@ -656,109 +657,136 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         self.db_details_text.insert(tk.END, f"{message}\\n\\nPlease check database connection and try again.")
 
     def analyze_rsi_divergences(self, engine):
-        """Analyze RSI divergences using existing fractal-based data."""
+        """Get summary data from existing RSI divergences infrastructure."""
         try:
+            from sqlalchemy import text
+            
             with engine.connect() as conn:
-                # Get latest divergences data
-                result = conn.execute(text(
-                    "SELECT MAX(signal_date) as latest_date, COUNT(*) as total_count "
-                    "FROM nse_rsi_divergences"
-                )).fetchone()
+                # Get latest divergences summary
+                latest_query = text("""
+                    SELECT 
+                        MAX(signal_date) as latest_date,
+                        MIN(signal_date) as earliest_date,
+                        COUNT(*) as total_signals,
+                        SUM(CASE WHEN signal_type LIKE '%Bullish%' THEN 1 ELSE 0 END) as total_bullish,
+                        SUM(CASE WHEN signal_type LIKE '%Bearish%' THEN 1 ELSE 0 END) as total_bearish
+                    FROM nse_rsi_divergences
+                """)
+                result = conn.execute(latest_query).fetchone()
                 
-                latest_date = result[0]
-                total_count = result[1]
+                latest_date = result[0] if result[0] else 'N/A'
+                earliest_date = result[1] if result[1] else 'N/A'
+                total_signals = result[2] if result[2] else 0
+                total_bullish = result[3] if result[3] else 0
+                total_bearish = result[4] if result[4] else 0
                 
-                # Get divergences by type for latest date
-                latest_divergences = conn.execute(text(
-                    "SELECT signal_type, COUNT(*) as count "
-                    "FROM nse_rsi_divergences WHERE signal_date = %s "
-                    "GROUP BY signal_type"
-                ), (latest_date,)).fetchall()
+                # Get latest date specific counts
+                latest_bullish = 0
+                latest_bearish = 0
+                if latest_date != 'N/A':
+                    latest_counts = text("""
+                        SELECT 
+                            signal_type,
+                            COUNT(*) as count 
+                        FROM nse_rsi_divergences 
+                        WHERE signal_date = :latest_date
+                        GROUP BY signal_type
+                    """)
+                    latest_results = conn.execute(latest_counts, {"latest_date": latest_date}).fetchall()
+                    
+                    for signal_type, count in latest_results:
+                        if 'Bullish' in signal_type:
+                            latest_bullish += count
+                        elif 'Bearish' in signal_type:
+                            latest_bearish += count
                 
-                # Extract counts
-                hidden_bullish_count = 0
-                hidden_bearish_count = 0
-                for signal_type, count in latest_divergences:
-                    if "Bullish" in signal_type:
-                        hidden_bullish_count += count
-                    elif "Bearish" in signal_type:
-                        hidden_bearish_count += count
-                
-                # Get RSI timeframe status
-                timeframe_status = {}
-                
-                # Daily RSI
-                rsi_daily = conn.execute(text(
-                    "SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as stocks, COUNT(*) as records "
-                    "FROM nse_rsi_daily"
-                )).fetchone()
-                
-                # Weekly RSI
-                rsi_weekly = conn.execute(text(
-                    "SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as stocks, COUNT(*) as records "
-                    "FROM nse_rsi_weekly"
-                )).fetchone()
-                
-                # Monthly RSI
-                rsi_monthly = conn.execute(text(
-                    "SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as stocks, COUNT(*) as records "
-                    "FROM nse_rsi_monthly"
-                )).fetchone()
-                
-                # Latest BHAV for comparison
-                bhav_latest = conn.execute(text(
-                    "SELECT MAX(trade_date) as latest_date FROM nse_equity_bhavcopy_full"
-                )).fetchone()
-                
-                timeframe_status = {
-                    "Daily RSI": {
-                        "period": 9,
-                        "latest_date": rsi_daily[0],
-                        "symbols": rsi_daily[1],
-                        "records": rsi_daily[2],
-                        "current": rsi_daily[0] == bhav_latest[0]
-                    },
-                    "Weekly RSI": {
-                        "period": 9,
-                        "latest_date": rsi_weekly[0],
-                        "symbols": rsi_weekly[1],
-                        "records": rsi_weekly[2],
-                        "current": True  # Weekly is always current
-                    },
-                    "Monthly RSI": {
-                        "period": 9,
-                        "latest_date": rsi_monthly[0],
-                        "symbols": rsi_monthly[1],
-                        "records": rsi_monthly[2],
-                        "current": True  # Monthly is always current
+                # Get RSI status
+                try:
+                    rsi_daily = conn.execute(text("""
+                        SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as records
+                        FROM nse_rsi_daily
+                    """)).fetchone()
+                    
+                    rsi_weekly = conn.execute(text("""
+                        SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as records
+                        FROM nse_rsi_weekly
+                    """)).fetchone()
+                    
+                    rsi_monthly = conn.execute(text("""
+                        SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as records
+                        FROM nse_rsi_monthly
+                    """)).fetchone()
+                    
+                    # Get BHAV latest
+                    bhav_latest = conn.execute(text("""
+                        SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full
+                    """)).fetchone()[0]
+                    
+                    # Calculate status
+                    rsi_current = rsi_daily[0] == bhav_latest if rsi_daily[0] and bhav_latest else False
+                    
+                    timeframe_status = {
+                        "Daily RSI": {
+                            "period": 9,
+                            "latest_date": rsi_daily[0] if rsi_daily[0] else 'N/A',
+                            "symbols": rsi_daily[1] if rsi_daily[1] else 0,
+                            "records": rsi_daily[2] if rsi_daily[2] else 0,
+                            "current": rsi_current
+                        },
+                        "Weekly RSI": {
+                            "period": 9,
+                            "latest_date": rsi_weekly[0] if rsi_weekly[0] else 'N/A',
+                            "symbols": rsi_weekly[1] if rsi_weekly[1] else 0,
+                            "records": rsi_weekly[2] if rsi_weekly[2] else 0,
+                            "current": True
+                        },
+                        "Monthly RSI": {
+                            "period": 9,
+                            "latest_date": rsi_monthly[0] if rsi_monthly[0] else 'N/A',
+                            "symbols": rsi_monthly[1] if rsi_monthly[1] else 0,
+                            "records": rsi_monthly[2] if rsi_monthly[2] else 0,
+                            "current": True
+                        }
                     }
-                }
-                
-                # Calculate coverage
-                total_stocks = conn.execute(text(
-                    "SELECT COUNT(DISTINCT symbol) FROM nse_equity_bhavcopy_full WHERE trade_date = %s"
-                ), (bhav_latest[0],)).fetchone()[0]
-                
-                coverage_percentage = (rsi_daily[1] / total_stocks * 100) if total_stocks > 0 else 0
-                
+                    
+                    # Calculate coverage
+                    total_stocks_query = text("""
+                        SELECT COUNT(DISTINCT symbol) FROM nse_equity_bhavcopy_full 
+                        WHERE trade_date = :date
+                    """)
+                    total_stocks = conn.execute(total_stocks_query, {"date": bhav_latest}).fetchone()[0] if bhav_latest else 0
+                    
+                    coverage_percentage = (rsi_daily[1] / total_stocks * 100) if total_stocks > 0 else 0
+                    
+                except Exception:
+                    timeframe_status = {
+                        "Daily RSI": {"period": 9, "latest_date": "N/A", "symbols": 0, "records": 0, "current": False},
+                        "Weekly RSI": {"period": 9, "latest_date": "N/A", "symbols": 0, "records": 0, "current": False},
+                        "Monthly RSI": {"period": 9, "latest_date": "N/A", "symbols": 0, "records": 0, "current": False}
+                    }
+                    coverage_percentage = 0
+                    
                 return {
                     "latest_date": latest_date,
-                    "hidden_bullish_count": hidden_bullish_count,
-                    "hidden_bearish_count": hidden_bearish_count,
+                    "hidden_bullish_count": latest_bullish,
+                    "hidden_bearish_count": latest_bearish,
                     "timeframe_status": timeframe_status,
-                    "lookback_days": 50,  # Standard fractal lookback
-                    "min_rsi_change": 5.0,  # Minimum RSI change for divergence
-                    "min_price_change": 2.0,  # Minimum price change for divergence
-                    "symbols_analyzed": rsi_daily[1],
-                    "price_data_quality": f"{total_stocks:,} stocks on {bhav_latest[0]}",
-                    "rsi_data_quality": f"{rsi_daily[2]:,} records on {rsi_daily[0]}",
-                    "coverage_percentage": coverage_percentage
+                    "lookback_days": 50,
+                    "min_rsi_change": 5.0,
+                    "min_price_change": 2.0,
+                    "symbols_analyzed": timeframe_status["Daily RSI"]["symbols"],
+                    "price_data_quality": f"BHAV data available",
+                    "rsi_data_quality": f"RSI data current",
+                    "coverage_percentage": coverage_percentage,
+                    "total_signals": total_signals,
+                    "total_bullish": total_bullish,
+                    "total_bearish": total_bearish
                 }
                 
         except Exception as e:
-            # Return error data structure
+            # Return error data structure  
             return {
-                "latest_date": "N/A",
+                "latest_date": "Error",
                 "hidden_bullish_count": 0,
                 "hidden_bearish_count": 0,
                 "timeframe_status": {
@@ -772,7 +800,10 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 "symbols_analyzed": 0,
                 "price_data_quality": f"Error: {str(e)}",
                 "rsi_data_quality": f"Error: {str(e)}",
-                "coverage_percentage": 0.0
+                "coverage_percentage": 0.0,
+                "total_signals": 0,
+                "total_bullish": 0,
+                "total_bearish": 0
             }
 
 
