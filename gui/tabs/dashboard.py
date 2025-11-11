@@ -309,8 +309,8 @@ class DashboardTab:
             # Configure matplotlib
             plt.style.use('default')
             
-            # Create figure with subplots
-            self.rsi_fig = Figure(figsize=(12, 8), dpi=80)
+            # Create larger figure for 6 charts (2x3 layout)
+            self.rsi_fig = Figure(figsize=(15, 10), dpi=80)
             
             # Create canvas
             self.rsi_canvas = FigureCanvasTkAgg(self.rsi_fig, master=self.rsi_charts_frame)
@@ -975,7 +975,7 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         self.db_details_text.insert(tk.END, f"{message}\\n\\nPlease check database connection and try again.")
 
     def analyze_rsi_divergences(self, engine):
-        """Get summary data from existing RSI divergences infrastructure."""
+        """Get comprehensive RSI divergences data including temporal distributions."""
         try:
             from sqlalchemy import text
             
@@ -1017,6 +1017,74 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                             latest_bullish += count
                         elif 'Bearish' in signal_type:
                             latest_bearish += count
+                
+                # Get yearly distribution
+                yearly_query = text("""
+                    SELECT 
+                        YEAR(signal_date) as year,
+                        CASE 
+                            WHEN signal_type LIKE '%Bullish%' THEN 'Bullish'
+                            WHEN signal_type LIKE '%Bearish%' THEN 'Bearish'
+                            ELSE 'Other'
+                        END as signal_category,
+                        COUNT(*) as signal_count
+                    FROM nse_rsi_divergences
+                    GROUP BY YEAR(signal_date), signal_category
+                    ORDER BY year DESC, signal_category
+                """)
+                yearly_results = conn.execute(yearly_query).fetchall()
+                
+                yearly_distribution = {}
+                for year, category, count in yearly_results:
+                    if year not in yearly_distribution:
+                        yearly_distribution[year] = {'Bullish': 0, 'Bearish': 0}
+                    yearly_distribution[year][category] = count
+                
+                # Get monthly distribution (last 18 months)
+                monthly_query = text("""
+                    SELECT 
+                        DATE_FORMAT(signal_date, '%Y-%m') as month,
+                        CASE 
+                            WHEN signal_type LIKE '%Bullish%' THEN 'Bullish'
+                            WHEN signal_type LIKE '%Bearish%' THEN 'Bearish'
+                            ELSE 'Other'
+                        END as signal_category,
+                        COUNT(*) as signal_count
+                    FROM nse_rsi_divergences
+                    WHERE signal_date >= DATE_SUB(CURDATE(), INTERVAL 18 MONTH)
+                    GROUP BY DATE_FORMAT(signal_date, '%Y-%m'), signal_category
+                    ORDER BY month DESC, signal_category
+                """)
+                monthly_results = conn.execute(monthly_query).fetchall()
+                
+                monthly_distribution = {}
+                for month, category, count in monthly_results:
+                    if month not in monthly_distribution:
+                        monthly_distribution[month] = {'Bullish': 0, 'Bearish': 0}
+                    monthly_distribution[month][category] = count
+                
+                # Get weekly distribution (last 12 weeks)
+                weekly_query = text("""
+                    SELECT 
+                        CONCAT(YEAR(signal_date), '-W', LPAD(WEEK(signal_date), 2, '0')) as week,
+                        CASE 
+                            WHEN signal_type LIKE '%Bullish%' THEN 'Bullish'
+                            WHEN signal_type LIKE '%Bearish%' THEN 'Bearish'
+                            ELSE 'Other'
+                        END as signal_category,
+                        COUNT(*) as signal_count
+                    FROM nse_rsi_divergences
+                    WHERE signal_date >= DATE_SUB(CURDATE(), INTERVAL 12 WEEK)
+                    GROUP BY CONCAT(YEAR(signal_date), '-W', LPAD(WEEK(signal_date), 2, '0')), signal_category
+                    ORDER BY week DESC, signal_category
+                """)
+                weekly_results = conn.execute(weekly_query).fetchall()
+                
+                weekly_distribution = {}
+                for week, category, count in weekly_results:
+                    if week not in weekly_distribution:
+                        weekly_distribution[week] = {'Bullish': 0, 'Bearish': 0}
+                    weekly_distribution[week][category] = count
                 
                 # Get RSI status
                 try:
@@ -1098,11 +1166,16 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     "coverage_percentage": coverage_percentage,
                     "total_signals": total_signals,
                     "total_bullish": total_bullish,
-                    "total_bearish": total_bearish
+                    "total_bearish": total_bearish,
+                    # New temporal distribution data
+                    "yearly_distribution": yearly_distribution,
+                    "monthly_distribution": monthly_distribution,
+                    "weekly_distribution": weekly_distribution
                 }
                 
         except Exception as e:
-            # Return error data structure  
+            # Return error data structure with temporal distributions
+            print(f"Error analyzing RSI divergences: {e}")
             return {
                 "latest_date": "Error",
                 "hidden_bullish_count": 0,
@@ -1121,7 +1194,10 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 "coverage_percentage": 0.0,
                 "total_signals": 0,
                 "total_bullish": 0,
-                "total_bearish": 0
+                "total_bearish": 0,
+                "yearly_distribution": {},
+                "monthly_distribution": {},
+                "weekly_distribution": {}
             }
 
     def update_database_charts_with_data(self, bhav_status, sma_status, rsi_status, trend_status):
@@ -1260,19 +1336,24 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             print(f"Error updating database charts: {e}")
 
     def update_rsi_charts_with_data(self, analysis):
-        """Update RSI charts with analysis data."""
+        """Update RSI charts with temporal distribution data."""
         try:
-            if not hasattr(self, 'rsi_fig'):
+            if not hasattr(self, 'rsi_fig') or self.rsi_fig is None:
                 return
                 
-            self.rsi_fig.clear()
+            # Clear figure safely
+            for ax in list(self.rsi_fig.axes):
+                self.rsi_fig.delaxes(ax)
             
-            # Create 2x2 subplot layout
-            ax1 = self.rsi_fig.add_subplot(2, 2, 1)
-            ax2 = self.rsi_fig.add_subplot(2, 2, 2) 
-            ax3 = self.rsi_fig.add_subplot(2, 1, 2)
+            # Create 2x3 subplot layout for temporal analysis
+            ax1 = self.rsi_fig.add_subplot(2, 3, 1)
+            ax2 = self.rsi_fig.add_subplot(2, 3, 2) 
+            ax3 = self.rsi_fig.add_subplot(2, 3, 3)
+            ax4 = self.rsi_fig.add_subplot(2, 3, 4)
+            ax5 = self.rsi_fig.add_subplot(2, 3, 5)
+            ax6 = self.rsi_fig.add_subplot(2, 3, 6)
             
-            # Pie chart - Divergence types distribution (all-time)
+            # Pie chart - All-time divergence distribution
             if analysis.get('total_bullish', 0) > 0 or analysis.get('total_bearish', 0) > 0:
                 div_data = [analysis.get('total_bullish', 0), analysis.get('total_bearish', 0)]
                 div_labels = [f"Bullish ({analysis.get('total_bullish', 0):,})", 
@@ -1296,16 +1377,16 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     ax1.pie([1], labels=['No Data'], colors=['lightgray'], autopct='')
             else:
                 ax1.pie([1], labels=['No Divergences'], colors=['lightgray'], autopct='')
-            ax1.set_title('All-Time Divergence Distribution', fontweight='bold')
+            ax1.set_title('All-Time Distribution', fontweight='bold', fontsize=10)
             
-            # Bar chart - Latest divergence signals
+            # Bar chart - Latest signals
             latest_bullish = analysis.get('hidden_bullish_count', 0)
             latest_bearish = analysis.get('hidden_bearish_count', 0)
             
             bars = ax2.bar(['Bullish', 'Bearish'], [latest_bullish, latest_bearish], 
                           color=['#4caf50', '#ff6b6b'])
-            ax2.set_title(f'Latest Signals ({analysis.get("latest_date", "N/A")})', fontweight='bold')
-            ax2.set_ylabel('Signal Count')
+            ax2.set_title(f'Latest Signals\n({analysis.get("latest_date", "N/A")})', fontweight='bold', fontsize=10)
+            ax2.set_ylabel('Signals', fontsize=9)
             
             # Add value labels on bars
             for bar, count in zip(bars, [latest_bullish, latest_bearish]):
@@ -1313,41 +1394,163 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 if height > 0:
                     ax2.annotate(f'{count}',
                                xy=(bar.get_x() + bar.get_width() / 2, height),
-                               xytext=(0, 3),  # 3 points vertical offset
+                               xytext=(0, 3),
                                textcoords="offset points",
-                               ha='center', va='bottom', fontsize=10, fontweight='bold')
+                               ha='center', va='bottom', fontsize=9, fontweight='bold')
             
-            # RSI timeframe status chart
+            # Yearly distribution
+            yearly_data = analysis.get('yearly_distribution', {})
+            if yearly_data:
+                years = sorted(yearly_data.keys())
+                bullish_yearly = [yearly_data[year].get('Bullish', 0) for year in years]
+                bearish_yearly = [yearly_data[year].get('Bearish', 0) for year in years]
+                
+                x = range(len(years))
+                width = 0.35
+                
+                bars1 = ax3.bar([i - width/2 for i in x], bullish_yearly, width, 
+                               label='Bullish', color='#4caf50')
+                bars2 = ax3.bar([i + width/2 for i in x], bearish_yearly, width,
+                               label='Bearish', color='#ff6b6b')
+                
+                ax3.set_xlabel('Year', fontsize=9)
+                ax3.set_ylabel('Signals', fontsize=9)
+                ax3.set_title('Yearly Distribution', fontweight='bold', fontsize=10)
+                ax3.set_xticks(x)
+                ax3.set_xticklabels(years, fontsize=8)
+                ax3.legend(fontsize=8)
+                
+                # Add value labels on bars
+                for bars in [bars1, bars2]:
+                    for bar in bars:
+                        height = bar.get_height()
+                        if height > 0:
+                            ax3.annotate(f'{int(height)}',
+                                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                                       xytext=(0, 3),
+                                       textcoords="offset points",
+                                       ha='center', va='bottom', fontsize=7)
+            else:
+                ax3.text(0.5, 0.5, 'No yearly data', ha='center', va='center', 
+                        transform=ax3.transAxes, fontsize=10)
+                ax3.set_title('Yearly Distribution', fontweight='bold', fontsize=10)
+            
+            # Monthly distribution (last 12 months)
+            monthly_data = analysis.get('monthly_distribution', {})
+            if monthly_data:
+                months = sorted(monthly_data.keys())[-12:]  # Last 12 months
+                bullish_monthly = [monthly_data[month].get('Bullish', 0) for month in months]
+                bearish_monthly = [monthly_data[month].get('Bearish', 0) for month in months]
+                
+                x = range(len(months))
+                width = 0.35
+                
+                bars1 = ax4.bar([i - width/2 for i in x], bullish_monthly, width, 
+                               label='Bullish', color='#4caf50')
+                bars2 = ax4.bar([i + width/2 for i in x], bearish_monthly, width,
+                               label='Bearish', color='#ff6b6b')
+                
+                ax4.set_xlabel('Month', fontsize=9)
+                ax4.set_ylabel('Signals', fontsize=9)
+                ax4.set_title('Monthly Distribution (Last 12M)', fontweight='bold', fontsize=10)
+                ax4.set_xticks(x)
+                
+                # Format month labels (show only month name)
+                month_labels = [month.split('-')[1] for month in months]
+                ax4.set_xticklabels(month_labels, fontsize=7, rotation=45)
+                ax4.legend(fontsize=8)
+                
+                # Add value labels for significant bars only
+                for bars in [bars1, bars2]:
+                    for bar in bars:
+                        height = bar.get_height()
+                        if height > 50:  # Only show labels for significant counts
+                            ax4.annotate(f'{int(height)}',
+                                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                                       xytext=(0, 3),
+                                       textcoords="offset points",
+                                       ha='center', va='bottom', fontsize=7)
+            else:
+                ax4.text(0.5, 0.5, 'No monthly data', ha='center', va='center', 
+                        transform=ax4.transAxes, fontsize=10)
+                ax4.set_title('Monthly Distribution', fontweight='bold', fontsize=10)
+            
+            # Weekly distribution (last 8 weeks)
+            weekly_data = analysis.get('weekly_distribution', {})
+            if weekly_data:
+                weeks = sorted(weekly_data.keys())[-8:]  # Last 8 weeks
+                bullish_weekly = [weekly_data[week].get('Bullish', 0) for week in weeks]
+                bearish_weekly = [weekly_data[week].get('Bearish', 0) for week in weeks]
+                
+                x = range(len(weeks))
+                width = 0.35
+                
+                bars1 = ax5.bar([i - width/2 for i in x], bullish_weekly, width, 
+                               label='Bullish', color='#4caf50')
+                bars2 = ax5.bar([i + width/2 for i in x], bearish_weekly, width,
+                               label='Bearish', color='#ff6b6b')
+                
+                ax5.set_xlabel('Week', fontsize=9)
+                ax5.set_ylabel('Signals', fontsize=9)
+                ax5.set_title('Weekly Distribution (Last 8W)', fontweight='bold', fontsize=10)
+                ax5.set_xticks(x)
+                
+                # Format week labels (show week start date)
+                week_labels = [f"W{i+1}" for i in range(len(weeks))]
+                ax5.set_xticklabels(week_labels, fontsize=7)
+                ax5.legend(fontsize=8)
+                
+                # Add value labels for significant bars only
+                for bars in [bars1, bars2]:
+                    for bar in bars:
+                        height = bar.get_height()
+                        if height > 10:  # Only show labels for significant counts
+                            ax5.annotate(f'{int(height)}',
+                                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                                       xytext=(0, 3),
+                                       textcoords="offset points",
+                                       ha='center', va='bottom', fontsize=7)
+            else:
+                ax5.text(0.5, 0.5, 'No weekly data', ha='center', va='center', 
+                        transform=ax5.transAxes, fontsize=10)
+                ax5.set_title('Weekly Distribution', fontweight='bold', fontsize=10)
+            
+            # RSI timeframe coverage
             timeframe_data = analysis.get('timeframe_status', {})
             if timeframe_data:
                 timeframes = list(timeframe_data.keys())
                 symbol_counts = [tf_data.get('symbols', 0) for tf_data in timeframe_data.values()]
                 
-                bars = ax3.bar(timeframes, symbol_counts, color=['#2196f3', '#ff9800', '#9c27b0'])
-                ax3.set_title('RSI Calculation Coverage by Timeframe', fontweight='bold')
-                ax3.set_ylabel('Symbol Count')
-                ax3.tick_params(axis='x', rotation=45)
+                bars = ax6.bar(timeframes, symbol_counts, color=['#2196f3', '#ff9800', '#9c27b0'])
+                ax6.set_title('RSI Coverage', fontweight='bold', fontsize=10)
+                ax6.set_ylabel('Symbols', fontsize=9)
+                ax6.tick_params(axis='x', rotation=45, labelsize=8)
                 
                 # Add value labels on bars
                 for bar, count in zip(bars, symbol_counts):
                     height = bar.get_height()
                     if height > 0:
-                        ax3.annotate(f'{count:,}',
+                        ax6.annotate(f'{count:,}',
                                    xy=(bar.get_x() + bar.get_width() / 2, height),
-                                   xytext=(0, 3),  # 3 points vertical offset
+                                   xytext=(0, 3),
                                    textcoords="offset points",
-                                   ha='center', va='bottom', fontsize=9)
+                                   ha='center', va='bottom', fontsize=7)
             else:
-                ax3.text(0.5, 0.5, 'No RSI timeframe data available', 
-                       horizontalalignment='center', verticalalignment='center',
-                       transform=ax3.transAxes, fontsize=12)
-                ax3.set_title('RSI Calculation Status', fontweight='bold')
+                ax6.text(0.5, 0.5, 'No timeframe data', ha='center', va='center', 
+                        transform=ax6.transAxes, fontsize=10)
+                ax6.set_title('RSI Coverage', fontweight='bold', fontsize=10)
             
-            self.rsi_fig.tight_layout()
-            self.rsi_canvas.draw()
+            # Use subplots_adjust instead of tight_layout to avoid errors
+            self.rsi_fig.subplots_adjust(left=0.08, right=0.95, top=0.92, bottom=0.15, 
+                                       wspace=0.3, hspace=0.45)
+            
+            if hasattr(self, 'rsi_canvas') and self.rsi_canvas is not None:
+                self.rsi_canvas.draw()
             
         except Exception as e:
             print(f"Error updating RSI charts: {e}")
+            import traceback
+            traceback.print_exc()
 
 # Test function
 if __name__ == "__main__":
