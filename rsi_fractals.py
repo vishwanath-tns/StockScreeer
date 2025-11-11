@@ -360,89 +360,198 @@ def scan_and_upsert_fractals_optimized(engine, period: int = 9, workers: int = 4
 
 
 def scan_and_upsert_fractals(engine, period: int = 9, workers: int = 4, progress_cb=None, limit: int = 0):
-    """Scan BHAV for all symbols and upsert fractals found.
+    """Enhanced full historical fractal scan with improved error handling and status reporting.
 
     This function fetches full BHAV history and processes each symbol in parallel.
     progress_cb(current, total, message) is called if provided.
     """
+    if progress_cb:
+        progress_cb(0, 0, '🚀 Starting Full Historical Fractal Scan...')
+    
     # ensure table exists and migrations applied before running
     try:
-        ensure_fractals_table(engine)
-    except Exception:
-        pass
-
-    # fetch full bhav
-    with engine.connect() as conn:
-        rows = conn.execute(text("SELECT trade_date, symbol, close_price, high_price, low_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' ORDER BY symbol, trade_date")).fetchall()
-    if not rows:
         if progress_cb:
-            progress_cb(0, 0, 'No BHAV rows found')
+            progress_cb(0, 0, '📋 Ensuring fractals table exists...')
+        ensure_fractals_table(engine)
+        if progress_cb:
+            progress_cb(0, 0, '✅ Fractals table ready')
+    except Exception as e:
+        if progress_cb:
+            progress_cb(0, 0, f'⚠️ Table setup warning: {e}')
+
+    # fetch full bhav with progress reporting
+    if progress_cb:
+        progress_cb(0, 0, '📊 Loading full BHAV history (this may take a moment)...')
+    
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text("SELECT trade_date, symbol, close_price, high_price, low_price FROM nse_equity_bhavcopy_full WHERE series = 'EQ' ORDER BY symbol, trade_date")).fetchall()
+        
+        if not rows:
+            if progress_cb:
+                progress_cb(0, 0, '❌ No BHAV rows found in database')
+            return
+            
+        if progress_cb:
+            progress_cb(0, 0, f'📈 Loaded {len(rows):,} BHAV records')
+            
+    except Exception as e:
+        if progress_cb:
+            progress_cb(0, 0, f'❌ Failed to load BHAV data: {e}')
         return
 
-    df = pd.DataFrame(rows, columns=[c for c in rows[0]._fields])
-    df = df.rename(columns={'close_price': 'close', 'high_price': 'high', 'low_price': 'low', 'trade_date': 'trade_date'})
-    df['trade_date'] = pd.to_datetime(df['trade_date'])
-    df['close'] = pd.to_numeric(df['close'], errors='coerce')
-    df['high'] = pd.to_numeric(df['high'], errors='coerce')
-    df['low'] = pd.to_numeric(df['low'], errors='coerce')
-    df = df[df['symbol'].notna() & df['trade_date'].notna()]
-
-    syms = sorted(df['symbol'].unique())
-    if limit and limit > 0:
-        syms = syms[:limit]
-    total = len(syms)
+    # Process data with detailed status
     if progress_cb:
-        progress_cb(0, total, f'Scanning {total} symbols for fractals')
+        progress_cb(0, 0, '🔄 Processing and cleaning BHAV data...')
+    
+    try:
+        df = pd.DataFrame(rows, columns=[c for c in rows[0]._fields])
+        df = df.rename(columns={'close_price': 'close', 'high_price': 'high', 'low_price': 'low', 'trade_date': 'trade_date'})
+        df['trade_date'] = pd.to_datetime(df['trade_date'])
+        df['close'] = pd.to_numeric(df['close'], errors='coerce')
+        df['high'] = pd.to_numeric(df['high'], errors='coerce')
+        df['low'] = pd.to_numeric(df['low'], errors='coerce')
+        df = df[df['symbol'].notna() & df['trade_date'].notna()]
+
+        syms = sorted(df['symbol'].unique())
+        if limit and limit > 0:
+            syms = syms[:limit]
+        total = len(syms)
+        
+        if progress_cb:
+            progress_cb(0, total, f'✅ Data processed: {total:,} symbols ready for fractal analysis')
+            
+    except Exception as e:
+        if progress_cb:
+            progress_cb(0, 0, f'❌ Data processing failed: {e}')
+        return
 
     import concurrent.futures
 
-    # fetch precomputed daily RSI for all symbols (for the given period) to avoid recomputing
+    # Fetch precomputed RSI data with detailed progress
     rsi_map = {}
+    if progress_cb:
+        progress_cb(0, total, f'📊 Loading RSI data (period {period}) for {total:,} symbols...')
+    
     try:
-        with _ensure_engine().connect() as conn:
-            # select symbol, trade_date, rsi from nse_rsi_daily where period = :p and symbol in (...)
-            syms_tuple = tuple(syms)
-            q = text("SELECT symbol, trade_date, rsi FROM nse_rsi_daily WHERE period = :p AND symbol IN :syms")
-            rows = conn.execute(q, {"p": period, "syms": syms_tuple}).fetchall()
-            for r in rows:
-                s = r[0]
-                d = pd.to_datetime(r[1]).date()
-                val = float(r[2]) if r[2] is not None else None
-                rsi_map.setdefault(s, {})[d] = val
-    except Exception:
-        # if any error occurs, proceed without DB RSI (fallback to compute)
+        # Use the same engine to avoid connection issues
+        with engine.connect() as conn:
+            # Process RSI data in batches to avoid memory issues
+            batch_size = 500
+            for i in range(0, len(syms), batch_size):
+                batch_syms = syms[i:i+batch_size]
+                syms_tuple = tuple(batch_syms)
+                
+                if progress_cb:
+                    progress_cb(0, total, f'📈 Loading RSI batch {i//batch_size + 1}/{(len(syms) + batch_size - 1)//batch_size}...')
+                
+                q = text("SELECT symbol, trade_date, rsi FROM nse_rsi_daily WHERE period = :p AND symbol IN :syms")
+                batch_rows = conn.execute(q, {"p": period, "syms": syms_tuple}).fetchall()
+                
+                for r in batch_rows:
+                    s = r[0]
+                    d = pd.to_datetime(r[1]).date()
+                    val = float(r[2]) if r[2] is not None else None
+                    rsi_map.setdefault(s, {})[d] = val
+                    
+        if progress_cb:
+            rsi_symbols = len(rsi_map)
+            progress_cb(0, total, f'✅ RSI data loaded for {rsi_symbols:,} symbols')
+            
+    except Exception as e:
+        if progress_cb:
+            progress_cb(0, total, f'⚠️ RSI loading failed, will compute on-the-fly: {e}')
         rsi_map = {}
 
-    def _process(sym):
-        g = df[df['symbol'] == sym].sort_values('trade_date')
-        if g.empty:
-            return []
-        g['symbol'] = sym
-        return scan_symbol_for_fractals(g, period=period, rsi_by_date=rsi_map.get(sym))
+    def _process_with_error_handling(sym):
+        """Process single symbol with comprehensive error handling."""
+        try:
+            g = df[df['symbol'] == sym].sort_values('trade_date')
+            if g.empty:
+                return []
+            g['symbol'] = sym
+            return scan_symbol_for_fractals(g, period=period, rsi_by_date=rsi_map.get(sym))
+        except Exception as e:
+            # Return error info for reporting
+            return {'error': True, 'symbol': sym, 'message': str(e)}
 
     all_rows = []
-    # Use ThreadPoolExecutor to avoid multiprocessing pickling issues when running inside GUIs
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, workers)) as ex:
-        futures = {ex.submit(_process, s): s for s in syms}
-        for i, fut in enumerate(concurrent.futures.as_completed(futures), start=1):
-            sym = futures[fut]
-            try:
-                res = fut.result()
-                if res:
-                    all_rows.extend(res)
-                if progress_cb:
-                    progress_cb(i, total, f'Processed {sym} ({i}/{total})')
-            except Exception as e:
-                # continue processing other symbols; report error via progress_cb
-                if progress_cb:
-                    progress_cb(i, total, f'Error processing {sym}: {e}')
+    error_count = 0
+    
+    # Start parallel processing with enhanced progress reporting
+    if progress_cb:
+        progress_cb(0, total, f'🔄 Starting parallel processing with {workers} workers...')
+    
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(workers, 8))) as ex:
+            futures = {ex.submit(_process_with_error_handling, s): s for s in syms}
+            
+            for i, fut in enumerate(concurrent.futures.as_completed(futures), start=1):
+                sym = futures[fut]
+                try:
+                    res = fut.result()
+                    
+                    # Handle error responses
+                    if isinstance(res, dict) and res.get('error'):
+                        error_count += 1
+                        if progress_cb:
+                            progress_cb(i, total, f'❌ Error processing {sym}: {res.get("message", "Unknown error")} ({i}/{total})')
+                        continue
+                    
+                    # Handle successful results
+                    if res:
+                        all_rows.extend(res)
+                        if progress_cb:
+                            fractal_count = len(res)
+                            progress_cb(i, total, f'✅ {sym}: Found {fractal_count} fractals ({i}/{total}, {len(all_rows)} total)')
+                    else:
+                        if progress_cb:
+                            progress_cb(i, total, f'⭕ {sym}: No fractals found ({i}/{total})')
+                            
+                except Exception as e:
+                    error_count += 1
+                    if progress_cb:
+                        progress_cb(i, total, f'❌ Exception processing {sym}: {e} ({i}/{total})')
+                        
+    except Exception as e:
+        if progress_cb:
+            progress_cb(0, total, f'❌ Threading error: {e}')
+        return
+
+    # Report final processing results
+    if progress_cb:
+        if error_count > 0:
+            progress_cb(total, total, f'⚠️ Processing completed with {error_count} errors')
+        else:
+            progress_cb(total, total, '✅ All symbols processed successfully')
 
     if not all_rows:
         if progress_cb:
-            progress_cb(total, total, 'No fractals found')
+            progress_cb(total, total, '📭 No fractals found in any symbol')
         return
 
-    df_rows = pd.DataFrame(all_rows)
-    upsert_fractals(engine, df_rows)
+    # Upsert results with progress reporting
     if progress_cb:
-        progress_cb(total, total, f'Upserted {len(df_rows)} fractals')
+        progress_cb(total, total, f'💾 Saving {len(all_rows):,} fractals to database...')
+    
+    try:
+        df_rows = pd.DataFrame(all_rows)
+        
+        # Remove duplicates with reporting
+        original_count = len(df_rows)
+        if 'fractal_date' in df_rows.columns and 'symbol' in df_rows.columns:
+            df_rows = df_rows.drop_duplicates(subset=['symbol', 'fractal_date', 'fractal_type'])
+        
+        duplicate_count = original_count - len(df_rows)
+        if progress_cb and duplicate_count > 0:
+            progress_cb(total, total, f'🔄 Removed {duplicate_count} duplicates, saving {len(df_rows):,} unique fractals...')
+        
+        upsert_fractals(engine, df_rows)
+        
+        if progress_cb:
+            progress_cb(total, total, f'🎉 SUCCESS: Upserted {len(df_rows):,} fractals to database!')
+            
+    except Exception as e:
+        if progress_cb:
+            progress_cb(total, total, f'❌ Database save failed: {e}')
+        raise

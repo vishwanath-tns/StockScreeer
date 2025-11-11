@@ -2277,16 +2277,51 @@ class ScannerGUI:
 
                 def _progress(c, t, m):
                     try:
-                        self.append_log(f"[Fractal] {m}")
+                        # Enhanced logging with timestamp
+                        import datetime
+                        timestamp = datetime.datetime.now().strftime('%H:%M:%S')
+                        self.append_log(f"[{timestamp}] [Fractal] {m}")
+                        
                         def _ui():
                             try:
                                 self.frac_results.delete('1.0', 'end')
-                                self.frac_results.insert('end', f"{m}\n{c}/{t}\n")
+                                
+                                # Enhanced status display with better formatting
+                                status_lines = []
+                                
+                                # Show current operation
+                                status_lines.append(f"🔄 {m}")
+                                
+                                # Show progress if available
                                 if t > 0:
+                                    progress_pct = (c / t) * 100
+                                    progress_bar = '█' * int(progress_pct / 5) + '░' * (20 - int(progress_pct / 5))
+                                    status_lines.append(f"Progress: [{progress_bar}] {c}/{t} ({progress_pct:.1f}%)")
+                                    
+                                    # Update progress bar
                                     self.frac_progress['maximum'] = t
                                     self.frac_progress['value'] = c
-                            except Exception:
-                                pass
+                                else:
+                                    status_lines.append("Initializing...")
+                                
+                                # Add scan details
+                                if scan_mode == "optimized":
+                                    status_lines.append(f"🚀 Quick Scan Mode (last {days_back} days)")
+                                else:
+                                    status_lines.append("📚 Full Historical Scan Mode")
+                                
+                                status_lines.append(f"⚙️ Workers: {workers} | RSI Period: {period}")
+                                status_lines.append("")
+                                status_lines.append(f"Time: {timestamp}")
+                                
+                                # Display all status lines
+                                status_text = '\n'.join(status_lines)
+                                self.frac_results.insert('end', status_text)
+                                
+                            except Exception as e:
+                                # Fallback to simple display
+                                self.frac_results.delete('1.0', 'end')
+                                self.frac_results.insert('end', f"{m}\n{c}/{t}\n")
                         self.root.after(0, _ui)
                     except Exception:
                         pass
