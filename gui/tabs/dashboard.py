@@ -405,9 +405,10 @@ class DashboardTab:
             print(f"Error updating RSI chart placeholder: {e}")
     
     def auto_refresh(self):
-        """Auto-refresh dashboard every 30 seconds."""
+        """Auto-refresh dashboard every 5 minutes to prevent connection exhaustion."""
         self.refresh_dashboard()
-        self.parent.after(30000, self.auto_refresh)
+        # Increased from 30 seconds to 5 minutes (300 seconds) to reduce connection pressure
+        self.parent.after(300000, self.auto_refresh)
     
     def start_background_refresh(self):
         """Start the background refresh process."""
@@ -425,8 +426,8 @@ class DashboardTab:
         thread = threading.Thread(target=background_refresh, daemon=True)
         thread.start()
         
-        # Schedule auto-refresh for future updates
-        self.parent.after(30000, self.auto_refresh)
+        # Schedule auto-refresh for future updates (5 minutes instead of 30 seconds)
+        self.parent.after(300000, self.auto_refresh)
     
     def show_loading_state(self):
         """Show loading indicators while data is being fetched."""
@@ -471,11 +472,11 @@ class DashboardTab:
             self.sma_content_text.insert(1.0, "🔄 Loading SMA trends data...\n\nProcessing moving average calculations...")
     
     def refresh_dashboard_async(self):
-        """Refresh dashboard data in background and update UI."""
+        """Refresh dashboard data in background and update UI with single connection."""
         try:
             # Update last updated time on main thread
             self.parent.after(0, lambda: self.last_updated_label.config(
-                text=f"� Refreshing... Started: {datetime.now().strftime('%H:%M:%S')}"
+                text=f"🔄 Refreshing... Started: {datetime.now().strftime('%H:%M:%S')}"
             ))
             
             engine = self.get_database_engine()
@@ -483,26 +484,28 @@ class DashboardTab:
                 self.parent.after(0, lambda: self.show_error("❌ Database connection failed"))
                 return
             
-            # Check database status (these are the expensive queries)
-            self.parent.after(0, lambda: self.last_updated_label.config(
-                text="🔄 Checking BHAV data..."
-            ))
-            bhav_status = self.check_bhav_data(engine)
-            
-            self.parent.after(0, lambda: self.last_updated_label.config(
-                text="🔄 Checking SMA data..."
-            ))
-            sma_status = self.check_sma_data(engine)
-            
-            self.parent.after(0, lambda: self.last_updated_label.config(
-                text="🔄 Checking RSI data..."
-            ))
-            rsi_status = self.check_rsi_data(engine)
-            
-            self.parent.after(0, lambda: self.last_updated_label.config(
-                text="🔄 Checking trend data..."
-            ))
-            trend_status = self.check_trend_data(engine)
+            # Use single connection for entire refresh cycle to prevent pool exhaustion
+            with engine.connect() as conn:
+                # Check database status using shared connection
+                self.parent.after(0, lambda: self.last_updated_label.config(
+                    text="🔄 Checking BHAV data..."
+                ))
+                bhav_status = self.check_bhav_data_with_connection(conn)
+                
+                self.parent.after(0, lambda: self.last_updated_label.config(
+                    text="🔄 Checking SMA data..."
+                ))
+                sma_status = self.check_sma_data_with_connection(conn)
+                
+                self.parent.after(0, lambda: self.last_updated_label.config(
+                    text="🔄 Checking RSI data..."
+                ))
+                rsi_status = self.check_rsi_data_with_connection(conn)
+                
+                self.parent.after(0, lambda: self.last_updated_label.config(
+                    text="🔄 Checking trend data..."
+                ))
+                trend_status = self.check_trend_data_with_connection(conn)
             
             # Update UI on main thread
             def update_ui():
@@ -795,13 +798,13 @@ Medium-term: 20 SMA vs 50 SMA crossovers
                             username = os.getenv('MYSQL_USER', 'root')
                             password = os.getenv('MYSQL_PASSWORD', '')
                             
-                            # Create optimized engine with limited connection pool
+                            # Create optimized engine with increased connection pool for dashboard
                             connection_string = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}?charset=utf8mb4"
                             self._engine = create_engine(
                                 connection_string,
-                                pool_size=5,           # Limit concurrent connections
-                                max_overflow=10,       # Allow some overflow
-                                pool_timeout=30,       # Timeout for getting connection
+                                pool_size=8,           # Increased from 5 to handle dashboard queries
+                                max_overflow=15,       # Increased from 10 to handle refresh cycles
+                                pool_timeout=60,       # Increased from 30 to reduce timeouts
                                 pool_recycle=3600,     # Recycle connections hourly
                                 pool_pre_ping=True,    # Test connections before use
                                 echo=False
@@ -1614,6 +1617,118 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             print(f"Error updating RSI charts: {e}")
             import traceback
             traceback.print_exc()
+
+    # Optimized connection-reuse methods for dashboard refresh
+    def check_bhav_data_with_connection(self, conn) -> Dict[str, Any]:
+        """Check BHAV data availability using existing connection."""
+        try:
+            from sqlalchemy import text
+            query = text("""
+                SELECT MIN(trade_date) as earliest_date, MAX(trade_date) as latest_date,
+                       COUNT(DISTINCT trade_date) as trading_days, COUNT(*) as total_records
+                FROM nse_equity_bhavcopy_full WHERE trade_date IS NOT NULL
+            """)
+            result = conn.execute(query).fetchone()
+            
+            if result and result.latest_date:
+                days_behind = (date.today() - result.latest_date).days
+                status = "✅ Up to Date" if days_behind <= 3 else "⚠️ Behind" if days_behind <= 7 else "❌ Outdated"
+                color = "green" if days_behind <= 3 else "orange" if days_behind <= 7 else "red"
+                
+                return {
+                    'status': status, 'color': color,
+                    'details': f"{result.trading_days:,} trading days\\n{result.total_records:,} records",
+                    'earliest_date': result.earliest_date, 'latest_date': result.latest_date,
+                    'trading_days': result.trading_days, 'total_records': result.total_records,
+                    'days_behind': days_behind
+                }
+            else:
+                return {'status': "❌ No Data", 'color': "red", 'details': "No BHAV data found",
+                        'earliest_date': None, 'latest_date': None, 'trading_days': 0, 'total_records': 0, 'days_behind': 999}
+        except Exception as e:
+            return {'status': "❌ Error", 'color': "red", 'details': f"Query failed: {str(e)}",
+                    'earliest_date': None, 'latest_date': None, 'trading_days': 0, 'total_records': 0, 'days_behind': 999}
+
+    def check_sma_data_with_connection(self, conn) -> Dict[str, Any]:
+        """Check SMA data availability using existing connection."""
+        try:
+            from sqlalchemy import text
+            query = text("""
+                SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as total_records
+                FROM nse_sma_analysis WHERE trade_date IS NOT NULL
+            """)
+            result = conn.execute(query).fetchone()
+            
+            if result and result.latest_date:
+                days_behind = (date.today() - result.latest_date).days
+                status = "✅ Current" if days_behind <= 3 else "⚠️ Behind" if days_behind <= 7 else "❌ Outdated"
+                color = "green" if days_behind <= 3 else "orange" if days_behind <= 7 else "red"
+                
+                return {
+                    'status': status, 'color': color,
+                    'details': f"{result.symbols:,} symbols\\n{result.total_records:,} records",
+                    'latest_date': result.latest_date, 'symbols': result.symbols, 'total_records': result.total_records
+                }
+            else:
+                return {'status': "❌ No Data", 'color': "red", 'details': "No SMA data found",
+                        'latest_date': None, 'symbols': 0, 'total_records': 0}
+        except Exception as e:
+            return {'status': "❌ Error", 'color': "red", 'details': f"Query failed: {str(e)}",
+                    'latest_date': None, 'symbols': 0, 'total_records': 0}
+
+    def check_rsi_data_with_connection(self, conn) -> Dict[str, Any]:
+        """Check RSI data availability using existing connection."""
+        try:
+            from sqlalchemy import text
+            query = text("""
+                SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as total_records
+                FROM nse_rsi_daily WHERE trade_date IS NOT NULL
+            """)
+            result = conn.execute(query).fetchone()
+            
+            if result and result.latest_date:
+                days_behind = (date.today() - result.latest_date).days
+                status = "✅ Current" if days_behind <= 3 else "⚠️ Behind" if days_behind <= 7 else "❌ Outdated"
+                color = "green" if days_behind <= 3 else "orange" if days_behind <= 7 else "red"
+                
+                return {
+                    'status': status, 'color': color,
+                    'details': f"{result.symbols:,} symbols\\n{result.total_records:,} records",
+                    'latest_date': result.latest_date, 'symbols': result.symbols, 'total_records': result.total_records
+                }
+            else:
+                return {'status': "❌ No Data", 'color': "red", 'details': "No RSI data found",
+                        'latest_date': None, 'symbols': 0, 'total_records': 0}
+        except Exception as e:
+            return {'status': "❌ Error", 'color': "red", 'details': f"Query failed: {str(e)}",
+                    'latest_date': None, 'symbols': 0, 'total_records': 0}
+
+    def check_trend_data_with_connection(self, conn) -> Dict[str, Any]:
+        """Check trend data availability using existing connection."""
+        try:
+            from sqlalchemy import text
+            query = text("""
+                SELECT MAX(trade_date) as latest_date, COUNT(DISTINCT symbol) as symbols, COUNT(*) as total_records
+                FROM nse_trend_ratings WHERE trade_date IS NOT NULL
+            """)
+            result = conn.execute(query).fetchone()
+            
+            if result and result.latest_date:
+                days_behind = (date.today() - result.latest_date).days
+                status = "✅ Current" if days_behind <= 3 else "⚠️ Behind" if days_behind <= 7 else "❌ Outdated"
+                color = "green" if days_behind <= 3 else "orange" if days_behind <= 7 else "red"
+                
+                return {
+                    'status': status, 'color': color,
+                    'details': f"{result.symbols:,} symbols\\n{result.total_records:,} records",
+                    'latest_date': result.latest_date, 'symbols': result.symbols, 'total_records': result.total_records
+                }
+            else:
+                return {'status': "❌ No Data", 'color': "red", 'details': "No trend data found",
+                        'latest_date': None, 'symbols': 0, 'total_records': 0}
+        except Exception as e:
+            return {'status': "❌ Error", 'color': "red", 'details': f"Query failed: {str(e)}",
+                    'latest_date': None, 'symbols': 0, 'total_records': 0}
 
     def cleanup(self):
         """Clean up resources when dashboard is destroyed."""
