@@ -31,8 +31,11 @@ class DashboardTab:
         # Initialize components
         self.create_dashboard()
         
-        # Auto-refresh every 30 seconds
-        self.auto_refresh()
+        # Add loading indicator
+        self.show_loading_state()
+        
+        # Start background refresh after a brief delay
+        self.parent.after(100, self.start_background_refresh)
     
     def create_dashboard(self):
         """Create the dashboard UI with subsections."""
@@ -61,8 +64,7 @@ class DashboardTab:
         self.create_trend_ratings_section()  
         self.create_sma_trends_section()
         
-        # Initial refresh
-        self.refresh_dashboard()
+        # Don't run initial refresh here - will be done in background
     
     def create_database_status_section(self):
         """Create Database Status subsection - monitors database tables."""
@@ -205,38 +207,154 @@ class DashboardTab:
         self.refresh_dashboard()
         self.parent.after(30000, self.auto_refresh)
     
-    def refresh_dashboard(self):
-        """Refresh all dashboard data."""
-        self.last_updated_label.config(text=f"🕐 Last updated: {datetime.now().strftime('%H:%M:%S')}")
+    def start_background_refresh(self):
+        """Start the background refresh process."""
+        import threading
         
+        def background_refresh():
+            """Run refresh in background thread."""
+            try:
+                self.refresh_dashboard_async()
+            except Exception as e:
+                # Schedule error display in main thread
+                self.parent.after(0, lambda: self.show_error(f"Background refresh failed: {e}"))
+        
+        # Start background thread
+        thread = threading.Thread(target=background_refresh, daemon=True)
+        thread.start()
+        
+        # Schedule auto-refresh for future updates
+        self.parent.after(30000, self.auto_refresh)
+    
+    def show_loading_state(self):
+        """Show loading indicators while data is being fetched."""
+        # Update status cards with loading state
+        loading_status = {
+            'status': '🔄 Loading...',
+            'color': 'orange',
+            'details': 'Connecting...',
+            'latest_date': 'Fetching...',
+            'trading_days': 0,
+            'total_records': 0,
+            'days_behind': 999,
+            'symbols_count': 0
+        }
+        
+        if hasattr(self, 'bhav_card'):
+            self.update_status_card(self.bhav_card, loading_status)
+        if hasattr(self, 'sma_card'):
+            self.update_status_card(self.sma_card, loading_status)
+        if hasattr(self, 'rsi_card'):
+            self.update_status_card(self.rsi_card, loading_status)
+        if hasattr(self, 'trend_card'):
+            self.update_status_card(self.trend_card, loading_status)
+        
+        # Update text widgets with loading message
+        loading_text = "🔄 Loading dashboard data in background...\n\nPlease wait while we fetch the latest information from the database.\nThis may take a few moments on first load.\n\n⏱️ Status: Connecting to database..."
+        
+        if hasattr(self, 'db_details_text'):
+            self.db_details_text.delete(1.0, tk.END)
+            self.db_details_text.insert(1.0, loading_text)
+        
+        if hasattr(self, 'rsi_content_text'):
+            self.rsi_content_text.delete(1.0, tk.END)
+            self.rsi_content_text.insert(1.0, "🔄 Loading RSI divergences data...\n\nConnecting to database and analyzing fractal-based signals...")
+        
+        if hasattr(self, 'trend_content_text'):
+            self.trend_content_text.delete(1.0, tk.END)
+            self.trend_content_text.insert(1.0, "🔄 Loading trend ratings data...\n\nAnalyzing trend patterns and ratings...")
+        
+        if hasattr(self, 'sma_content_text'):
+            self.sma_content_text.delete(1.0, tk.END)
+            self.sma_content_text.insert(1.0, "🔄 Loading SMA trends data...\n\nProcessing moving average calculations...")
+    
+    def refresh_dashboard_async(self):
+        """Refresh dashboard data in background and update UI."""
         try:
+            # Update last updated time on main thread
+            self.parent.after(0, lambda: self.last_updated_label.config(
+                text=f"� Refreshing... Started: {datetime.now().strftime('%H:%M:%S')}"
+            ))
+            
             engine = self.get_database_engine()
             if not engine:
-                self.show_error("❌ Database connection failed")
+                self.parent.after(0, lambda: self.show_error("❌ Database connection failed"))
                 return
             
-            # Check database status
+            # Check database status (these are the expensive queries)
+            self.parent.after(0, lambda: self.last_updated_label.config(
+                text="🔄 Checking BHAV data..."
+            ))
             bhav_status = self.check_bhav_data(engine)
+            
+            self.parent.after(0, lambda: self.last_updated_label.config(
+                text="🔄 Checking SMA data..."
+            ))
             sma_status = self.check_sma_data(engine)
+            
+            self.parent.after(0, lambda: self.last_updated_label.config(
+                text="🔄 Checking RSI data..."
+            ))
             rsi_status = self.check_rsi_data(engine)
+            
+            self.parent.after(0, lambda: self.last_updated_label.config(
+                text="🔄 Checking trend data..."
+            ))
             trend_status = self.check_trend_data(engine)
             
-            # Update database status cards
-            self.update_status_card(self.bhav_card, bhav_status)
-            self.update_status_card(self.sma_card, sma_status)
-            self.update_status_card(self.rsi_card, rsi_status)
-            self.update_status_card(self.trend_card, trend_status)
+            # Update UI on main thread
+            def update_ui():
+                try:
+                    # Update database status cards
+                    self.update_status_card(self.bhav_card, bhav_status)
+                    self.update_status_card(self.sma_card, sma_status) 
+                    self.update_status_card(self.rsi_card, rsi_status)
+                    self.update_status_card(self.trend_card, trend_status)
+                    
+                    # Update detailed database status
+                    self.update_database_details(bhav_status, sma_status, rsi_status, trend_status)
+                    
+                    # Update completion time
+                    self.last_updated_label.config(
+                        text=f"✅ Last updated: {datetime.now().strftime('%H:%M:%S')}"
+                    )
+                    
+                    # Also refresh other sections asynchronously
+                    self.refresh_other_sections()
+                    
+                except Exception as e:
+                    self.show_error(f"Error updating UI: {e}")
             
-            # Update database details
-            self.update_database_details(bhav_status, sma_status, rsi_status, trend_status)
-            
-            # Refresh other sections
-            self.refresh_rsi_divergences()
-            self.refresh_trend_ratings()
-            self.refresh_sma_trends()
+            self.parent.after(0, update_ui)
             
         except Exception as e:
-            self.show_error(f"❌ Error: {str(e)}")
+            self.parent.after(0, lambda: self.show_error(f"Background refresh failed: {e}"))
+
+    def refresh_other_sections(self):
+        """Refresh RSI, trends and SMA sections in background."""
+        import threading
+        
+        def refresh_section(section_name, refresh_method):
+            try:
+                self.parent.after(0, lambda: self.last_updated_label.config(
+                    text=f"🔄 Loading {section_name}..."
+                ))
+                refresh_method()
+            except Exception as e:
+                print(f"Error refreshing {section_name}: {e}")
+        
+        # Refresh RSI divergences
+        threading.Thread(target=lambda: refresh_section("RSI divergences", self.refresh_rsi_divergences), daemon=True).start()
+        
+        # Refresh trend ratings with a small delay
+        self.parent.after(500, lambda: threading.Thread(target=lambda: refresh_section("trend ratings", self.refresh_trend_ratings), daemon=True).start())
+        
+        # Refresh SMA trends with another delay  
+        self.parent.after(1000, lambda: threading.Thread(target=lambda: refresh_section("SMA trends", self.refresh_sma_trends), daemon=True).start())
+
+    def refresh_dashboard(self):
+        """Fallback refresh method for auto-refresh - uses async approach."""
+        self.start_background_refresh()
     
     def refresh_rsi_divergences(self):
         """Refresh RSI divergences section with real analysis."""
