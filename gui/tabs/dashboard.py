@@ -15,6 +15,14 @@ from datetime import datetime, date
 from typing import Dict, Any
 from dotenv import load_dotenv
 
+# Chart imports
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import matplotlib.dates as mdates
+import numpy as np
+import pandas as pd
+
 # Load environment variables
 load_dotenv()
 
@@ -85,12 +93,20 @@ class DashboardTab:
         self.rsi_card = self.create_status_card(cards_frame, "📉 RSI", "Loading...", "gray", 0, 2)
         self.trend_card = self.create_status_card(cards_frame, "🎯 Trends", "Loading...", "gray", 0, 3)
         
-        # Database details section
-        details_frame = ttk.LabelFrame(db_frame, text="📋 Database Details", padding=10)
+        # Database details section with charts
+        details_frame = ttk.LabelFrame(db_frame, text="📋 Database Details & Analytics", padding=10)
         details_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        text_frame = ttk.Frame(details_frame)
-        text_frame.pack(fill=tk.BOTH, expand=True)
+        # Create notebook for details and charts
+        details_notebook = ttk.Notebook(details_frame)
+        details_notebook.pack(fill=tk.BOTH, expand=True)
+        
+        # Text details tab
+        text_tab = ttk.Frame(details_notebook)
+        details_notebook.add(text_tab, text="📄 Status Report")
+        
+        text_frame = ttk.Frame(text_tab)
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         self.db_details_text = tk.Text(text_frame, height=12, wrap=tk.WORD, font=('Consolas', 10))
         self.db_details_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -98,6 +114,14 @@ class DashboardTab:
         scrollbar = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.db_details_text.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.db_details_text.configure(yscrollcommand=scrollbar.set)
+        
+        # Charts tab
+        charts_tab = ttk.Frame(details_notebook)
+        details_notebook.add(charts_tab, text="📊 Analytics Charts")
+        
+        # Create database charts area
+        self.db_charts_frame = charts_tab
+        self.create_database_charts()
     
     def create_rsi_divergences_section(self):
         """Create RSI Divergences subsection."""
@@ -114,19 +138,35 @@ class DashboardTab:
         ttk.Button(header_frame, text="🔄 Refresh RSI", 
                   command=self.refresh_rsi_divergences).pack(side=tk.RIGHT)
         
-        # Content area
-        content_frame = ttk.LabelFrame(rsi_frame, text="RSI Divergence Status", padding=10)
+        # Content area with charts
+        content_frame = ttk.LabelFrame(rsi_frame, text="RSI Divergence Analysis", padding=10)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        text_frame = ttk.Frame(content_frame)
-        text_frame.pack(fill=tk.BOTH, expand=True)
+        # Create notebook for content and charts  
+        content_notebook = ttk.Notebook(content_frame)
+        content_notebook.pack(fill=tk.BOTH, expand=True)
         
-        self.rsi_content_text = tk.Text(text_frame, wrap=tk.WORD, font=('Consolas', 10))
+        # Status report tab
+        status_tab = ttk.Frame(content_notebook)
+        content_notebook.add(status_tab, text="📄 Status Summary")
+        
+        text_frame = ttk.Frame(status_tab)
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        self.rsi_content_text = tk.Text(text_frame, height=12, wrap=tk.WORD, font=('Consolas', 10))
         self.rsi_content_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         rsi_scrollbar = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.rsi_content_text.yview)
         rsi_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.rsi_content_text.configure(yscrollcommand=rsi_scrollbar.set)
+        
+        # Charts tab for RSI divergences
+        rsi_charts_tab = ttk.Frame(content_notebook)
+        content_notebook.add(rsi_charts_tab, text="📊 Divergence Charts")
+        
+        # Create RSI charts area
+        self.rsi_charts_frame = rsi_charts_tab
+        self.create_rsi_charts()
     
     def create_trend_ratings_section(self):
         """Create Trend Ratings Status subsection.""" 
@@ -201,6 +241,122 @@ class DashboardTab:
         details_label.pack(pady=(5, 0))
         
         return {'frame': card_frame, 'title': title_label, 'status': status_label, 'details': details_label}
+    
+    def create_database_charts(self):
+        """Create database analytics charts."""
+        try:
+            # Configure matplotlib for tkinter
+            plt.style.use('default')
+            
+            # Create figure with subplots
+            self.db_fig = Figure(figsize=(12, 8), dpi=80)
+            
+            # Create canvas
+            self.db_canvas = FigureCanvasTkAgg(self.db_fig, master=self.db_charts_frame)
+            self.db_canvas.draw()
+            self.db_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            
+            # Initialize with placeholder
+            self.update_database_charts_placeholder()
+            
+        except Exception as e:
+            # Fallback to text display if charts fail
+            error_label = ttk.Label(self.db_charts_frame, text=f"Charts unavailable: {e}")
+            error_label.pack(padx=10, pady=10)
+            print(f"Error creating database charts: {e}")
+    
+    def create_rsi_charts(self):
+        """Create RSI divergences charts."""
+        try:
+            # Configure matplotlib
+            plt.style.use('default')
+            
+            # Create figure with subplots
+            self.rsi_fig = Figure(figsize=(12, 8), dpi=80)
+            
+            # Create canvas
+            self.rsi_canvas = FigureCanvasTkAgg(self.rsi_fig, master=self.rsi_charts_frame)
+            self.rsi_canvas.draw()
+            self.rsi_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            
+            # Initialize with placeholder
+            self.update_rsi_charts_placeholder()
+            
+        except Exception as e:
+            # Fallback to text display
+            error_label = ttk.Label(self.rsi_charts_frame, text=f"Charts unavailable: {e}")
+            error_label.pack(padx=10, pady=10)
+            print(f"Error creating RSI charts: {e}")
+    
+    def update_database_charts_placeholder(self):
+        """Show placeholder charts while loading."""
+        try:
+            self.db_fig.clear()
+            
+            # Create 2x2 subplot layout
+            ax1 = self.db_fig.add_subplot(2, 2, 1)
+            ax2 = self.db_fig.add_subplot(2, 2, 2)
+            ax3 = self.db_fig.add_subplot(2, 1, 2)
+            
+            # Placeholder data
+            tables = ['BHAV', 'SMAs', 'RSI', 'Trends']
+            loading_data = [0, 0, 0, 0]
+            
+            # Bar chart - Record counts
+            bars = ax1.bar(tables, loading_data, color=['lightgray']*4)
+            ax1.set_title('Table Record Counts', fontweight='bold')
+            ax1.set_ylabel('Records (in thousands)')
+            for bar in bars:
+                bar.set_height(100)  # Placeholder height
+                
+            # Pie chart - Data freshness  
+            ax2.pie([1], labels=['Loading...'], colors=['lightgray'], autopct='')
+            ax2.set_title('Data Freshness Status', fontweight='bold')
+            
+            # Timeline placeholder
+            ax3.text(0.5, 0.5, 'Loading database analytics...', 
+                    horizontalalignment='center', verticalalignment='center',
+                    transform=ax3.transAxes, fontsize=12)
+            ax3.set_title('Data Timeline Analysis', fontweight='bold')
+            ax3.axis('off')
+            
+            self.db_fig.tight_layout()
+            self.db_canvas.draw()
+            
+        except Exception as e:
+            print(f"Error updating database chart placeholder: {e}")
+    
+    def update_rsi_charts_placeholder(self):
+        """Show placeholder RSI charts while loading."""
+        try:
+            self.rsi_fig.clear()
+            
+            # Create 2x2 subplot layout
+            ax1 = self.rsi_fig.add_subplot(2, 2, 1)
+            ax2 = self.rsi_fig.add_subplot(2, 2, 2)
+            ax3 = self.rsi_fig.add_subplot(2, 1, 2)
+            
+            # Placeholder pie chart
+            ax1.pie([1], labels=['Loading...'], colors=['lightgray'], autopct='')
+            ax1.set_title('Divergence Types Distribution', fontweight='bold')
+            
+            # Placeholder bar chart
+            ax2.bar(['Bullish', 'Bearish'], [0, 0], color=['lightgreen', 'lightcoral'])
+            ax2.set_title('Latest Divergence Signals', fontweight='bold')
+            ax2.set_ylabel('Signal Count')
+            
+            # Placeholder timeline
+            ax3.text(0.5, 0.5, 'Loading RSI divergence analytics...', 
+                    horizontalalignment='center', verticalalignment='center',
+                    transform=ax3.transAxes, fontsize=12)
+            ax3.set_title('Historical Divergence Trends', fontweight='bold')
+            ax3.axis('off')
+            
+            self.rsi_fig.tight_layout()
+            self.rsi_canvas.draw()
+            
+        except Exception as e:
+            print(f"Error updating RSI chart placeholder: {e}")
     
     def auto_refresh(self):
         """Auto-refresh dashboard every 30 seconds."""
@@ -313,6 +469,9 @@ class DashboardTab:
                     
                     # Update detailed database status
                     self.update_database_details(bhav_status, sma_status, rsi_status, trend_status)
+                    
+                    # Update database charts with real data
+                    self.update_database_charts_with_data(bhav_status, sma_status, rsi_status, trend_status)
                     
                     # Update completion time
                     self.last_updated_label.config(
@@ -429,6 +588,9 @@ RSI Data: {analysis['rsi_data_quality']}
 Analysis Coverage: {analysis['coverage_percentage']:.1f}% of listed stocks"""
 
             self.rsi_content_text.insert(tk.END, content)
+            
+            # Update RSI charts with the analysis data
+            self.update_rsi_charts_with_data(analysis)
             
         except Exception as e:
             error_msg = f"❌ Error analyzing RSI divergences: {str(e)}\n\n"
@@ -924,6 +1086,230 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 "total_bearish": 0
             }
 
+    def update_database_charts_with_data(self, bhav_status, sma_status, rsi_status, trend_status):
+        """Update database charts with real data."""
+        try:
+            if not hasattr(self, 'db_fig'):
+                return
+                
+            self.db_fig.clear()
+            
+            # Create 2x2 subplot layout
+            ax1 = self.db_fig.add_subplot(2, 2, 1)
+            ax2 = self.db_fig.add_subplot(2, 2, 2)
+            ax3 = self.db_fig.add_subplot(2, 1, 2)
+            
+            # Bar chart - Record counts (in thousands)
+            tables = ['BHAV', 'SMAs', 'RSI', 'Trends']
+            record_counts = [
+                bhav_status.get('total_records', 0) / 1000,
+                sma_status.get('total_records', 0) / 1000,
+                rsi_status.get('total_records', 0) / 1000,
+                trend_status.get('total_records', 0) / 1000
+            ]
+            
+            colors = []
+            for status in [bhav_status, sma_status, rsi_status, trend_status]:
+                if 'error' in status:
+                    colors.append('#ff6b6b')  # Red for error
+                elif status.get('days_behind', 0) > 7:
+                    colors.append('#ffa726')  # Orange for outdated
+                else:
+                    colors.append('#4caf50')  # Green for current
+            
+            bars = ax1.bar(tables, record_counts, color=colors)
+            ax1.set_title('Table Record Counts (thousands)', fontweight='bold')
+            ax1.set_ylabel('Records (K)')
+            
+            # Add value labels on bars
+            for bar, count in zip(bars, record_counts):
+                height = bar.get_height()
+                ax1.annotate(f'{count:.0f}K',
+                           xy=(bar.get_x() + bar.get_width() / 2, height),
+                           xytext=(0, 3),  # 3 points vertical offset
+                           textcoords="offset points",
+                           ha='center', va='bottom', fontsize=9)
+            
+            # Pie chart - Data freshness status
+            current_count = sum(1 for status in [bhav_status, sma_status, rsi_status, trend_status] 
+                              if 'error' not in status and status.get('days_behind', 0) <= 1)
+            outdated_count = sum(1 for status in [bhav_status, sma_status, rsi_status, trend_status] 
+                               if 'error' not in status and status.get('days_behind', 0) > 1)
+            error_count = sum(1 for status in [bhav_status, sma_status, rsi_status, trend_status] 
+                            if 'error' in status)
+            
+            freshness_data = []
+            freshness_labels = []
+            freshness_colors = []
+            
+            if current_count > 0:
+                freshness_data.append(current_count)
+                freshness_labels.append(f'Current ({current_count})')
+                freshness_colors.append('#4caf50')
+            
+            if outdated_count > 0:
+                freshness_data.append(outdated_count)
+                freshness_labels.append(f'Outdated ({outdated_count})')
+                freshness_colors.append('#ffa726')
+                
+            if error_count > 0:
+                freshness_data.append(error_count)
+                freshness_labels.append(f'Error ({error_count})')
+                freshness_colors.append('#ff6b6b')
+                
+            if freshness_data:
+                ax2.pie(freshness_data, labels=freshness_labels, colors=freshness_colors, 
+                       autopct='%1.0f%%', startangle=90)
+            else:
+                ax2.pie([1], labels=['No Data'], colors=['lightgray'], autopct='')
+            ax2.set_title('Data Freshness Status', fontweight='bold')
+            
+            # Timeline - Data coverage over time (simplified)
+            try:
+                # Use latest dates for timeline
+                dates_data = []
+                table_names = []
+                
+                for name, status in [('BHAV', bhav_status), ('SMA', sma_status), 
+                                   ('RSI', rsi_status), ('Trends', trend_status)]:
+                    if 'error' not in status and status.get('latest_date'):
+                        dates_data.append(status['latest_date'])
+                        table_names.append(name)
+                
+                if dates_data:
+                    # Convert to pandas datetime for easier plotting
+                    import pandas as pd
+                    df_dates = pd.DataFrame({
+                        'table': table_names,
+                        'latest_date': pd.to_datetime(dates_data)
+                    })
+                    
+                    # Simple bar chart showing how recent each table is
+                    today = pd.Timestamp.now().normalize()
+                    days_behind = [(today - date).days for date in df_dates['latest_date']]
+                    
+                    bars = ax3.barh(table_names, days_behind, 
+                                   color=['#4caf50' if d <= 1 else '#ffa726' if d <= 7 else '#ff6b6b' 
+                                         for d in days_behind])
+                    ax3.set_title('Days Behind Current Date', fontweight='bold')
+                    ax3.set_xlabel('Days Behind')
+                    
+                    # Add value labels
+                    for bar, days in zip(bars, days_behind):
+                        width = bar.get_width()
+                        ax3.annotate(f'{days}d',
+                                   xy=(width, bar.get_y() + bar.get_height() / 2),
+                                   xytext=(3, 0),  # 3 points horizontal offset
+                                   textcoords="offset points",
+                                   ha='left', va='center', fontsize=9)
+                else:
+                    ax3.text(0.5, 0.5, 'No date data available', 
+                           horizontalalignment='center', verticalalignment='center',
+                           transform=ax3.transAxes, fontsize=12)
+                    ax3.set_title('📈 Data Timeline Analysis', fontweight='bold')
+                    
+            except Exception as e:
+                ax3.text(0.5, 0.5, f'Timeline error: {str(e)}', 
+                       horizontalalignment='center', verticalalignment='center',
+                       transform=ax3.transAxes, fontsize=10)
+                ax3.set_title('📈 Data Timeline Analysis', fontweight='bold')
+                print(f"Timeline chart error: {e}")
+            
+            self.db_fig.tight_layout()
+            self.db_canvas.draw()
+            
+        except Exception as e:
+            print(f"Error updating database charts: {e}")
+
+    def update_rsi_charts_with_data(self, analysis):
+        """Update RSI charts with analysis data."""
+        try:
+            if not hasattr(self, 'rsi_fig'):
+                return
+                
+            self.rsi_fig.clear()
+            
+            # Create 2x2 subplot layout
+            ax1 = self.rsi_fig.add_subplot(2, 2, 1)
+            ax2 = self.rsi_fig.add_subplot(2, 2, 2) 
+            ax3 = self.rsi_fig.add_subplot(2, 1, 2)
+            
+            # Pie chart - Divergence types distribution (all-time)
+            if analysis.get('total_bullish', 0) > 0 or analysis.get('total_bearish', 0) > 0:
+                div_data = [analysis.get('total_bullish', 0), analysis.get('total_bearish', 0)]
+                div_labels = [f"Bullish ({analysis.get('total_bullish', 0):,})", 
+                             f"Bearish ({analysis.get('total_bearish', 0):,})"]
+                div_colors = ['#4caf50', '#ff6b6b']
+                
+                # Filter out zero values
+                filtered_data = []
+                filtered_labels = []
+                filtered_colors = []
+                for data, label, color in zip(div_data, div_labels, div_colors):
+                    if data > 0:
+                        filtered_data.append(data)
+                        filtered_labels.append(label)
+                        filtered_colors.append(color)
+                
+                if filtered_data:
+                    ax1.pie(filtered_data, labels=filtered_labels, colors=filtered_colors, 
+                           autopct='%1.1f%%', startangle=90)
+                else:
+                    ax1.pie([1], labels=['No Data'], colors=['lightgray'], autopct='')
+            else:
+                ax1.pie([1], labels=['No Divergences'], colors=['lightgray'], autopct='')
+            ax1.set_title('All-Time Divergence Distribution', fontweight='bold')
+            
+            # Bar chart - Latest divergence signals
+            latest_bullish = analysis.get('hidden_bullish_count', 0)
+            latest_bearish = analysis.get('hidden_bearish_count', 0)
+            
+            bars = ax2.bar(['Bullish', 'Bearish'], [latest_bullish, latest_bearish], 
+                          color=['#4caf50', '#ff6b6b'])
+            ax2.set_title(f'Latest Signals ({analysis.get("latest_date", "N/A")})', fontweight='bold')
+            ax2.set_ylabel('Signal Count')
+            
+            # Add value labels on bars
+            for bar, count in zip(bars, [latest_bullish, latest_bearish]):
+                height = bar.get_height()
+                if height > 0:
+                    ax2.annotate(f'{count}',
+                               xy=(bar.get_x() + bar.get_width() / 2, height),
+                               xytext=(0, 3),  # 3 points vertical offset
+                               textcoords="offset points",
+                               ha='center', va='bottom', fontsize=10, fontweight='bold')
+            
+            # RSI timeframe status chart
+            timeframe_data = analysis.get('timeframe_status', {})
+            if timeframe_data:
+                timeframes = list(timeframe_data.keys())
+                symbol_counts = [tf_data.get('symbols', 0) for tf_data in timeframe_data.values()]
+                
+                bars = ax3.bar(timeframes, symbol_counts, color=['#2196f3', '#ff9800', '#9c27b0'])
+                ax3.set_title('RSI Calculation Coverage by Timeframe', fontweight='bold')
+                ax3.set_ylabel('Symbol Count')
+                ax3.tick_params(axis='x', rotation=45)
+                
+                # Add value labels on bars
+                for bar, count in zip(bars, symbol_counts):
+                    height = bar.get_height()
+                    if height > 0:
+                        ax3.annotate(f'{count:,}',
+                                   xy=(bar.get_x() + bar.get_width() / 2, height),
+                                   xytext=(0, 3),  # 3 points vertical offset
+                                   textcoords="offset points",
+                                   ha='center', va='bottom', fontsize=9)
+            else:
+                ax3.text(0.5, 0.5, 'No RSI timeframe data available', 
+                       horizontalalignment='center', verticalalignment='center',
+                       transform=ax3.transAxes, fontsize=12)
+                ax3.set_title('RSI Calculation Status', fontweight='bold')
+            
+            self.rsi_fig.tight_layout()
+            self.rsi_canvas.draw()
+            
+        except Exception as e:
+            print(f"Error updating RSI charts: {e}")
 
 # Test function
 if __name__ == "__main__":
