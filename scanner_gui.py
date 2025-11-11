@@ -18,6 +18,9 @@ import pandas as pd
 from sqlalchemy import text
 import os
 
+# Import the dashboard tab
+from gui.tabs.dashboard import DashboardTab
+
 LOG_MAX_LINES = 200
 
 
@@ -41,6 +44,9 @@ class ScannerGUI:
         nb = ttk.Notebook(root, style='Custom.TNotebook')
         nb.pack(fill="both", expand=True, padx=8, pady=8)
 
+        # Create dashboard frame first
+        self.dashboard_frame = ttk.Frame(nb)
+        
         self.accum_frame = ttk.Frame(nb)
         self.swing_frame = ttk.Frame(nb)
         self.liq_frame = ttk.Frame(nb)
@@ -55,6 +61,8 @@ class ScannerGUI:
         self.trends_frame = ttk.Frame(nb)
         self.market_breadth_frame = ttk.Frame(nb)
 
+        # Add dashboard tab first
+        nb.add(self.dashboard_frame, text="Dashboard")
         nb.add(self.accum_frame, text="Accumulation Scanner")
         nb.add(self.swing_frame, text="Swing Scanner")
         nb.add(self.liq_frame, text="Liquidity Baseline & Scan")
@@ -69,6 +77,8 @@ class ScannerGUI:
         nb.add(self.trends_frame, text="Trend Analysis")
         nb.add(self.market_breadth_frame, text="Market Breadth")
 
+        # Build dashboard tab first
+        self._build_dashboard_tab()
         self._build_accum_tab()
         self._build_swing_tab()
         self._build_liq_tab()
@@ -188,6 +198,19 @@ class ScannerGUI:
         except Exception:
             # fallback immediate exit
             os._exit(0)
+
+    # -------- Dashboard tab --------
+    def _build_dashboard_tab(self):
+        """Build the Dashboard tab."""
+        try:
+            # Create the dashboard tab directly in the existing frame
+            dashboard_tab = DashboardTab(self.dashboard_frame)
+            self.append_log("Dashboard tab initialized successfully")
+        except Exception as e:
+            # Fallback to a simple placeholder if import fails
+            self.append_log(f"Error building dashboard tab: {e}")
+            f = self.dashboard_frame
+            ttk.Label(f, text=f"Dashboard tab failed to load: {e}").pack(padx=10, pady=10)
 
     # -------- Accumulation tab --------
     def _build_accum_tab(self):
