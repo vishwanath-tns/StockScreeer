@@ -23,6 +23,10 @@ import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 
+# Configure matplotlib to suppress emoji warnings
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, message='.*Glyph.*missing from font.*')
+
 # Load environment variables
 load_dotenv()
 
@@ -1379,13 +1383,13 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     ax3.text(0.5, 0.5, 'No date data available', 
                            horizontalalignment='center', verticalalignment='center',
                            transform=ax3.transAxes, fontsize=12)
-                    ax3.set_title('📈 Data Timeline Analysis', fontweight='bold')
+                    ax3.set_title('Data Timeline Analysis', fontweight='bold')
                     
             except Exception as e:
                 ax3.text(0.5, 0.5, f'Timeline error: {str(e)}', 
                        horizontalalignment='center', verticalalignment='center',
                        transform=ax3.transAxes, fontsize=10)
-                ax3.set_title('📈 Data Timeline Analysis', fontweight='bold')
+                ax3.set_title('Data Timeline Analysis', fontweight='bold')
                 print(f"Timeline chart error: {e}")
             
             self.db_fig.tight_layout()
