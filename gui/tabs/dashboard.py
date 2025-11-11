@@ -478,18 +478,24 @@ class DashboardTab:
     def refresh_dashboard_async(self):
         """Refresh dashboard data in background and update UI with single connection."""
         try:
+            print(f"🔍 [DASHBOARD LOG] Starting refresh at {datetime.now().strftime('%H:%M:%S')}")
+            
             # Use a flag to check if we're in the main thread
             import threading
             is_main_thread = threading.current_thread() is threading.main_thread()
+            print(f"🔍 [DASHBOARD LOG] Is main thread: {is_main_thread}")
             
             # Helper function for safe UI updates
             def safe_update_ui(update_func):
                 if is_main_thread:
+                    print("🔍 [DASHBOARD LOG] Updating UI directly on main thread")
                     update_func()
                 else:
                     try:
+                        print("🔍 [DASHBOARD LOG] Scheduling UI update via after()")
                         self.parent.after(0, update_func)
-                    except RuntimeError:
+                    except RuntimeError as e:
+                        print(f"⚠️ [DASHBOARD LOG] RuntimeError: {e}, updating directly")
                         # Main loop not running, update directly (for testing)
                         update_func()
             
@@ -498,64 +504,103 @@ class DashboardTab:
                 text=f"🔄 Refreshing... Started: {datetime.now().strftime('%H:%M:%S')}"
             ))
             
+            print("🔍 [DASHBOARD LOG] Getting database engine...")
             engine = self.get_database_engine()
             if not engine:
+                print("❌ [DASHBOARD LOG] Database engine failed!")
                 safe_update_ui(lambda: self.show_error("❌ Database connection failed"))
                 return
             
+            print("✅ [DASHBOARD LOG] Database engine created successfully")
+            
             # Use single connection for entire refresh cycle to prevent pool exhaustion
             with engine.connect() as conn:
+                print("✅ [DASHBOARD LOG] Database connection established")
                 # Check database status using shared connection
                 safe_update_ui(lambda: self.last_updated_label.config(
                     text="🔄 Checking BHAV data..."
                 ))
+                print("🔍 [DASHBOARD LOG] Checking BHAV data...")
                 bhav_status = self.check_bhav_data_with_connection(conn)
+                print(f"✅ [DASHBOARD LOG] BHAV result: {bhav_status}")
                 
                 safe_update_ui(lambda: self.last_updated_label.config(
                     text="🔄 Checking SMA data..."
                 ))
+                print("🔍 [DASHBOARD LOG] Checking SMA data...")
                 sma_status = self.check_sma_data_with_connection(conn)
+                print(f"✅ [DASHBOARD LOG] SMA result: {sma_status}")
                 
                 safe_update_ui(lambda: self.last_updated_label.config(
                     text="🔄 Checking RSI data..."
                 ))
+                print("🔍 [DASHBOARD LOG] Checking RSI data...")
                 rsi_status = self.check_rsi_data_with_connection(conn)
+                print(f"✅ [DASHBOARD LOG] RSI result: {rsi_status}")
                 
                 safe_update_ui(lambda: self.last_updated_label.config(
                     text="🔄 Checking trend data..."
                 ))
+                print("🔍 [DASHBOARD LOG] Checking trend data...")
                 trend_status = self.check_trend_data_with_connection(conn)
+                print(f"✅ [DASHBOARD LOG] Trend result: {trend_status}")
+            
+            print("🔍 [DASHBOARD LOG] All data checks completed, updating UI...")
             
             # Update UI on main thread
             def update_ui():
                 try:
+                    print("🔍 [DASHBOARD LOG] Starting UI update...")
+                    
                     # Update database status cards
+                    print("🔍 [DASHBOARD LOG] Updating BHAV card...")
                     self.update_status_card(self.bhav_card, bhav_status)
+                    
+                    print("🔍 [DASHBOARD LOG] Updating SMA card...")
                     self.update_status_card(self.sma_card, sma_status) 
+                    
+                    print("🔍 [DASHBOARD LOG] Updating RSI card...")
                     self.update_status_card(self.rsi_card, rsi_status)
+                    
+                    print("🔍 [DASHBOARD LOG] Updating Trend card...")
                     self.update_status_card(self.trend_card, trend_status)
                     
+                    print("🔍 [DASHBOARD LOG] Updating database details...")
                     # Update detailed database status
                     self.update_database_details(bhav_status, sma_status, rsi_status, trend_status)
                     
+                    print("🔍 [DASHBOARD LOG] Updating database charts...")
                     # Update database charts with real data
                     self.update_database_charts_with_data(bhav_status, sma_status, rsi_status, trend_status)
                     
+                    print("🔍 [DASHBOARD LOG] Setting completion timestamp...")
                     # Update completion time
                     self.last_updated_label.config(
                         text=f"✅ Last updated: {datetime.now().strftime('%H:%M:%S')}"
                     )
                     
+                    print("✅ [DASHBOARD LOG] UI update completed successfully!")
+                    
                     # Also refresh other sections asynchronously
+                    print("🔍 [DASHBOARD LOG] Refreshing other sections...")
                     self.refresh_other_sections()
+                    print("✅ [DASHBOARD LOG] Other sections refresh completed!")
                     
                 except Exception as e:
+                    print(f"❌ [DASHBOARD LOG] Error in update_ui: {e}")
+                    import traceback
+                    traceback.print_exc()
                     self.show_error(f"Error updating UI: {e}")
             
+            print("🔍 [DASHBOARD LOG] Calling safe_update_ui for final UI update...")
             # Use safe UI update
             safe_update_ui(update_ui)
+            print("✅ [DASHBOARD LOG] Dashboard refresh task completed!")
             
         except Exception as e:
+            print(f"❌ [DASHBOARD LOG] Exception in refresh_dashboard_async: {e}")
+            import traceback
+            traceback.print_exc()
             safe_update_ui(lambda: self.show_error(f"Background refresh failed: {e}"))
 
     def refresh_other_sections(self):
@@ -959,8 +1004,30 @@ Medium-term: 20 SMA vs 50 SMA crossovers
     
     def update_status_card(self, card, status_info):
         """Update status card with new information."""
-        card['status'].config(text=status_info['status'], foreground=status_info['color'])
-        card['details'].config(text=status_info['details'])
+        try:
+            print(f"🔍 [DASHBOARD LOG] Updating status card with info: {status_info}")
+            print(f"🔍 [DASHBOARD LOG] Card object: {card}")
+            
+            if 'status' not in card:
+                print(f"❌ [DASHBOARD LOG] Card missing 'status' widget: {list(card.keys())}")
+                return
+                
+            if 'details' not in card:
+                print(f"❌ [DASHBOARD LOG] Card missing 'details' widget: {list(card.keys())}")
+                return
+            
+            print(f"🔍 [DASHBOARD LOG] Setting status: {status_info['status']} with color: {status_info['color']}")
+            card['status'].config(text=status_info['status'], foreground=status_info['color'])
+            
+            print(f"🔍 [DASHBOARD LOG] Setting details: {status_info['details']}")
+            card['details'].config(text=status_info['details'])
+            
+            print("✅ [DASHBOARD LOG] Status card updated successfully!")
+            
+        except Exception as e:
+            print(f"❌ [DASHBOARD LOG] Error updating status card: {e}")
+            import traceback
+            traceback.print_exc()
     
     def update_database_details(self, bhav_status, sma_status, rsi_status, trend_status):
         """Update database details section."""
@@ -1690,7 +1757,7 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     'status': status, 'color': color,
                     'details': f"{result.symbols_count:,} symbols\\n{result.total_records:,} records",
                     'latest_date': result.latest_date, 'trading_days': result.trading_days,
-                    'symbols_count': result.symbols_count, 'total_records': result.total_records
+                    'symbols_count': result.symbols_count, 'total_records': result.total_records, 'days_behind': days_behind
                 }
             else:
                 return {'status': "❌ No Data", 'color': "red", 'details': "No SMA data found",
