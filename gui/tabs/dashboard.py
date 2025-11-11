@@ -23,6 +23,12 @@ import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 
+# SMA analysis imports
+try:
+    import sma50_scanner
+except ImportError:
+    sma50_scanner = None
+
 # Configure matplotlib to suppress emoji warnings
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, message='.*Glyph.*missing from font.*')
@@ -247,16 +253,17 @@ class DashboardTab:
         sma_notebook = ttk.Notebook(content_frame)
         sma_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Charts tab (prepared for future implementation)
+        # Charts tab with SMA 50 count analysis
         sma_charts_tab = ttk.Frame(sma_notebook)
-        sma_notebook.add(sma_charts_tab, text="📊 SMA Charts")
+        sma_notebook.add(sma_charts_tab, text="📊 SMA 50 Counts")
         
-        # Placeholder for future charts
-        placeholder_label = ttk.Label(sma_charts_tab, 
-                                     text="📊 SMA Trend Charts\n\n🚧 Coming Soon!\n\nCharts will include:\n• Golden/Death cross signals\n• SMA crossover patterns\n• Price vs SMA positioning\n• Multi-timeframe analysis", 
-                                     font=('Arial', 11), 
-                                     justify=tk.CENTER)
-        placeholder_label.pack(expand=True)
+        # Create frame for SMA 50 charts
+        self.sma_chart_frame = ttk.Frame(sma_charts_tab)
+        self.sma_chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Initialize chart placeholder
+        self.sma50_canvas = None
+        self.create_sma50_chart_placeholder()
         
         # Status report tab
         status_tab = ttk.Frame(sma_notebook)
@@ -371,6 +378,136 @@ class DashboardTab:
             
         except Exception as e:
             print(f"Error updating database chart placeholder: {e}")
+    
+    def create_sma50_chart_placeholder(self):
+        """Create placeholder for SMA 50 count charts."""
+        try:
+            # Create figure for SMA 50 charts
+            self.sma50_fig = Figure(figsize=(12, 8), dpi=80)
+            
+            # Create canvas
+            if self.sma50_canvas:
+                self.sma50_canvas.get_tk_widget().destroy()
+            
+            self.sma50_canvas = FigureCanvasTkAgg(self.sma50_fig, master=self.sma_chart_frame)
+            self.sma50_canvas.draw()
+            self.sma50_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            
+            # Show loading placeholder
+            self.update_sma50_chart_placeholder()
+            
+        except Exception as e:
+            print(f"Error creating SMA 50 chart placeholder: {e}")
+    
+    def update_sma50_chart_placeholder(self):
+        """Show placeholder while loading SMA 50 data."""
+        try:
+            self.sma50_fig.clear()
+            
+            # Single placeholder
+            ax = self.sma50_fig.add_subplot(1, 1, 1)
+            ax.text(0.5, 0.5, '📊 Loading SMA 50 Count Analysis...\n\nCharts will show:\n• Stocks above/below 50-day SMA\n• Percentage trends over time\n• Market breadth indicators', 
+                   horizontalalignment='center', verticalalignment='center',
+                   transform=ax.transAxes, fontsize=12)
+            ax.set_title('SMA 50 Count Analysis', fontweight='bold')
+            ax.axis('off')
+            
+            self.sma50_fig.tight_layout()
+            self.sma50_canvas.draw()
+            
+        except Exception as e:
+            print(f"Error updating SMA 50 chart placeholder: {e}")
+    
+    def update_sma50_charts(self):
+        """Update SMA 50 count charts with real data."""
+        try:
+            if sma50_scanner is None:
+                print("SMA 50 scanner module not available")
+                return
+            
+            print("🔍 [SMA LOG] Loading SMA 50 count data...")
+            
+            # Get engine for data fetching
+            engine = self.get_database_engine()
+            if not engine:
+                print("❌ [SMA LOG] No database engine available")
+                return
+            
+            # Fetch SMA 50 count data for last 3 months
+            from datetime import datetime, timedelta
+            end_date = datetime.now().strftime('%Y-%m-%d')
+            start_date = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+            
+            # Get SMA counts data
+            sma_data = sma50_scanner.fetch_counts(engine, start=start_date, end=end_date)
+            
+            if sma_data.empty:
+                print("❌ [SMA LOG] No SMA 50 count data found")
+                return
+            
+            print(f"✅ [SMA LOG] Loaded {len(sma_data)} days of SMA 50 data")
+            
+            # Clear figure and create new plots
+            self.sma50_fig.clear()
+            
+            # Create 2x1 subplot layout
+            ax1 = self.sma50_fig.add_subplot(2, 1, 1)
+            ax2 = self.sma50_fig.add_subplot(2, 1, 2)
+            
+            # Plot 1: Count trends
+            dates = sma_data['trade_date']
+            ax1.plot(dates, sma_data['above_count'], label='Above 50 SMA', color='green', linewidth=2)
+            ax1.plot(dates, sma_data['below_count'], label='Below 50 SMA', color='red', linewidth=2)
+            ax1.fill_between(dates, sma_data['above_count'], alpha=0.3, color='green')
+            ax1.fill_between(dates, sma_data['below_count'], alpha=0.3, color='red')
+            
+            ax1.set_title('Stocks Above/Below 50-Day SMA (Last 3 Months)', fontweight='bold', fontsize=12)
+            ax1.set_ylabel('Number of Stocks')
+            ax1.legend()
+            ax1.grid(True, alpha=0.3)
+            
+            # Format x-axis
+            ax1.tick_params(axis='x', rotation=45)
+            
+            # Plot 2: Percentage above SMA with total count
+            ax2_twin = ax2.twinx()
+            
+            # Percentage line
+            line1 = ax2.plot(dates, sma_data['pct_above'], label='% Above 50 SMA', color='blue', linewidth=2)
+            ax2.fill_between(dates, sma_data['pct_above'], alpha=0.2, color='blue')
+            ax2.set_ylabel('Percentage Above (%)', color='blue')
+            ax2.tick_params(axis='y', labelcolor='blue')
+            ax2.set_ylim(0, 100)
+            
+            # Total count bars
+            bars = ax2_twin.bar(dates, sma_data['total_count'], alpha=0.6, color='gray', width=1, label='Total Stocks')
+            ax2_twin.set_ylabel('Total Stocks Analyzed', color='gray')
+            ax2_twin.tick_params(axis='y', labelcolor='gray')
+            
+            # Combined legend
+            lines1, labels1 = ax2.get_legend_handles_labels()
+            lines2, labels2 = ax2_twin.get_legend_handles_labels()
+            ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+            
+            ax2.set_title('Market Breadth: Percentage Above 50-Day SMA', fontweight='bold', fontsize=12)
+            ax2.grid(True, alpha=0.3)
+            ax2.tick_params(axis='x', rotation=45)
+            
+            # Add summary statistics
+            latest_data = sma_data.iloc[-1]
+            summary_text = f"Latest: {latest_data['above_count']:.0f} above ({latest_data['pct_above']:.1f}%), {latest_data['below_count']:.0f} below"
+            ax2.text(0.02, 0.98, summary_text, transform=ax2.transAxes, 
+                    verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+            
+            self.sma50_fig.tight_layout()
+            self.sma50_canvas.draw()
+            
+            print("✅ [SMA LOG] SMA 50 charts updated successfully")
+            
+        except Exception as e:
+            print(f"❌ [SMA LOG] Error updating SMA 50 charts: {e}")
+            import traceback
+            traceback.print_exc()
     
     def update_rsi_charts_placeholder(self):
         """Show placeholder RSI charts while loading."""
@@ -781,56 +918,124 @@ This section will contain:
             self.trend_content_text.insert(tk.END, f"❌ Error refreshing trend data: {e}")
     
     def refresh_sma_trends(self):
-        """Refresh SMA trends section - placeholder for now."""
+        """Refresh SMA trends section with charts and analysis."""
         try:
+            print("🔍 [SMA REFRESH] Starting SMA trends refresh...")
+            
+            # Update SMA 50 charts first
+            self.update_sma50_charts()
+            
+            # Update text content
             self.sma_content_text.delete(1.0, tk.END)
-            content = """🔄 Refreshing SMA Trends data...
+            
+            # Get basic SMA statistics
+            engine = self.get_database_engine()
+            sma_stats = self.get_sma_statistics(engine) if engine else None
+            
+            content = f"""📊 SMA TRENDS ANALYSIS - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+{'=' * 60}
 
-📊 SMA TRENDS ANALYSIS
-====================
+📈 SMA 50 COUNT ANALYSIS
+======================"""
+            
+            if sma_stats:
+                content += f"""
+Latest Data: {sma_stats.get('latest_date', 'N/A')}
+Stocks Above 50 SMA: {sma_stats.get('above_50', 'N/A')} ({sma_stats.get('pct_above_50', 'N/A'):.1f}%)
+Stocks Below 50 SMA: {sma_stats.get('below_50', 'N/A')}
+Total Stocks Analyzed: {sma_stats.get('total_stocks', 'N/A')}
 
-This section will contain:
-• SMA crossover patterns and signals
-• Golden cross / Death cross detection
-• Price vs SMA positioning analysis
-• Moving average trend strength indicators
-• Multi-timeframe SMA analysis
+� MARKET BREADTH INDICATORS
+==========================
+Bullish Threshold: >60% above 50 SMA
+Neutral Zone: 40-60% above 50 SMA  
+Bearish Threshold: <40% above 50 SMA
 
-🚧 DEVELOPMENT STATUS
-===================
-▪ SMA calculation engine: Active (moving_averages table)
-▪ Crossover detection: Coming soon
-▪ Trend strength analysis: Coming soon
-▪ Signal generation: Coming soon
+Current Market State: {sma_stats.get('market_state', 'Unknown')}"""
+            else:
+                content += """
+❌ Unable to load SMA statistics
+Please check database connectivity and sma50_counts table."""
+            
+            content += """
 
-📈 SMA INDICATORS
-===============
-• 5, 10, 20, 50, 100, 200 day moving averages
-• Price above/below SMA analysis
-• SMA slope and momentum calculation
-• Volume-weighted moving averages
+📈 SMA INDICATORS AVAILABLE
+=========================
+• 5, 10, 20, 50, 100, 200 day moving averages (moving_averages table)
+• Daily counts of stocks above/below 50 SMA (sma50_counts table)
+• Historical trend analysis and market breadth indicators
+• Percentage-based market strength measurements
 
-🔍 CROSSOVER SIGNALS
-==================
+🔍 CROSSOVER SIGNALS (Coming Soon)
+================================
 Golden Cross: 50 SMA crosses above 200 SMA (Bullish)
 Death Cross: 50 SMA crosses below 200 SMA (Bearish)
 Short-term: 5 SMA vs 20 SMA crossovers
 Medium-term: 20 SMA vs 50 SMA crossovers
 
-📊 PLANNED FEATURES
-=================
-1. Real-time crossover signal detection
-2. SMA trend strength scoring system
-3. Price momentum vs SMA analysis
-4. Multi-symbol SMA screening
-5. Historical crossover success analysis
-6. Automated SMA alerts
+📊 CURRENT FEATURES
+==================
+✅ Daily SMA 50 count tracking
+✅ Market breadth percentage analysis  
+✅ Historical trend visualization
+✅ Real-time data updates
 
-🔍 Current Status: Data infrastructure ready, analysis algorithms next..."""
+🚧 PLANNED FEATURES
+==================
+🔄 SMA 200 count analysis (similar to SMA 50)
+🔄 Multi-timeframe crossover detection
+🔄 SMA trend strength scoring
+🔄 Automated signal generation
+🔄 Volume-weighted moving averages
+
+📅 Data Coverage: Real-time daily updates with historical analysis"""
 
             self.sma_content_text.insert(tk.END, content)
+            print("✅ [SMA REFRESH] SMA trends refresh completed")
+            
         except Exception as e:
-            self.sma_content_text.insert(tk.END, f"❌ Error refreshing SMA data: {e}")
+            error_msg = f"❌ Error refreshing SMA data: {e}"
+            print(f"❌ [SMA REFRESH] {error_msg}")
+            self.sma_content_text.delete(1.0, tk.END)
+            self.sma_content_text.insert(tk.END, error_msg)
+    
+    def get_sma_statistics(self, engine):
+        """Get current SMA statistics for display."""
+        try:
+            if not engine or sma50_scanner is None:
+                return None
+                
+            # Get latest SMA 50 data
+            from datetime import datetime
+            end_date = datetime.now().strftime('%Y-%m-%d')
+            
+            sma_data = sma50_scanner.fetch_counts(engine, end=end_date)
+            if sma_data.empty:
+                return None
+                
+            latest = sma_data.iloc[-1]
+            pct_above = latest['pct_above']
+            
+            # Determine market state based on percentage
+            if pct_above > 60:
+                market_state = "💚 Bullish (>60% above 50 SMA)"
+            elif pct_above > 40:
+                market_state = "🟡 Neutral (40-60% above 50 SMA)"
+            else:
+                market_state = "🔴 Bearish (<40% above 50 SMA)"
+            
+            return {
+                'latest_date': latest['trade_date'].strftime('%Y-%m-%d'),
+                'above_50': int(latest['above_count']),
+                'below_50': int(latest['below_count']),
+                'pct_above_50': pct_above,
+                'total_stocks': int(latest['total_count']),
+                'market_state': market_state
+            }
+            
+        except Exception as e:
+            print(f"Error getting SMA statistics: {e}")
+            return None
     
     def get_database_engine(self):
         """Get shared database engine with optimized connection pooling."""
