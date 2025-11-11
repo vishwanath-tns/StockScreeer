@@ -209,6 +209,156 @@ def upsert_fractals(engine, df: pd.DataFrame):
         print(f"Upserted {len(df)} fractal rows into nse_fractals")
 
 
+def scan_and_upsert_fractals_optimized(engine, period: int = 9, workers: int = 4, progress_cb=None, limit: int = 0, days_back: int = 30):
+    """Optimized fractal scan that only processes recent data to avoid performance issues.
+    
+    Args:
+        engine: Database engine
+        period: RSI period (default 9)
+        workers: Number of parallel workers (default 4)  
+        progress_cb: Progress callback function
+        limit: Limit number of symbols (0 = no limit)
+        days_back: Number of recent days to process (default 30)
+    """
+    # ensure table exists and migrations applied before running
+    try:
+        ensure_fractals_table(engine)
+    except Exception:
+        pass
+
+    # Get cutoff date for recent data processing
+    from datetime import datetime, timedelta
+    cutoff_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+    
+    # Only fetch recent BHAV data to reduce memory usage
+    with engine.connect() as conn:
+        recent_query = text("""
+            SELECT trade_date, symbol, close_price, high_price, low_price 
+            FROM nse_equity_bhavcopy_full 
+            WHERE series = 'EQ' AND trade_date >= :cutoff_date
+            ORDER BY symbol, trade_date
+        """)
+        rows = conn.execute(recent_query, {"cutoff_date": cutoff_date}).fetchall()
+    
+    if not rows:
+        if progress_cb:
+            progress_cb(0, 0, f'No recent BHAV data found (last {days_back} days)')
+        return
+
+    df = pd.DataFrame(rows, columns=[c for c in rows[0]._fields])
+    df = df.rename(columns={'close_price': 'close', 'high_price': 'high', 'low_price': 'low'})
+    df['trade_date'] = pd.to_datetime(df['trade_date'])
+    df['close'] = pd.to_numeric(df['close'], errors='coerce')
+    df['high'] = pd.to_numeric(df['high'], errors='coerce')
+    df['low'] = pd.to_numeric(df['low'], errors='coerce')
+    df = df[df['symbol'].notna() & df['trade_date'].notna()]
+
+    syms = sorted(df['symbol'].unique())
+    if limit and limit > 0:
+        syms = syms[:limit]
+    total = len(syms)
+    
+    if progress_cb:
+        progress_cb(0, total, f'Processing {total} symbols for recent fractals (last {days_back} days)')
+
+    # Get historical context and RSI data efficiently with single connection
+    extended_data = {}
+    rsi_map = {}
+    
+    with engine.connect() as conn:
+        # Batch fetch historical context for all symbols
+        if progress_cb:
+            progress_cb(0, total, f'Loading historical context for {total} symbols...')
+            
+        for i, sym in enumerate(syms):
+            # Get last 100 days of data for proper fractal analysis context
+            context_query = text("""
+                SELECT trade_date, close_price, high_price, low_price 
+                FROM nse_equity_bhavcopy_full 
+                WHERE symbol = :symbol AND series = 'EQ'
+                ORDER BY trade_date DESC 
+                LIMIT 100
+            """)
+            ctx_rows = conn.execute(context_query, {"symbol": sym}).fetchall()
+            if ctx_rows:
+                ctx_df = pd.DataFrame(ctx_rows, columns=['trade_date', 'close', 'high', 'low'])
+                ctx_df['trade_date'] = pd.to_datetime(ctx_df['trade_date'])
+                ctx_df['close'] = pd.to_numeric(ctx_df['close'], errors='coerce')
+                ctx_df['high'] = pd.to_numeric(ctx_df['high'], errors='coerce')
+                ctx_df['low'] = pd.to_numeric(ctx_df['low'], errors='coerce')
+                ctx_df = ctx_df.sort_values('trade_date')
+                extended_data[sym] = ctx_df
+            
+            # Progress update every 50 symbols  
+            if progress_cb and (i + 1) % 50 == 0:
+                progress_cb(0, total, f'Loaded context for {i + 1}/{total} symbols...')
+        
+        # Batch fetch RSI data for recent period
+        try:
+            rsi_query = text("""
+                SELECT symbol, trade_date, rsi 
+                FROM nse_rsi_daily 
+                WHERE period = :period AND trade_date >= :cutoff_date
+            """)
+            rsi_rows = conn.execute(rsi_query, {"period": period, "cutoff_date": cutoff_date}).fetchall()
+            for r in rsi_rows:
+                s = r[0]
+                d = pd.to_datetime(r[1]).date()
+                val = float(r[2]) if r[2] is not None else None
+                rsi_map.setdefault(s, {})[d] = val
+        except Exception:
+            rsi_map = {}
+
+    def _process_symbol_optimized(sym):
+        """Process single symbol with extended context data for accurate fractal detection."""
+        if sym not in extended_data:
+            return []
+        
+        symbol_df = extended_data[sym].copy()
+        symbol_df['symbol'] = sym
+        return scan_symbol_for_fractals(symbol_df, period=period, rsi_by_date=rsi_map.get(sym))
+
+    all_rows = []
+    # Use ThreadPoolExecutor with connection management
+    import concurrent.futures
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(workers, 8))) as ex:
+        futures = {ex.submit(_process_symbol_optimized, s): s for s in syms}
+        for i, fut in enumerate(concurrent.futures.as_completed(futures), start=1):
+            sym = futures[fut]
+            try:
+                res = fut.result()
+                if res:
+                    # Filter to only include fractals from recent period
+                    recent_fractals = []
+                    for fractal in res:
+                        fractal_date = pd.to_datetime(fractal.get('fractal_date'))
+                        if fractal_date.date() >= pd.to_datetime(cutoff_date).date():
+                            recent_fractals.append(fractal)
+                    all_rows.extend(recent_fractals)
+                    
+                if progress_cb:
+                    progress_cb(i, total, f'Processed {sym} ({i}/{total}) - Found {len(res) if res else 0} fractals')
+            except Exception as e:
+                if progress_cb:
+                    progress_cb(i, total, f'Error processing {sym}: {e}')
+
+    if not all_rows:
+        if progress_cb:
+            progress_cb(total, total, f'No new fractals found in last {days_back} days')
+        return
+
+    df_rows = pd.DataFrame(all_rows)
+    
+    # Remove duplicates before upserting
+    if 'fractal_date' in df_rows.columns and 'symbol' in df_rows.columns:
+        df_rows = df_rows.drop_duplicates(subset=['symbol', 'fractal_date', 'fractal_type'])
+    
+    upsert_fractals(engine, df_rows)
+    if progress_cb:
+        progress_cb(total, total, f'Upserted {len(df_rows)} new fractals (last {days_back} days)')
+
+
 def scan_and_upsert_fractals(engine, period: int = 9, workers: int = 4, progress_cb=None, limit: int = 0):
     """Scan BHAV for all symbols and upsert fractals found.
 

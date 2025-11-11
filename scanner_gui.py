@@ -721,15 +721,26 @@ class ScannerGUI:
             self.frac_workers = tk.IntVar(value=4)
             ttk.Entry(f, textvariable=self.frac_workers, width=6).grid(row=0, column=3, sticky='w')
 
-            ttk.Button(f, text='Run Fractals Scan', command=self.run_fractals_scan).grid(row=1, column=0, pady=6)
-            ttk.Button(f, text='Cancel Fractals', command=self._cancel_fractals).grid(row=1, column=1, pady=6)
-            ttk.Button(f, text='Show Fractal Breaks', command=self.show_fractal_breaks).grid(row=1, column=2, pady=6)
+            ttk.Label(f, text='Days Back').grid(row=0, column=4, sticky='w')
+            self.frac_days_back = tk.IntVar(value=30)
+            ttk.Entry(f, textvariable=self.frac_days_back, width=6).grid(row=0, column=5, sticky='w')
+
+            # Scan mode selection
+            self.frac_scan_mode = tk.StringVar(value="optimized")
+            ttk.Radiobutton(f, text="Quick Scan (Recent)", variable=self.frac_scan_mode, 
+                           value="optimized").grid(row=1, column=0, sticky='w')
+            ttk.Radiobutton(f, text="Full Scan (All History)", variable=self.frac_scan_mode, 
+                           value="full").grid(row=1, column=1, columnspan=2, sticky='w')
+
+            ttk.Button(f, text='Run Fractals Scan', command=self.run_fractals_scan).grid(row=2, column=0, pady=6)
+            ttk.Button(f, text='Cancel Fractals', command=self._cancel_fractals).grid(row=2, column=1, pady=6)
+            ttk.Button(f, text='Show Fractal Breaks', command=self.show_fractal_breaks).grid(row=2, column=2, pady=6)
 
             self.frac_progress = ttk.Progressbar(f, orient='horizontal', mode='determinate', length=400)
-            self.frac_progress.grid(row=2, column=0, columnspan=6, pady=(4,8), sticky='we')
+            self.frac_progress.grid(row=3, column=0, columnspan=6, pady=(4,8), sticky='we')
             self.frac_results = tk.Text(f, height=10, wrap='none')
-            self.frac_results.grid(row=3, column=0, columnspan=6, sticky='nsew')
-            f.grid_rowconfigure(3, weight=1)
+            self.frac_results.grid(row=4, column=0, columnspan=6, sticky='nsew')
+            f.grid_rowconfigure(4, weight=1)
             f.grid_columnconfigure(5, weight=1)
 
             # Treeview for fractals
@@ -2247,6 +2258,13 @@ class ScannerGUI:
             workers = max(1, int(self.frac_workers.get()))
         except Exception:
             workers = 4
+        try:
+            days_back = max(7, int(self.frac_days_back.get()))
+        except Exception:
+            days_back = 30
+        
+        scan_mode = self.frac_scan_mode.get()
+        
         # reset cancel token on main thread
         try:
             self._fractals_cancel['cancel'] = False
@@ -2273,7 +2291,20 @@ class ScannerGUI:
                     except Exception:
                         pass
 
-                rf.scan_and_upsert_fractals(eng, period=period, workers=workers, progress_cb=_progress)
+                # Use optimized scan by default, fall back to full scan if requested
+                if scan_mode == "optimized":
+                    self.append_log(f'[Fractal] Starting optimized scan (last {days_back} days)')
+                    try:
+                        rf.scan_and_upsert_fractals_optimized(eng, period=period, workers=workers, 
+                                                             progress_cb=_progress, days_back=days_back)
+                    except AttributeError:
+                        # Fall back to original method if optimized version not available
+                        self.append_log(f'[Fractal] Optimized scan not available, using full scan')
+                        rf.scan_and_upsert_fractals(eng, period=period, workers=workers, progress_cb=_progress)
+                else:
+                    self.append_log('[Fractal] Starting full historical scan (this may take several minutes)')
+                    rf.scan_and_upsert_fractals(eng, period=period, workers=workers, progress_cb=_progress)
+                
                 self.append_log('[Fractal] Scan finished')
                 # load last N fractals into tree
                 with eng.connect() as conn:
