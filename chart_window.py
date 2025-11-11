@@ -13,7 +13,19 @@ from matplotlib.figure import Figure
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-import reporting_adv_decl as rad
+import sys
+import os
+
+# Add parent directory to path for imports  
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    import reporting_adv_decl as rad
+except ImportError:
+    # Fallback for database connection
+    from db.connection import ensure_engine
+    rad = None
+
 from sqlalchemy import text
 
 class StockChartWindow:
@@ -34,7 +46,10 @@ class StockChartWindow:
     
     def get_stock_data_with_ratings(self):
         """Get stock data with ratings for the chart."""
-        engine = rad.engine()
+        if rad:
+            engine = rad.engine()
+        else:
+            engine = ensure_engine()
         
         end_date = datetime.now().date()
         start_date = end_date - timedelta(days=self.days)

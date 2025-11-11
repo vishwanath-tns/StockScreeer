@@ -53,6 +53,7 @@ class ScannerGUI:
         self.rsi_frame = ttk.Frame(nb)
         self.most_active_frame = ttk.Frame(nb)
         self.trends_frame = ttk.Frame(nb)
+        self.market_breadth_frame = ttk.Frame(nb)
 
         nb.add(self.accum_frame, text="Accumulation Scanner")
         nb.add(self.swing_frame, text="Swing Scanner")
@@ -66,6 +67,7 @@ class ScannerGUI:
         nb.add(self.rsi_frame, text="RSI Calculator")
         nb.add(self.most_active_frame, text="Most Active")
         nb.add(self.trends_frame, text="Trend Analysis")
+        nb.add(self.market_breadth_frame, text="Market Breadth")
 
         self._build_accum_tab()
         self._build_swing_tab()
@@ -85,6 +87,7 @@ class ScannerGUI:
         self._build_bhav_export_tab()
         self._build_rsi_divergences_tab()
         self._build_trends_tab()
+        self._build_market_breadth_tab()
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -4506,6 +4509,20 @@ class ScannerGUI:
             self.append_log(f"Error building trends tab: {e}")
             f = self.trends_frame
             ttk.Label(f, text="Trends Analysis - Error Loading").pack(pady=20)
+            ttk.Label(f, text=f"Error: {str(e)}").pack(pady=10)
+
+    def _build_market_breadth_tab(self):
+        """Build the Market Breadth Analysis tab."""
+        try:
+            from gui.tabs.market_breadth import MarketBreadthTab
+            # Create the market breadth tab directly in the existing frame
+            market_breadth_tab = MarketBreadthTab(self.market_breadth_frame)
+            self.append_log("Market Breadth Analysis tab initialized successfully")
+        except Exception as e:
+            # Fallback to a simple placeholder if import fails
+            self.append_log(f"Error building market breadth tab: {e}")
+            f = self.market_breadth_frame
+            ttk.Label(f, text="Market Breadth Analysis - Error Loading").pack(pady=20)
             ttk.Label(f, text=f"Error: {str(e)}").pack(pady=10)
 
     def _browse(self, var: tk.StringVar, folder: bool = False):

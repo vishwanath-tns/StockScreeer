@@ -7,6 +7,7 @@ tqdm
 matplotlib
 mplfinance
 mplcursors  # optional: used for interactive hover when available
+tkcalendar  # for date picker widgets in Market Breadth analysis
 
 # Test / client dependencies
 httpx

@@ -207,7 +207,8 @@ class TrendsTab:
                 self.parent_frame.after(0, lambda: self.scan_complete(results_df, "current day"))
                 
             except Exception as e:
-                self.parent_frame.after(0, lambda: self.scan_error(str(e)))
+                error_msg = str(e)  # Capture the error message in a local variable
+                self.parent_frame.after(0, lambda msg=error_msg: self.scan_error(msg))
         
         self.scan_thread = threading.Thread(target=scan_worker, daemon=True)
         self.scan_thread.start()
@@ -243,7 +244,8 @@ class TrendsTab:
                 self.parent_frame.after(0, lambda: self.scan_complete(None, f"historical ({total_processed} records)"))
                 
             except Exception as e:
-                self.parent_frame.after(0, lambda: self.scan_error(str(e)))
+                error_msg = str(e)  # Capture the error message in a local variable
+                self.parent_frame.after(0, lambda msg=error_msg: self.scan_error(msg))
         
         self.scan_thread = threading.Thread(target=scan_worker, daemon=True)
         self.scan_thread.start()
@@ -286,7 +288,8 @@ class TrendsTab:
                 self.parent_frame.after(0, lambda: self.scan_complete_parallel(total_processed))
                 
             except Exception as e:
-                self.parent_frame.after(0, lambda: self.scan_error(str(e)))
+                error_msg = str(e)  # Capture the error message in a local variable
+                self.parent_frame.after(0, lambda msg=error_msg: self.scan_error(msg))
         
         self.scan_thread = threading.Thread(target=scan_worker, daemon=True)
         self.scan_thread.start()
@@ -503,7 +506,8 @@ Positive: {positive_ratings:,} | Negative: {negative_ratings:,} | Neutral: {neut
                     results_df = scan_historical_trends_for_range(start_date, end_date)
                     self.parent_frame.after(0, lambda: self.scan_complete(results_df, "date range"))
                 except Exception as e:
-                    self.parent_frame.after(0, lambda: self.scan_error(str(e)))
+                    error_msg = str(e)  # Capture the error message in a local variable
+                    self.parent_frame.after(0, lambda msg=error_msg: self.scan_error(msg))
             
             import threading
             threading.Thread(target=run_scan, daemon=True).start()

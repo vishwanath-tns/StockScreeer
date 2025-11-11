@@ -553,7 +553,7 @@ def scan_historical_trends_for_range(start_date: date, end_date: date, engine=No
             ORDER BY symbol
             """)
             
-            symbols_df = pd.read_sql(symbols_sql, con=conn.connection, params={'trade_date': trade_date_str})
+            symbols_df = pd.read_sql(symbols_sql, con=conn, params={'trade_date': trade_date_str})
             symbols = symbols_df['symbol'].tolist()
             
             if not symbols:

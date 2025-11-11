@@ -351,7 +351,8 @@ def open_price_rsi_chart(
         try:
             ohlcv_df, rsi_df = fetch_price_and_rsi(symbol, days=days)
         except Exception as e:
-            root.after(0, lambda: tk.messagebox.showerror("Chart error", str(e)))
+            error_msg = str(e)  # Capture the error message in a local variable
+            root.after(0, lambda msg=error_msg: tk.messagebox.showerror("Chart error", msg))
             return
 
         if ohlcv_df is None or ohlcv_df.empty:
