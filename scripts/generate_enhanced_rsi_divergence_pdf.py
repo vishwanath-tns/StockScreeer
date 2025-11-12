@@ -603,78 +603,110 @@ def create_summary_page(divergences_df, trading_table_df, latest_date):
 
 def generate_enhanced_pdf_report(max_stocks=15):
     """Generate enhanced PDF with grouped signals and trading table"""
-    print("🔍 Fetching grouped RSI divergences data...")
-    divergences_df, trading_table_df, latest_date = get_grouped_divergences_data(limit=max_stocks)
-    
-    if divergences_df.empty:
-        print("❌ No divergences found with complete data")
-        return
-    
-    pdf_filename = f"Enhanced_RSI_Divergences_Grouped_{latest_date.strftime('%Y%m%d')}_EQ_Series.pdf"
-    
-    print(f"📄 Generating enhanced PDF report: {pdf_filename}")
-    print(f"📊 Including {len(divergences_df)} stocks with divergences...")
-    print(f"📋 Trading table includes {len(trading_table_df)} stocks...")
-    
-    with PdfPages(pdf_filename) as pdf:
-        # Create summary page
-        print("📋 Creating enhanced summary page...")
-        summary_fig = create_summary_page(divergences_df, trading_table_df, latest_date)
-        pdf.savefig(summary_fig, bbox_inches='tight', dpi=150)
-        plt.close(summary_fig)
+    try:
+        print("🔍 Fetching grouped RSI divergences data...")
+        divergences_df, trading_table_df, latest_date = get_grouped_divergences_data(limit=max_stocks)
         
-        # Create trading table page
-        print("📊 Creating comprehensive trading table...")
-        trading_fig = create_trading_table_page(trading_table_df, latest_date)
-        pdf.savefig(trading_fig, bbox_inches='tight', dpi=150)
-        plt.close(trading_fig)
+        if divergences_df.empty:
+            print("❌ No divergences found with complete data")
+            return {
+                'success': False,
+                'error': 'No divergences found with complete data',
+                'filename': None
+            }
         
-        # Create individual stock pages (grouped signals)
-        successful_charts = 0
-        for idx, (_, stock_data) in enumerate(divergences_df.iterrows()):
-            symbol = stock_data['symbol']
-            print(f"📈 Creating grouped chart for {symbol} ({idx+1}/{len(divergences_df)}) - {stock_data['signal_count']} signals...")
+        pdf_filename = f"Enhanced_RSI_Divergences_Grouped_{latest_date.strftime('%Y%m%d')}_EQ_Series.pdf"
+        
+        print(f"📄 Generating enhanced PDF report: {pdf_filename}")
+        print(f"📊 Including {len(divergences_df)} stocks with divergences...")
+        print(f"📋 Trading table includes {len(trading_table_df)} stocks...")
+        
+    except Exception as e:
+        print(f"❌ Error during data fetching: {str(e)}")
+        return {
+            'success': False,
+            'error': f'Data fetching failed: {str(e)}',
+            'filename': None
+        }
+    
+    try:
+        with PdfPages(pdf_filename) as pdf:
+            # Create summary page
+            print("📋 Creating enhanced summary page...")
+            summary_fig = create_summary_page(divergences_df, trading_table_df, latest_date)
+            pdf.savefig(summary_fig, bbox_inches='tight', dpi=150)
+            plt.close(summary_fig)
             
-            try:
-                # Get chart data
-                price_df, rsi_df = get_stock_data(symbol, days_back=90)
+            # Create trading table page
+            print("📊 Creating comprehensive trading table...")
+            trading_fig = create_trading_table_page(trading_table_df, latest_date)
+            pdf.savefig(trading_fig, bbox_inches='tight', dpi=150)
+            plt.close(trading_fig)
+            
+            # Create individual stock pages (grouped signals)
+            successful_charts = 0
+            for idx, (_, stock_data) in enumerate(divergences_df.iterrows()):
+                symbol = stock_data['symbol']
+                print(f"📈 Creating grouped chart for {symbol} ({idx+1}/{len(divergences_df)}) - {stock_data['signal_count']} signals...")
                 
-                if not price_df.empty and not rsi_df.empty:
-                    # Create chart with multiple signals
-                    chart_fig = create_multi_divergence_chart(symbol, stock_data, price_df, rsi_df)
+                try:
+                    # Get chart data
+                    price_df, rsi_df = get_stock_data(symbol, days_back=90)
                     
-                    if chart_fig:
-                        pdf.savefig(chart_fig, bbox_inches='tight', dpi=150)
-                        plt.close(chart_fig)
-                        successful_charts += 1
-                        print(f"✅ Chart created successfully for {symbol}")
+                    if not price_df.empty and not rsi_df.empty:
+                        # Create chart with multiple signals
+                        chart_fig = create_multi_divergence_chart(symbol, stock_data, price_df, rsi_df)
+                        
+                        if chart_fig:
+                            pdf.savefig(chart_fig, bbox_inches='tight', dpi=150)
+                            plt.close(chart_fig)
+                            successful_charts += 1
+                            print(f"✅ Chart created successfully for {symbol}")
+                        else:
+                            print(f"⚠️  Failed to create chart for {symbol}")
                     else:
-                        print(f"⚠️  Failed to create chart for {symbol}")
-                else:
-                    print(f"⚠️  No chart data available for {symbol}")
-                    
-            except Exception as e:
-                print(f"❌ Error processing {symbol}: {e}")
-                continue
-    
-    print(f"\n✅ Enhanced PDF Report Generated Successfully!")
-    print(f"📄 Filename: {pdf_filename}")
-    print(f"📊 Total stocks with charts: {successful_charts}")
-    print(f"📋 Trading table stocks: {len(trading_table_df)}")
-    print(f"📅 Report Date: {latest_date}")
-    
-    # Print summary statistics
-    total_signals = divergences_df['signal_count'].sum()
-    unique_stocks = len(divergences_df)
-    buy_opportunities = len(trading_table_df[trading_table_df['buy_above_price'].notna()])
-    sell_opportunities = len(trading_table_df[trading_table_df['sell_below_price'].notna()])
-    
-    print(f"\n📈 Total Divergence Signals: {total_signals}")
-    print(f"📊 Unique Stocks with Charts: {unique_stocks}")
-    print(f"🟢 Buy Opportunities: {buy_opportunities}")
-    print(f"🔴 Sell Opportunities: {sell_opportunities}")
-    print(f"💼 EQ Series Stocks Only")
-    print(f"📊 Features: Grouped Charts + Trading Table + RSI-9")
+                        print(f"⚠️  No chart data available for {symbol}")
+                        
+                except Exception as e:
+                    print(f"❌ Error processing {symbol}: {e}")
+                    continue
+        
+        print(f"\n✅ Enhanced PDF Report Generated Successfully!")
+        print(f"📄 Filename: {pdf_filename}")
+        print(f"📊 Total stocks with charts: {successful_charts}")
+        print(f"📋 Trading table stocks: {len(trading_table_df)}")
+        print(f"📅 Report Date: {latest_date}")
+        
+        # Print summary statistics
+        total_signals = divergences_df['signal_count'].sum()
+        unique_stocks = len(divergences_df)
+        buy_opportunities = len(trading_table_df[trading_table_df['buy_above_price'].notna()])
+        sell_opportunities = len(trading_table_df[trading_table_df['sell_below_price'].notna()])
+        
+        print(f"\n📈 Total Divergence Signals: {total_signals}")
+        print(f"📊 Unique Stocks with Charts: {unique_stocks}")
+        print(f"🟢 Buy Opportunities: {buy_opportunities}")
+        print(f"🔴 Sell Opportunities: {sell_opportunities}")
+        print(f"💼 EQ Series Stocks Only")
+        print(f"📊 Features: Grouped Charts + Trading Table + RSI-9")
+        
+        # Return success information
+        return {
+            'success': True,
+            'filename': pdf_filename,
+            'total_stocks': successful_charts,
+            'total_signals': total_signals,
+            'buy_opportunities': buy_opportunities,
+            'sell_opportunities': sell_opportunities
+        }
+        
+    except Exception as e:
+        print(f"❌ Error during PDF generation: {str(e)}")
+        return {
+            'success': False,
+            'error': f'PDF generation failed: {str(e)}',
+            'filename': pdf_filename if 'pdf_filename' in locals() else None
+        }
 
 if __name__ == "__main__":
     # Generate enhanced PDF with grouped signals and trading table

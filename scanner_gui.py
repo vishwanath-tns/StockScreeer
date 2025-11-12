@@ -18,8 +18,9 @@ import pandas as pd
 from sqlalchemy import text
 import os
 
-# Import the dashboard tab
+# Import the dashboard and reports tabs
 from gui.tabs.dashboard import DashboardTab
+from gui.tabs.reports import ReportsTab
 
 LOG_MAX_LINES = 200
 
@@ -60,6 +61,7 @@ class ScannerGUI:
         self.most_active_frame = ttk.Frame(nb)
         self.trends_frame = ttk.Frame(nb)
         self.market_breadth_frame = ttk.Frame(nb)
+        self.reports_frame = ttk.Frame(nb)  # Add Reports tab frame
 
         # Add dashboard tab first
         nb.add(self.dashboard_frame, text="Dashboard")
@@ -76,6 +78,7 @@ class ScannerGUI:
         nb.add(self.most_active_frame, text="Most Active")
         nb.add(self.trends_frame, text="Trend Analysis")
         nb.add(self.market_breadth_frame, text="Market Breadth")
+        nb.add(self.reports_frame, text="📊 Reports")  # Add Reports tab
 
         # Build dashboard tab first
         self._build_dashboard_tab()
@@ -98,6 +101,7 @@ class ScannerGUI:
         self._build_rsi_divergences_tab()
         self._build_trends_tab()
         self._build_market_breadth_tab()
+        self._build_reports_tab()  # Add Reports tab build method
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -4613,6 +4617,20 @@ class ScannerGUI:
             f = self.market_breadth_frame
             ttk.Label(f, text="Market Breadth Analysis - Error Loading").pack(pady=20)
             ttk.Label(f, text=f"Error: {str(e)}").pack(pady=10)
+
+    def _build_reports_tab(self):
+        """Build the Reports tab with PDF generation capabilities."""
+        try:
+            # Create the reports tab directly in the existing frame
+            reports_tab = ReportsTab(self.reports_frame)
+            self.append_log("Reports tab initialized successfully")
+        except Exception as e:
+            # Fallback to a simple placeholder if import fails
+            self.append_log(f"Error building reports tab: {e}")
+            f = self.reports_frame
+            ttk.Label(f, text="📊 Reports - Error Loading", font=("Segoe UI", 12, "bold")).pack(pady=20)
+            ttk.Label(f, text=f"Error: {str(e)}", foreground="red").pack(pady=10)
+            ttk.Label(f, text="Please check that all report dependencies are installed.").pack(pady=5)
 
     def _browse(self, var: tk.StringVar, folder: bool = False):
         """Set `var` to a selected path. If folder=True opens a folder dialog, otherwise a save-as CSV dialog."""
