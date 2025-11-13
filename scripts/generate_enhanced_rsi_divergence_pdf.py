@@ -754,6 +754,239 @@ def generate_enhanced_pdf_report(max_stocks=15):
             'filename': pdf_filename if 'pdf_filename' in locals() else None
         }
 
+def get_grouped_divergences_data_7days(limit=15):
+    """Get divergences from last 7 days grouped by stock for EQ series"""
+    engine = rad.engine()
+    
+    with engine.connect() as conn:
+        # Get signals from last 7 days (using date comparison)
+        seven_days_ago = (datetime.now() - timedelta(days=7)).date()
+        print(f"📅 Fetching signals from last 7 days (since {seven_days_ago})")
+        
+        # Get mixed divergences (both bullish and bearish) from last 7 days
+        # Get top Hidden Bullish signals
+        bullish_query = text('''
+            SELECT 
+                d.symbol,
+                COUNT(*) as signal_count,
+                GROUP_CONCAT(DISTINCT d.signal_type ORDER BY d.signal_type) as signal_types,
+                GROUP_CONCAT(d.curr_fractal_date ORDER BY d.id) as curr_fractal_dates,
+                GROUP_CONCAT(d.curr_center_close ORDER BY d.id) as curr_center_closes,
+                GROUP_CONCAT(d.curr_center_rsi ORDER BY d.id) as curr_center_rsis,
+                GROUP_CONCAT(d.comp_fractal_date ORDER BY d.id) as comp_fractal_dates,
+                GROUP_CONCAT(d.comp_center_close ORDER BY d.id) as comp_center_closes,
+                GROUP_CONCAT(d.comp_center_rsi ORDER BY d.id) as comp_center_rsis,
+                d.buy_above_price,
+                d.sell_below_price,
+                b.close_price as current_price,
+                b.ttl_trd_qnty as volume,
+                'bullish' as signal_category,
+                MAX(d.signal_date) as latest_signal_date
+            FROM nse_rsi_divergences d
+            JOIN nse_equity_bhavcopy_full b ON d.symbol COLLATE utf8mb4_unicode_ci = b.symbol COLLATE utf8mb4_unicode_ci
+            WHERE d.signal_date >= DATE(:seven_days_ago)
+                AND d.signal_type = 'Hidden Bullish Divergence'
+                AND b.series = 'EQ'
+                AND b.trade_date = (SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full)
+                AND EXISTS (
+                    SELECT 1 FROM nse_rsi_daily r 
+                    WHERE r.symbol COLLATE utf8mb4_unicode_ci = d.symbol COLLATE utf8mb4_unicode_ci
+                    AND r.period = 9
+                    AND r.trade_date >= DATE_SUB(NOW(), INTERVAL 60 DAY)
+                )
+            GROUP BY d.symbol, d.buy_above_price, d.sell_below_price, b.close_price, b.ttl_trd_qnty
+            ORDER BY MAX(d.signal_date) DESC, b.ttl_trd_qnty DESC
+            LIMIT :bullish_limit
+        ''')
+        
+        # Get top Hidden Bearish signals from last 7 days
+        bearish_query = text('''
+            SELECT 
+                d.symbol,
+                COUNT(*) as signal_count,
+                GROUP_CONCAT(DISTINCT d.signal_type ORDER BY d.signal_type) as signal_types,
+                GROUP_CONCAT(d.curr_fractal_date ORDER BY d.id) as curr_fractal_dates,
+                GROUP_CONCAT(d.curr_center_close ORDER BY d.id) as curr_center_closes,
+                GROUP_CONCAT(d.curr_center_rsi ORDER BY d.id) as curr_center_rsis,
+                GROUP_CONCAT(d.comp_fractal_date ORDER BY d.id) as comp_fractal_dates,
+                GROUP_CONCAT(d.comp_center_close ORDER BY d.id) as comp_center_closes,
+                GROUP_CONCAT(d.comp_center_rsi ORDER BY d.id) as comp_center_rsis,
+                d.buy_above_price,
+                d.sell_below_price,
+                b.close_price as current_price,
+                b.ttl_trd_qnty as volume,
+                'bearish' as signal_category,
+                MAX(d.signal_date) as latest_signal_date
+            FROM nse_rsi_divergences d
+            JOIN nse_equity_bhavcopy_full b ON d.symbol COLLATE utf8mb4_unicode_ci = b.symbol COLLATE utf8mb4_unicode_ci
+            WHERE d.signal_date >= DATE(:seven_days_ago)
+                AND d.signal_type = 'Hidden Bearish Divergence'
+                AND b.series = 'EQ'
+                AND b.trade_date = (SELECT MAX(trade_date) FROM nse_equity_bhavcopy_full)
+                AND EXISTS (
+                    SELECT 1 FROM nse_rsi_daily r 
+                    WHERE r.symbol COLLATE utf8mb4_unicode_ci = d.symbol COLLATE utf8mb4_unicode_ci
+                    AND r.period = 9
+                    AND r.trade_date >= DATE_SUB(NOW(), INTERVAL 60 DAY)
+                )
+            GROUP BY d.symbol, d.buy_above_price, d.sell_below_price, b.close_price, b.ttl_trd_qnty
+            ORDER BY MAX(d.signal_date) DESC, b.ttl_trd_qnty DESC
+            LIMIT :bearish_limit
+        ''')
+        
+        # Calculate limits for better mix
+        bearish_limit = min(8, limit // 2)  # Up to 8 bearish signals
+        bullish_limit = limit - bearish_limit  # Rest as bullish
+        
+        print(f"📊 Selecting {bullish_limit} bullish + {bearish_limit} bearish signals from last 7 days")
+        
+        # Get both types
+        bullish_df = pd.read_sql(bullish_query, conn, params={
+            'seven_days_ago': seven_days_ago, 
+            'bullish_limit': bullish_limit
+        })
+        
+        bearish_df = pd.read_sql(bearish_query, conn, params={
+            'seven_days_ago': seven_days_ago, 
+            'bearish_limit': bearish_limit
+        })
+        
+        # Combine results
+        combined_df = pd.concat([bullish_df, bearish_df], ignore_index=True)
+        
+        if combined_df.empty:
+            print("❌ No divergences found in last 7 days with complete data")
+            return pd.DataFrame(), pd.DataFrame(), datetime.now()
+        
+        print(f"✅ Found {len(combined_df)} stocks with divergences in last 7 days")
+        print(f"📊 Bullish signals: {len(bullish_df)}")
+        print(f"📉 Bearish signals: {len(bearish_df)}")
+        
+        # Use the most recent signal date found
+        latest_signal_date = combined_df['latest_signal_date'].max()
+        print(f"📅 Most recent signal date in 7-day period: {latest_signal_date}")
+        
+        # Create trading table with proper columns
+        trading_table = []
+        for _, row in combined_df.iterrows():
+            # Calculate distance percentage
+            if pd.notna(row['buy_above_price']):
+                distance_pct = ((row['buy_above_price'] - row['current_price']) / row['current_price']) * 100
+            elif pd.notna(row['sell_below_price']):
+                distance_pct = ((row['sell_below_price'] - row['current_price']) / row['current_price']) * 100
+            else:
+                distance_pct = None
+                
+            trading_table.append({
+                'symbol': row['symbol'],
+                'total_signals': row['signal_count'],
+                'signal_types': row['signal_types'],
+                'signal_category': row['signal_category'],
+                'current_price': row['current_price'],
+                'buy_above_price': row['buy_above_price'],
+                'sell_below_price': row['sell_below_price'],
+                'volume': row['volume'],
+                'distance_pct': distance_pct,
+                'latest_signal_date': row['latest_signal_date']
+            })
+        
+        trading_table_df = pd.DataFrame(trading_table)
+        
+        return combined_df, trading_table_df, latest_signal_date
+
+def generate_enhanced_pdf_report_7days(max_stocks=15):
+    """Generate enhanced PDF with signals from last 7 days only"""
+    try:
+        print("🔍 Fetching last 7 days RSI divergences data...")
+        divergences_df, trading_table_df, latest_date = get_grouped_divergences_data_7days(limit=max_stocks)
+        
+        if divergences_df.empty:
+            print("❌ No divergences found in last 7 days with complete data")
+            return {
+                'success': False,
+                'error': 'No divergences found in last 7 days with complete data',
+                'filename': None
+            }
+        
+        pdf_filename = f"Enhanced_RSI_Divergences_7Days_{datetime.now().strftime('%Y%m%d_%H%M')}_EQ_Series.pdf"
+        
+        print(f"📄 Generating 7-day enhanced PDF report: {pdf_filename}")
+        print(f"📊 Including {len(divergences_df)} stocks with divergences in last 7 days...")
+        print(f"📋 Trading table includes {len(trading_table_df)} stocks...")
+        
+        with PdfPages(pdf_filename) as pdf:
+            # Create trading table page
+            print("📊 Creating comprehensive 7-day trading table...")
+            trading_fig = create_trading_table_page(trading_table_df, latest_date)
+            pdf.savefig(trading_fig, bbox_inches='tight', dpi=150)
+            plt.close(trading_fig)
+            
+            # Generate charts for each stock
+            total_signals = 0
+            buy_opportunities = 0
+            sell_opportunities = 0
+            
+            for idx, row in divergences_df.iterrows():
+                symbol = row['symbol']
+                print(f"📈 Processing {symbol} ({idx+1}/{len(divergences_df)})...")
+                
+                try:
+                    # Count signals for this stock
+                    signal_count = row['signal_count']
+                    total_signals += signal_count
+                    
+                    # Count opportunities
+                    if 'bullish' in row['signal_category'].lower():
+                        buy_opportunities += signal_count
+                    else:
+                        sell_opportunities += signal_count
+                    
+                    # Get chart data
+                    price_df, rsi_df = get_stock_data(symbol, days_back=90)
+                    
+                    if not price_df.empty and not rsi_df.empty:
+                        # Create multi-divergence chart
+                        chart_fig = create_multi_divergence_chart(symbol, row, price_df, rsi_df)
+                        
+                        if chart_fig:
+                            pdf.savefig(chart_fig, bbox_inches='tight', dpi=150)
+                            plt.close(chart_fig)
+                            print(f"✅ Chart created successfully for {symbol}")
+                        else:
+                            print(f"⚠️  Failed to create chart for {symbol}")
+                    else:
+                        print(f"⚠️  No chart data available for {symbol}")
+                    
+                except Exception as e:
+                    print(f"❌ Error processing {symbol}: {str(e)}")
+                    continue
+            
+            print(f"✅ PDF generation completed successfully!")
+            print(f"📄 Generated: {pdf_filename}")
+            print(f"📊 Total stocks processed: {len(divergences_df)}")
+            print(f"📈 Total signals: {total_signals}")
+            print(f"🟢 Buy opportunities: {buy_opportunities}")
+            print(f"🔴 Sell opportunities: {sell_opportunities}")
+            
+            return {
+                'success': True,
+                'filename': pdf_filename,
+                'total_stocks': len(divergences_df),
+                'total_signals': total_signals,
+                'buy_opportunities': buy_opportunities,
+                'sell_opportunities': sell_opportunities
+            }
+    
+    except Exception as e:
+        import traceback
+        print(f"❌ Error during 7-day PDF generation: {str(e)}")
+        print(f"❌ Stack trace:\n{traceback.format_exc()}")
+        return {
+            'success': False,
+            'error': f'7-day PDF generation failed: {str(e)}',
+            'filename': pdf_filename if 'pdf_filename' in locals() else None
+        }
+
 if __name__ == "__main__":
     # Generate enhanced PDF with grouped signals and trading table
     generate_enhanced_pdf_report(max_stocks=15)

@@ -105,18 +105,31 @@ class ReportsTab:
         buttons_frame = ttk.Frame(rsi_frame)
         buttons_frame.pack(fill="x", pady=(0, 15))
         
-        # Generate button
-        self.generate_btn = ttk.Button(buttons_frame, text="🚀 Generate RSI Divergence PDF",
+        # First row of buttons
+        buttons_row1 = ttk.Frame(buttons_frame)
+        buttons_row1.pack(fill="x", pady=(0, 5))
+        
+        # Generate full report button
+        self.generate_btn = ttk.Button(buttons_row1, text="🚀 Generate All Signals PDF",
                                       command=self._generate_rsi_report)
         self.generate_btn.pack(side="left", padx=(0, 10))
         
+        # Generate 7-day report button
+        self.generate_7day_btn = ttk.Button(buttons_row1, text="📅 Generate Last 7 Days PDF",
+                                           command=self._generate_7day_report)
+        self.generate_7day_btn.pack(side="left", padx=(0, 10))
+        
+        # Second row of buttons
+        buttons_row2 = ttk.Frame(buttons_frame)
+        buttons_row2.pack(fill="x")
+        
         # Open folder button
-        self.open_folder_btn = ttk.Button(buttons_frame, text="📁 Open Reports Folder",
+        self.open_folder_btn = ttk.Button(buttons_row2, text="📁 Open Reports Folder",
                                          command=self._open_reports_folder)
         self.open_folder_btn.pack(side="left", padx=(0, 10))
         
         # View last report button
-        self.view_report_btn = ttk.Button(buttons_frame, text="👁️ View Last Report",
+        self.view_report_btn = ttk.Button(buttons_row2, text="👁️ View Last Report",
                                          command=self._view_last_report, state="disabled")
         self.view_report_btn.pack(side="left")
         
@@ -295,6 +308,119 @@ class ReportsTab:
         finally:
             # Re-enable button
             self.generate_btn.config(state="normal")
+    
+    def _generate_7day_report(self):
+        """Generate RSI Divergence PDF report for last 7 days in background thread"""
+        
+        # Disable button during generation
+        self.generate_7day_btn.config(state="disabled")
+        self.progress_var.set(0)
+        self.status_var.set("Starting 7-day PDF generation...")
+        self._clear_log()
+        
+        # Start generation in background thread
+        generation_thread = threading.Thread(target=self._run_7day_generation, daemon=True)
+        generation_thread.start()
+    
+    def _run_7day_generation(self):
+        """Run 7-day RSI report generation in background thread"""
+        try:
+            self._update_status("Initializing 7-day report generator...")
+            self._update_progress(10)
+            
+            # Get configuration values
+            max_stocks = int(self.max_stocks_var.get())
+            
+            self._log_message(f"📊 Starting 7-Day RSI Divergence PDF Generation")
+            self._log_message(f"📋 Configuration: Max Stocks = {max_stocks}")
+            self._log_message(f"📅 Report Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            self._log_message(f"🔍 Filter: Last 7 days signals only")
+            self._log_message("-" * 50)
+            
+            # Import and run the enhanced PDF generator
+            self._update_status("Loading 7-day report generator...")
+            self._update_progress(20)
+            
+            # Change to project directory
+            project_dir = Path(__file__).parent.parent.parent
+            original_cwd = os.getcwd()
+            os.chdir(project_dir)
+            
+            try:
+                # Set matplotlib to use non-GUI backend for threading
+                import matplotlib
+                matplotlib.use('Agg')  # Use non-GUI backend for threading
+                
+                # Import the PDF generator
+                self._log_message("🔍 Importing 7-day PDF generator module...")
+                sys.path.insert(0, str(project_dir / "scripts"))
+                import generate_enhanced_rsi_divergence_pdf as pdf_gen
+                
+                self._update_status("Fetching last 7 days divergence data...")
+                self._update_progress(40)
+                
+                # Generate the PDF with progress updates
+                self._log_message("📊 Fetching RSI divergence data for last 7 days...")
+                
+                # Call the PDF generation function with 7-day filter
+                self._log_message("🚀 Generating enhanced 7-day PDF report...")
+                result = pdf_gen.generate_enhanced_pdf_report_7days(max_stocks=max_stocks)
+                
+                self._update_progress(90)
+                self._update_status("Finalizing 7-day PDF report...")
+                
+                # Check if generation was successful
+                if result and result.get('success', False):
+                    # PDF generation succeeded
+                    pdf_filename = result.get('filename')
+                    if pdf_filename and Path(pdf_filename).exists():
+                        self.last_report_path = str(Path(pdf_filename).resolve())
+                        file_size = Path(pdf_filename).stat().st_size / 1024  # KB
+                        
+                        self._log_message("-" * 50)
+                        self._log_message(f"✅ 7-Day PDF Report Generated Successfully!")
+                        self._log_message(f"📄 Filename: {pdf_filename}")
+                        self._log_message(f"📊 File Size: {file_size:.1f} KB")
+                        self._log_message(f"📈 Total Charts: {result.get('total_stocks', 0)}")
+                        self._log_message(f"📊 Total Signals: {result.get('total_signals', 0)}")
+                        self._log_message(f"🟢 Buy Opportunities: {result.get('buy_opportunities', 0)}")
+                        self._log_message(f"🔴 Sell Opportunities: {result.get('sell_opportunities', 0)}")
+                        self._log_message(f"📁 Location: {self.last_report_path}")
+                        self._log_message(f"📅 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                        self._log_message(f"🕐 Period: Last 7 days signals only")
+                        
+                        self._update_status(f"✅ 7-day report generated: {Path(pdf_filename).name}")
+                        self._update_progress(100)
+                        
+                        # Enable view button
+                        self.view_report_btn.config(state="normal")
+                    else:
+                        self._log_message(f"❌ Error: PDF file not found: {pdf_filename}")
+                        self._update_status("❌ Error: PDF file not found after generation")
+                elif result and not result.get('success', True):
+                    # PDF generation failed with error
+                    error_msg = result.get('error', 'Unknown error')
+                    self._log_message(f"❌ 7-day PDF generation failed: {error_msg}")
+                    self._update_status(f"❌ 7-day generation failed: {error_msg}")
+                else:
+                    # Unexpected result format
+                    self._log_message(f"❌ Unexpected result from 7-day PDF generator: {result}")
+                    self._update_status("❌ 7-day PDF generation failed (unexpected result)")
+                    
+            except Exception as e:
+                self._log_message(f"💥 Error during 7-day PDF generation: {str(e)}")
+                self._update_status(f"💥 7-day generation error: {str(e)}")
+                import traceback
+                self._log_message(f"💥 Stack trace:\n{traceback.format_exc()}")
+            finally:
+                os.chdir(original_cwd)
+                
+        except Exception as e:
+            self._log_message(f"💥 Unexpected 7-day error: {str(e)}")
+            self._update_status(f"💥 Unexpected 7-day error: {str(e)}")
+        finally:
+            # Re-enable button
+            self.generate_7day_btn.config(state="normal")
     
     def _open_reports_folder(self):
         """Open the reports folder in file explorer"""
