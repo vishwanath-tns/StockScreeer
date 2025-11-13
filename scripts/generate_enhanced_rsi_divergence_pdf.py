@@ -253,6 +253,34 @@ def create_candlestick_chart(ax, price_df, title="Price Chart"):
     # Return positions and dates for divergence plotting
     return positions, price_df['trade_date'].values
 
+def get_candle_low_for_date(price_df, target_date):
+    """
+    Get the actual candle low price for a specific date from price DataFrame.
+    Returns None if date not found.
+    """
+    try:
+        target_date_normalized = pd.to_datetime(target_date).normalize()
+        
+        # Filter price data for the target date
+        matching_rows = price_df[pd.to_datetime(price_df['trade_date']).dt.normalize() == target_date_normalized]
+        
+        if not matching_rows.empty:
+            return float(matching_rows.iloc[0]['low_price'])
+        else:
+            # If exact date not found, try to find closest date within 3 days
+            price_df_copy = price_df.copy()
+            price_df_copy['date_normalized'] = pd.to_datetime(price_df_copy['trade_date']).dt.normalize()
+            price_df_copy['date_diff'] = abs((price_df_copy['date_normalized'] - target_date_normalized).dt.days)
+            
+            closest_match = price_df_copy[price_df_copy['date_diff'] <= 3].sort_values('date_diff')
+            if not closest_match.empty:
+                return float(closest_match.iloc[0]['low_price'])
+                
+    except Exception as e:
+        print(f"⚠️ Error getting low price for {target_date}: {e}")
+        
+    return None
+
 def parse_signal_data(stock_data):
     """Parse the grouped signal data into individual signals"""
     signals = []
@@ -333,6 +361,23 @@ def create_multi_divergence_chart(symbol, stock_data, price_df, rsi_df, fig_size
         curr_date = pd.to_datetime(signal['curr_fractal_date']).normalize()
         comp_date = pd.to_datetime(signal['comp_fractal_date']).normalize()
         
+        # Get actual candle low prices for the divergence dates
+        curr_low = get_candle_low_for_date(price_df, curr_date)
+        comp_low = get_candle_low_for_date(price_df, comp_date)
+        
+        # Fallback to center closes if low prices not found
+        if curr_low is None:
+            curr_low = signal['curr_center_close']
+            print(f"⚠️ Using center close for current divergence point: {curr_date}")
+        else:
+            print(f"✅ Using candle low for {curr_date}: ₹{curr_low:.2f} (vs center close: ₹{signal['curr_center_close']:.2f})")
+        
+        if comp_low is None:
+            comp_low = signal['comp_center_close'] 
+            print(f"⚠️ Using center close for comparison divergence point: {comp_date}")
+        else:
+            print(f"✅ Using candle low for {comp_date}: ₹{comp_low:.2f} (vs center close: ₹{signal['comp_center_close']:.2f})")
+        
         # Try exact match first, then closest match
         curr_pos = date_to_position.get(curr_date)
         comp_pos = date_to_position.get(comp_date)
@@ -354,22 +399,23 @@ def create_multi_divergence_chart(symbol, stock_data, price_df, rsi_df, fig_size
                     min_diff = diff_days
                     comp_pos = pos
         
-        # Plot divergence points if positions found
+        # Plot divergence points if positions found - using actual candle lows
         if curr_pos is not None:
-            ax1.scatter([curr_pos], [signal['curr_center_close']], 
+            ax1.scatter([curr_pos], [curr_low], 
                        color=signal_color, s=120, marker='o', alpha=alpha, zorder=5, 
                        edgecolor='black', label=f"Signal {i+1} Current" if i < 3 else "")
         
         if comp_pos is not None:
-            ax1.scatter([comp_pos], [signal['comp_center_close']], 
+            ax1.scatter([comp_pos], [comp_low], 
                        color=signal_color, s=120, marker='s', alpha=alpha, zorder=5, 
                        edgecolor='black', label=f"Signal {i+1} Comparison" if i < 3 else "")
         
-        # Draw divergence line if both positions found
+        # Draw divergence line connecting the actual candle lows
         if curr_pos is not None and comp_pos is not None:
             ax1.plot([comp_pos, curr_pos], 
-                    [signal['comp_center_close'], signal['curr_center_close']], 
-                    color=signal_color, linestyle='--', linewidth=1.5, alpha=alpha)
+                    [comp_low, curr_low], 
+                    color=signal_color, linestyle='--', linewidth=2.0, alpha=alpha+0.1,
+                    label=f"Divergence Line {i+1}" if i < 2 else "")
     
     # Add buy/sell levels if available
     if pd.notna(stock_data['buy_above_price']):
