@@ -1,0 +1,144 @@
+NSE DATA COMPLETENESS DETAILED REPORT
+============================================================
+Generated: 2025-11-14 00:56:11
+
+1. NSE EQUITY BHAVCOPY MISSING DATES
+----------------------------------------
+Date Range Analyzed: 2024-01-02 to 2025-11-13
+Total Missing Trading Days: 22
+
+
+2024-01:
+  2024-01-22 (Monday)
+  2024-01-26 (Friday)
+
+2024-03:
+  2024-03-08 (Friday)
+  2024-03-25 (Monday)
+  2024-03-29 (Friday)
+
+2024-04:
+  2024-04-11 (Thursday)
+  2024-04-17 (Wednesday)
+
+2024-05:
+  2024-05-01 (Wednesday)
+  2024-05-20 (Monday)
+
+2024-06:
+  2024-06-17 (Monday)
+
+2024-07:
+  2024-07-17 (Wednesday)
+
+2024-08:
+  2024-08-15 (Thursday)
+
+2024-10:
+  2024-10-02 (Wednesday)
+  2024-10-21 (Monday)
+
+2024-11:
+  2024-11-08 (Friday)
+  2024-11-11 (Monday)
+  2024-11-14 (Thursday)
+  2024-11-15 (Friday)
+  2024-11-20 (Wednesday)
+
+2024-12:
+  2024-12-25 (Wednesday)
+
+2025-04:
+  2025-04-08 (Tuesday)
+
+2025-10:
+  2025-10-13 (Monday)
+
+OCTOBER 13, 2025 ANALYSIS:
+Date: 2025-10-13 (Monday)
+Is Weekend: No
+Is Holiday: No
+Should Have Data: Yes
+Data Present: No
+
+
+2. RSI TABLES MISSING DATES
+----------------------------------------
+
+RSI Daily Table Missing Dates:
+Date Range: 2024-01-03 to 2025-11-13
+Total Missing: 22
+
+2024-01:
+  2024-01-22 (Monday)
+  2024-01-26 (Friday)
+
+2024-03:
+  2024-03-08 (Friday)
+  2024-03-25 (Monday)
+  2024-03-29 (Friday)
+
+2024-04:
+  2024-04-11 (Thursday)
+  2024-04-17 (Wednesday)
+
+2024-05:
+  2024-05-01 (Wednesday)
+  2024-05-20 (Monday)
+
+2024-06:
+  2024-06-17 (Monday)
+
+2024-07:
+  2024-07-17 (Wednesday)
+
+2024-08:
+  2024-08-15 (Thursday)
+
+2024-10:
+  2024-10-02 (Wednesday)
+  2024-10-21 (Monday)
+
+2024-11:
+  2024-11-08 (Friday)
+  2024-11-11 (Monday)
+  2024-11-14 (Thursday)
+  2024-11-15 (Friday)
+  2024-11-20 (Wednesday)
+
+2024-12:
+  2024-12-25 (Wednesday)
+
+2025-04:
+  2025-04-08 (Tuesday)
+
+2025-10:
+  2025-10-13 (Monday)
+
+
+RSI Divergences Table:
+Date Range: 2024-01-30 to 2025-11-07
+Total Signal Days: 112
+Note: RSI divergences are calculated periodically, not daily.
+Missing days are expected as signals are generated only when divergences are detected.
+
+
+3. CRITICAL ANALYSIS
+----------------------------------------
+
+No missing dates in the last 30 days.
+
+Consistency Check:
+BHAV missing dates: 22
+RSI missing dates: 22
+Common missing dates: 22
+✅ BHAV and RSI data gaps are consistent (same missing dates)
+
+
+4. RECOMMENDATIONS
+----------------------------------------
+1. Investigate why October 13, 2025 data is missing
+2. Review data import processes for the identified missing dates
+3. Check if missing dates correspond to unscheduled market closures
+4. Verify trading calendar against actual market trading days
+5. Consider backfilling missing data if sources are available
