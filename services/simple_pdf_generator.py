@@ -96,12 +96,21 @@ def generate_simple_sectoral_pdf_report(analysis_date: str, output_path: Optiona
         story.append(generated_para)
         story.append(Spacer(1, 0.5*inch))
         
-        # Get sectoral data using GUI functions
-        major_sectors = [
-            'NIFTY-PHARMA', 'NIFTY-BANK', 'NIFTY-IT', 'NIFTY-AUTO',
-            'NIFTY-FMCG', 'NIFTY-REALTY', 'NIFTY-METAL', 'NIFTY-ENERGY',
-            'NIFTY-HEALTHCARE-INDEX', 'NIFTY-CONSUMER-DURABLES'
-        ]
+        # Get sectoral data using the same logic as GUI "Compare All Major Sectors"
+        try:
+            from services.index_symbols_api import get_api
+            api = get_api()
+            all_indices = api.get_all_indices()
+            major_sectors = [s for s in all_indices.keys() if 'NIFTY' in s and len(s) < 25]
+            major_sectors = major_sectors[:10]  # Limit to first 10 to match GUI
+        except Exception as e:
+            print(f"Warning: Could not fetch dynamic sectors, using fallback list: {e}")
+            # Fallback to hardcoded list if API fails
+            major_sectors = [
+                'NIFTY-PHARMA', 'NIFTY-BANK', 'NIFTY-IT', 'NIFTY-AUTO',
+                'NIFTY-FMCG', 'NIFTY-REALTY', 'NIFTY-METAL', 'NIFTY-ENERGY',
+                'NIFTY-HEALTHCARE-INDEX', 'NIFTY-CONSUMER-DURABLES'
+            ]
         
         # Convert analysis_date string to date object
         try:
@@ -236,8 +245,8 @@ def generate_simple_sectoral_pdf_report(analysis_date: str, output_path: Optiona
         story.append(Paragraph("DETAILED SECTOR STOCK ANALYSIS", styles['CustomHeading']))
         story.append(Spacer(1, 0.3*inch))
         
-        # Create detailed analysis for each sector
-        for sector_data in sector_results[:5]:  # Top 5 sectors only for PDF space
+        # Create detailed analysis for all sectors (same as shown in GUI)
+        for sector_data in sector_results:  # Include all sectors to match GUI display
             sector_name = sector_data['sector']
             sector_code = f"NIFTY-{sector_name}" if not sector_name.startswith('NIFTY') else sector_name
             
