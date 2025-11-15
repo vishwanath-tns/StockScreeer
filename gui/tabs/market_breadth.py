@@ -33,8 +33,24 @@ from services.market_breadth_service import (
     get_or_calculate_market_breadth,  # New function for on-demand calculation
     get_market_depth_analysis_for_range,  # New function for date range analysis
     calculate_market_depth_trends,  # New function for trend calculations
-    get_nifty_with_breadth_chart_data  # New function for chart data
+    get_nifty_with_breadth_chart_data,  # New function for chart data
+    get_sectoral_breadth,  # New sectoral analysis function
+    compare_sectoral_breadth  # New multi-sector comparison function
 )
+
+# Import index symbols API for sectoral analysis
+try:
+    from services.index_symbols_api import IndexSymbolsAPI
+    index_api = IndexSymbolsAPI()
+except ImportError:
+    index_api = None
+
+# Import PDF generator for sectoral reports
+try:
+    from services.simple_pdf_generator import generate_sectoral_pdf_report
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
 
 # Import chart window for displaying stock charts
 try:
@@ -229,6 +245,9 @@ class MarketBreadthTab:
         
         # Stocks tab
         self.setup_stocks_tab()
+        
+        # Sectoral Analysis tab
+        self.setup_sectoral_tab()
     
     def setup_summary_tab(self):
         """Set up the summary overview tab."""
@@ -1157,6 +1176,859 @@ class MarketBreadthTab:
             print(f"Error showing chart for {symbol}: {e}")
             import traceback
             traceback.print_exc()
+    
+    def setup_sectoral_tab(self):
+        """Set up the sectoral analysis tab."""
+        sectoral_frame = ttk.Frame(self.notebook)
+        self.notebook.add(sectoral_frame, text="🏭 Sectoral Analysis")
+        
+        # Title
+        title_frame = ttk.Frame(sectoral_frame)
+        title_frame.pack(fill=tk.X, padx=10, pady=10)
+        ttk.Label(title_frame, text="Sectoral Trend Analysis", 
+                 font=('Arial', 14, 'bold')).pack(side=tk.LEFT)
+        
+        # Refresh sectoral data button
+        ttk.Button(title_frame, text="Refresh Sectoral Data", 
+                  command=self.refresh_sectoral_data).pack(side=tk.RIGHT)
+        
+        # Controls frame
+        controls_frame = ttk.LabelFrame(sectoral_frame, text="Analysis Controls", padding=10)
+        controls_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+        
+        # Sector selection
+        sector_select_frame = ttk.Frame(controls_frame)
+        sector_select_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Label(sector_select_frame, text="Select Sector:").pack(side=tk.LEFT)
+        self.sector_var = tk.StringVar()
+        
+        # Populate sectors dynamically
+        available_sectors = []
+        if index_api:
+            try:
+                all_indices = index_api.get_all_indices()
+                # Focus on major sectoral indices
+                priority_sectors = ['NIFTY-BANK', 'NIFTY-IT', 'NIFTY-PHARMA', 'NIFTY-AUTO', 
+                                  'NIFTY-FMCG', 'NIFTY-METALS', 'NIFTY-ENERGY', 'NIFTY-REALTY']
+                available_sectors = [s for s in priority_sectors if s in all_indices]
+                # Add other available sectors
+                for sector in all_indices:
+                    if sector not in available_sectors and 'NIFTY' in sector:
+                        available_sectors.append(sector)
+            except:
+                available_sectors = ['NIFTY-BANK', 'NIFTY-IT', 'NIFTY-PHARMA', 'NIFTY-AUTO', 'NIFTY-FMCG']
+        else:
+            available_sectors = ['NIFTY-BANK', 'NIFTY-IT', 'NIFTY-PHARMA', 'NIFTY-AUTO', 'NIFTY-FMCG']
+        
+        self.sector_combo = ttk.Combobox(sector_select_frame, textvariable=self.sector_var,
+                                        values=available_sectors, width=20)
+        self.sector_combo.pack(side=tk.LEFT, padx=(5, 0))
+        if available_sectors:
+            self.sector_combo.set(available_sectors[0])
+        
+        # Analysis date (dedicated for sectoral analysis)
+        date_frame = ttk.Frame(controls_frame)
+        date_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        # Latest data toggle for sectoral analysis
+        self.sectoral_use_latest = tk.BooleanVar(value=True)
+        latest_check = ttk.Checkbutton(date_frame, text="Use Latest Data", 
+                                     variable=self.sectoral_use_latest, 
+                                     command=self.on_sectoral_latest_toggle)
+        latest_check.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Date picker for sectoral analysis
+        ttk.Label(date_frame, text="Select Date:").pack(side=tk.LEFT)
+        
+        # Initialize sectoral date picker with current date
+        self.sectoral_date_picker = DateEntry(date_frame, width=12, background='darkblue',
+                                   foreground='white', borderwidth=2,
+                                   date_pattern='yyyy-mm-dd', state='disabled')
+        self.sectoral_date_picker.pack(side=tk.LEFT, padx=(5, 10))
+        self.sectoral_date_picker.bind('<<DateEntrySelected>>', self.on_sectoral_date_selected)
+        
+        # Status for sectoral date selection
+        self.sectoral_date_info = ttk.Label(date_frame, text="Using latest available data", foreground="green")
+        self.sectoral_date_info.pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Refresh available dates button
+        ttk.Button(date_frame, text="📅 Check Available Dates", 
+                  command=self.check_sectoral_dates).pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Analyze buttons
+        button_frame = ttk.Frame(controls_frame)
+        button_frame.pack(fill=tk.X)
+        
+        ttk.Button(button_frame, text="Analyze Single Sector", 
+                  command=self.analyze_single_sector).pack(side=tk.LEFT, padx=(0, 10))
+        
+        ttk.Button(button_frame, text="Compare Top 5 Sectors", 
+                  command=self.compare_top_sectors).pack(side=tk.LEFT, padx=(0, 10))
+        
+        ttk.Button(button_frame, text="Compare All Major Sectors", 
+                  command=self.compare_all_sectors).pack(side=tk.LEFT, padx=(0, 10))
+        
+        # PDF Report button
+        ttk.Button(button_frame, text="📄 Generate PDF Report", 
+                  command=self.generate_sectoral_pdf_report).pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Results frame with notebook for different views
+        results_frame = ttk.LabelFrame(sectoral_frame, text="Analysis Results", padding=10)
+        results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        
+        # Create notebook for sectoral results
+        self.sectoral_notebook = ttk.Notebook(results_frame)
+        self.sectoral_notebook.pack(fill=tk.BOTH, expand=True)
+        
+        # Single sector analysis tab
+        self.setup_single_sector_tab()
+        
+        # Multi-sector comparison tab
+        self.setup_multi_sector_tab()
+        
+        # Status bar for sectoral analysis
+        self.sectoral_status = ttk.Label(sectoral_frame, text="Ready for sectoral analysis", 
+                                       foreground="blue")
+        self.sectoral_status.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=(0, 5))
+    
+    def setup_single_sector_tab(self):
+        """Set up single sector analysis view."""
+        single_sector_frame = ttk.Frame(self.sectoral_notebook)
+        self.sectoral_notebook.add(single_sector_frame, text="Single Sector")
+        
+        # Metrics display
+        metrics_frame = ttk.LabelFrame(single_sector_frame, text="Sector Metrics", padding=10)
+        metrics_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Create metrics grid for single sector
+        self.sectoral_metrics_frame = ttk.Frame(metrics_frame)
+        self.sectoral_metrics_frame.pack(fill=tk.X)
+        
+        self.sectoral_metric_labels = {}
+        sectoral_metrics = [
+            ('sector_name', 'Sector', 0, 0),
+            ('total_stocks', 'Total Stocks', 0, 1),
+            ('symbols_analyzed', 'Analyzed', 0, 2),
+            ('bullish_percent', 'Bullish %', 1, 0),
+            ('bearish_percent', 'Bearish %', 1, 1),
+            ('daily_uptrend_percent', 'Daily Uptrend %', 1, 2),
+        ]
+        
+        for key, label, row, col in sectoral_metrics:
+            frame = ttk.Frame(self.sectoral_metrics_frame)
+            frame.grid(row=row, column=col, padx=10, pady=5, sticky='w')
+            
+            ttk.Label(frame, text=f"{label}:", font=('Arial', 10, 'bold')).pack()
+            value_label = ttk.Label(frame, text="--", font=('Arial', 12))
+            value_label.pack()
+            self.sectoral_metric_labels[key] = value_label
+        
+        # Stock breakdown
+        stocks_frame = ttk.LabelFrame(single_sector_frame, text="Stock Breakdown", padding=10)
+        stocks_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Treeview for individual stocks
+        columns = ('Symbol', 'Trend Rating', 'Daily Trend', 'Weekly Trend', 'Monthly Trend')
+        self.sectoral_stocks_tree = ttk.Treeview(stocks_frame, columns=columns, show='headings', height=10)
+        
+        for col in columns:
+            self.sectoral_stocks_tree.heading(col, text=col)
+            self.sectoral_stocks_tree.column(col, width=120)
+        
+        # Scrollbar for stocks tree
+        stocks_scroll = ttk.Scrollbar(stocks_frame, orient=tk.VERTICAL, command=self.sectoral_stocks_tree.yview)
+        self.sectoral_stocks_tree.configure(yscrollcommand=stocks_scroll.set)
+        
+        self.sectoral_stocks_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        stocks_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Bind double-click to show stock chart
+        self.sectoral_stocks_tree.bind('<Double-1>', self.on_sectoral_stock_double_click)
+    
+    def setup_multi_sector_tab(self):
+        """Set up multi-sector comparison view."""
+        multi_sector_frame = ttk.Frame(self.sectoral_notebook)
+        self.sectoral_notebook.add(multi_sector_frame, text="Multi-Sector Comparison")
+        
+        # Comparison table
+        comparison_frame = ttk.LabelFrame(multi_sector_frame, text="Sector Performance Comparison", padding=10)
+        comparison_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Treeview for comparison
+        columns = ('Sector', 'Total Stocks', 'Bullish %', 'Bearish %', 'Daily Uptrend %', 'Weekly Uptrend %')
+        self.comparison_tree = ttk.Treeview(comparison_frame, columns=columns, show='headings', height=12)
+        
+        for col in columns:
+            self.comparison_tree.heading(col, text=col, command=lambda _col=col: self.sort_comparison(_col))
+            self.comparison_tree.column(col, width=120)
+        
+        # Scrollbar for comparison tree
+        comparison_scroll = ttk.Scrollbar(comparison_frame, orient=tk.VERTICAL, command=self.comparison_tree.yview)
+        self.comparison_tree.configure(yscrollcommand=comparison_scroll.set)
+        
+        self.comparison_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        comparison_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Bind double-click to show detailed sector stocks
+        self.comparison_tree.bind('<Double-1>', self.on_sector_comparison_double_click)
+        
+        # Add summary labels below the comparison
+        summary_frame = ttk.Frame(multi_sector_frame)
+        summary_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        self.best_sector_label = ttk.Label(summary_frame, text="Best Performing Sector: --", 
+                                         font=('Arial', 11, 'bold'), foreground="green")
+        self.best_sector_label.pack(anchor=tk.W)
+        
+        self.worst_sector_label = ttk.Label(summary_frame, text="Weakest Performing Sector: --", 
+                                          font=('Arial', 11, 'bold'), foreground="red")
+        self.worst_sector_label.pack(anchor=tk.W)
+    
+    def refresh_sectoral_data(self):
+        """Refresh sectoral analysis data."""
+        if index_api is None:
+            messagebox.showerror("API Unavailable", "Index symbols API is not available. Please check the setup.")
+            return
+        
+        self.sectoral_status.configure(text="🔄 Refreshing sectoral data...", foreground="orange")
+        
+        def refresh_indices():
+            try:
+                # Get fresh list of available indices
+                all_indices = index_api.get_all_indices()
+                
+                # Update sector combo values
+                priority_sectors = ['NIFTY-BANK', 'NIFTY-IT', 'NIFTY-PHARMA', 'NIFTY-AUTO', 
+                                  'NIFTY-FMCG', 'NIFTY-METALS', 'NIFTY-ENERGY', 'NIFTY-REALTY']
+                available_sectors = [s for s in priority_sectors if s in all_indices]
+                
+                # Add other available sectors
+                for sector in all_indices:
+                    if sector not in available_sectors and 'NIFTY' in sector:
+                        available_sectors.append(sector)
+                
+                def update_ui():
+                    self.sector_combo['values'] = available_sectors
+                    if available_sectors and not self.sector_var.get():
+                        self.sector_combo.set(available_sectors[0])
+                    
+                    self.sectoral_status.configure(
+                        text=f"✅ {len(available_sectors)} sectors available", 
+                        foreground="green"
+                    )
+                
+                self.parent.after(0, update_ui)
+                
+            except Exception as e:
+                error_msg = f"Failed to refresh sectoral data: {str(e)}"
+                self.parent.after(0, lambda: self.handle_sectoral_error(error_msg))
+        
+        threading.Thread(target=refresh_indices, daemon=True).start()
+    
+    def get_analysis_date(self):
+        """Get the current analysis date from main date picker."""
+        if self.use_latest.get():
+            return None  # Use latest available
+        else:
+            try:
+                return self.date_picker.get_date()
+            except:
+                return None
+    
+    def get_sectoral_analysis_date(self):
+        """Get the current analysis date for sectoral analysis."""
+        if self.sectoral_use_latest.get():
+            return None  # Use latest available
+        else:
+            try:
+                return self.sectoral_date_picker.get_date()
+            except:
+                return None
+    
+    def on_sectoral_latest_toggle(self):
+        """Handle toggle between latest data and date picker for sectoral analysis."""
+        if self.sectoral_use_latest.get():
+            # Using latest data
+            self.sectoral_date_picker.configure(state='disabled')
+            self.sectoral_date_info.configure(text="Using latest available data", foreground="green")
+        else:
+            # Using date picker
+            self.sectoral_date_picker.configure(state='normal')
+            self.sectoral_date_info.configure(text="Select a date to analyze", foreground="blue")
+    
+    def on_sectoral_date_selected(self, event=None):
+        """Handle sectoral date picker selection."""
+        if not self.sectoral_use_latest.get():
+            try:
+                selected_date = self.sectoral_date_picker.get_date()
+                self.sectoral_date_info.configure(
+                    text=f"Selected: {selected_date.strftime('%Y-%m-%d')}", 
+                    foreground="blue"
+                )
+            except Exception as e:
+                self.sectoral_date_info.configure(
+                    text="Date selection error", 
+                    foreground="red"
+                )
+    
+    def check_sectoral_dates(self):
+        """Check and display available dates for sectoral analysis."""
+        self.sectoral_status.configure(text="🔄 Checking available dates...", foreground="orange")
+        
+        def fetch_dates():
+            try:
+                # Import the function
+                from services.market_breadth_service import get_sectoral_analysis_dates
+                
+                available_dates = get_sectoral_analysis_dates(30)
+                
+                def show_dates():
+                    if available_dates:
+                        date_list = '\n'.join([f"📅 {d}" for d in available_dates[:15]])
+                        if len(available_dates) > 15:
+                            date_list += f"\n... and {len(available_dates) - 15} more dates"
+                        
+                        messagebox.showinfo(
+                            "Available Analysis Dates", 
+                            f"📊 Found {len(available_dates)} dates with trend analysis data:\n\n"
+                            f"{date_list}\n\n"
+                            f"💡 Latest: {available_dates[0]}\n"
+                            f"📈 You can analyze any sector for these dates."
+                        )
+                        
+                        # Update status
+                        self.sectoral_status.configure(
+                            text=f"✅ {len(available_dates)} analysis dates available (latest: {available_dates[0]})", 
+                            foreground="green"
+                        )
+                    else:
+                        messagebox.showwarning(
+                            "No Data Available",
+                            "❌ No trend analysis data found in database.\n\n"
+                            "Please ensure:\n"
+                            "• Database connection is working\n"
+                            "• trend_analysis table has data\n"
+                            "• Run trend analysis calculations first"
+                        )
+                        self.sectoral_status.configure(text="❌ No analysis data available", foreground="red")
+                
+                self.parent.after(0, show_dates)
+                
+            except Exception as e:
+                error_msg = f"Error checking dates: {str(e)}"
+                self.parent.after(0, lambda: self.handle_sectoral_error(error_msg))
+        
+        threading.Thread(target=fetch_dates, daemon=True).start()
+    
+    def analyze_single_sector(self):
+        """Analyze a single sector."""
+        sector = self.sector_var.get()
+        if not sector:
+            messagebox.showwarning("No Sector", "Please select a sector to analyze.")
+            return
+        
+        # Get the selected date
+        analysis_date = self.get_sectoral_analysis_date()
+        date_str = analysis_date.strftime('%Y-%m-%d') if analysis_date else "latest"
+        
+        self.sectoral_status.configure(text=f"🔄 Analyzing {sector} for {date_str}...", foreground="orange")
+        
+        def fetch_analysis():
+            try:
+                result = get_sectoral_breadth(sector, analysis_date)
+                
+                self.parent.after(0, lambda: self.update_single_sector_display(result, sector))
+                
+            except Exception as e:
+                error_msg = f"Failed to analyze {sector} for {date_str}: {str(e)}"
+                self.parent.after(0, lambda: self.handle_sectoral_error(error_msg))
+        
+        threading.Thread(target=fetch_analysis, daemon=True).start()
+    
+    def compare_top_sectors(self):
+        """Compare top 5 major sectors."""
+        top_sectors = ['NIFTY-BANK', 'NIFTY-IT', 'NIFTY-PHARMA', 'NIFTY-AUTO', 'NIFTY-FMCG']
+        self._compare_sectors(top_sectors, "top 5 sectors")
+    
+    def compare_all_sectors(self):
+        """Compare all major sectors."""
+        if index_api is None:
+            messagebox.showerror("API Unavailable", "Index symbols API is not available.")
+            return
+        
+        try:
+            all_indices = index_api.get_all_indices()
+            major_sectors = [s for s in all_indices.keys() if 'NIFTY' in s and len(s) < 25]  # Filter reasonable sector names
+            major_sectors = major_sectors[:10]  # Limit to first 10 to avoid overload
+            self._compare_sectors(major_sectors, f"{len(major_sectors)} major sectors")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to get sectors list: {str(e)}")
+    
+    def _compare_sectors(self, sectors, description):
+        """Internal method to compare multiple sectors."""
+        if not sectors:
+            messagebox.showwarning("No Sectors", "No sectors to compare.")
+            return
+        
+        # Get the selected date
+        analysis_date = self.get_sectoral_analysis_date()
+        date_str = analysis_date.strftime('%Y-%m-%d') if analysis_date else "latest"
+        
+        self.sectoral_status.configure(text=f"🔄 Comparing {description} for {date_str}...", foreground="orange")
+        
+        def fetch_comparison():
+            try:
+                result = compare_sectoral_breadth(sectors, analysis_date)
+                
+                self.parent.after(0, lambda: self.update_comparison_display(result, description))
+                
+            except Exception as e:
+                error_msg = f"Failed to compare {description} for {date_str}: {str(e)}"
+                self.parent.after(0, lambda: self.handle_sectoral_error(error_msg))
+        
+        threading.Thread(target=fetch_comparison, daemon=True).start()
+    
+    def update_single_sector_display(self, result, sector):
+        """Update single sector analysis display."""
+        if not result.get('success', False):
+            error_msg = result.get('error', 'Unknown error')
+            
+            # Enhanced error message with suggestions
+            enhanced_msg = f"Failed to analyze {sector}:\n\n{error_msg}"
+            
+            # Add helpful suggestions if available
+            if 'latest_available' in result and result['latest_available']:
+                enhanced_msg += f"\n\n💡 Suggestions:"
+                enhanced_msg += f"\n• Try latest available date: {result['latest_available']}"
+                
+            if 'nearby_dates' in result and result['nearby_dates']:
+                enhanced_msg += f"\n• Try nearby dates: {', '.join(result['nearby_dates'][:3])}"
+            
+            enhanced_msg += "\n\n📅 Click 'Check Available Dates' to see all available analysis dates."
+            
+            messagebox.showerror("Sectoral Analysis Error", enhanced_msg)
+            self.sectoral_status.configure(text="❌ Analysis failed - check available dates", foreground="red")
+            return
+        
+        # Switch to single sector tab
+        self.sectoral_notebook.select(0)
+        
+        # Update metrics
+        metrics = {
+            'sector_name': sector,
+            'total_stocks': result.get('total_stocks', 0),
+            'symbols_analyzed': result.get('symbols_analyzed', 0),
+            'bullish_percent': result.get('breadth_summary', {}).get('bullish_percent', 0),
+            'bearish_percent': result.get('breadth_summary', {}).get('bearish_percent', 0),
+            'daily_uptrend_percent': result.get('technical_breadth', {}).get('daily_uptrend_percent', 0),
+        }
+        
+        for key, value in metrics.items():
+            if key in self.sectoral_metric_labels:
+                if key == 'sector_name':
+                    self.sectoral_metric_labels[key].config(text=str(value))
+                elif isinstance(value, (int, float)) and key.endswith('_percent'):
+                    self.sectoral_metric_labels[key].config(text=f"{value:.1f}%")
+                else:
+                    self.sectoral_metric_labels[key].config(text=str(value))
+        
+        # Update stocks tree
+        for item in self.sectoral_stocks_tree.get_children():
+            self.sectoral_stocks_tree.delete(item)
+        
+        # Get individual stock data from the result
+        sector_data = result.get('sector_data')
+        if sector_data is not None and not sector_data.empty:
+            for _, row in sector_data.iterrows():
+                values = (
+                    row['symbol'],
+                    f"{row['trend_rating']:.1f}",
+                    row['daily_trend'],
+                    row['weekly_trend'],
+                    row['monthly_trend']
+                )
+                self.sectoral_stocks_tree.insert('', tk.END, values=values)
+        
+        # Update status
+        analysis_date = result.get('analysis_date', 'latest')
+        self.sectoral_status.configure(
+            text=f"✅ {sector}: {metrics['symbols_analyzed']}/{metrics['total_stocks']} stocks analyzed ({analysis_date})", 
+            foreground="green"
+        )
+        
+        # Update sectoral date info
+        self.sectoral_date_info.configure(text=f"Analyzed: {analysis_date}")
+        
+        # Show success message for first-time users
+        if result.get('symbols_analyzed', 0) > 0:
+            coverage = result.get('coverage_percent', 0)
+            messagebox.showinfo(
+                "Sectoral Analysis Complete",
+                f"✅ {sector} Analysis Results:\n\n"
+                f"📊 Coverage: {metrics['symbols_analyzed']}/{metrics['total_stocks']} stocks ({coverage:.1f}%)\n"
+                f"📈 Bullish: {metrics['bullish_percent']:.1f}%\n"
+                f"📉 Bearish: {metrics['bearish_percent']:.1f}%\n"
+                f"⬆️ Daily Uptrend: {metrics['daily_uptrend_percent']:.1f}%\n\n"
+                f"💡 Double-click any stock to view its chart!"
+            )
+    
+    def update_comparison_display(self, result, description):
+        """Update multi-sector comparison display."""
+        if not result.get('comparison_summary'):
+            # Enhanced error handling for comparison
+            error_details = "No comparison data available"
+            if 'sectors_attempted' in result:
+                error_details += f" (tried {result['sectors_attempted']} sectors)"
+            
+            messagebox.showwarning(
+                "Sectoral Comparison Failed",
+                f"❌ {error_details} for {description}.\n\n"
+                f"📅 Analysis Date: {result.get('analysis_date', 'latest')}\n\n"
+                f"💡 Possible solutions:\n"
+                f"• Try a different date\n"
+                f"• Click 'Check Available Dates' to see valid dates\n"
+                f"• Check if sectors have data for this date"
+            )
+            self.sectoral_status.configure(text="❌ Comparison failed - check available dates", foreground="red")
+            return
+        
+        # Switch to comparison tab
+        self.sectoral_notebook.select(1)
+        
+        # Clear existing items
+        for item in self.comparison_tree.get_children():
+            self.comparison_tree.delete(item)
+        
+        # Sort by bullish percentage (descending)
+        comparison_data = sorted(result['comparison_summary'], 
+                               key=lambda x: x.get('bullish_percent', 0), reverse=True)
+        
+        # Populate comparison tree
+        for sector_data in comparison_data:
+            values = (
+                sector_data.get('sector', '--'),
+                sector_data.get('total_stocks', 0),
+                f"{sector_data.get('bullish_percent', 0):.1f}%",
+                f"{sector_data.get('bearish_percent', 0):.1f}%",
+                f"{sector_data.get('daily_uptrend_percent', 0):.1f}%",
+                f"{sector_data.get('weekly_uptrend_percent', 0):.1f}%"
+            )
+            self.comparison_tree.insert('', tk.END, values=values)
+        
+        # Update summary labels
+        if comparison_data:
+            best_sector = comparison_data[0]
+            worst_sector = comparison_data[-1]
+            
+            self.best_sector_label.configure(
+                text=f"Best Performing: {best_sector['sector']} ({best_sector.get('bullish_percent', 0):.1f}% bullish)"
+            )
+            self.worst_sector_label.configure(
+                text=f"Weakest Performing: {worst_sector['sector']} ({worst_sector.get('bullish_percent', 0):.1f}% bullish)"
+            )
+        
+        # Update status
+        analysis_date = result.get('analysis_date', 'latest')
+        successful_analyses = result.get('successful_analyses', 0)
+        total_attempted = result.get('sectors_analyzed', 0)
+        
+        self.sectoral_status.configure(
+            text=f"✅ Compared {successful_analyses}/{total_attempted} sectors successfully ({analysis_date})", 
+            foreground="green"
+        )
+        
+        # Update sectoral date info
+        self.sectoral_date_info.configure(text=f"Compared: {analysis_date}")
+        
+        # Show comparison summary
+        if successful_analyses > 0:
+            messagebox.showinfo(
+                "Sectoral Comparison Complete",
+                f"📊 {description.title()} Comparison Results:\n\n"
+                f"✅ Successfully analyzed: {successful_analyses} sectors\n"
+                f"🥇 Best performer: {best_sector['sector']} ({best_sector.get('bullish_percent', 0):.1f}% bullish)\n"
+                f"🔴 Weakest: {worst_sector['sector']} ({worst_sector.get('bullish_percent', 0):.1f}% bullish)\n\n"
+                f"📅 Analysis date: {analysis_date}\n"
+                f"📈 Click on any sector row for details!"
+            )
+    
+    def sort_comparison(self, column):
+        """Sort comparison tree by column."""
+        # This is a simplified sort - could be enhanced
+        children = list(self.comparison_tree.get_children())
+        if not children:
+            return
+        
+        # Get column index
+        columns = self.comparison_tree['columns']
+        try:
+            col_idx = list(columns).index(column)
+        except ValueError:
+            return
+        
+        # Extract values and sort
+        def get_sort_value(item):
+            values = self.comparison_tree.item(item, 'values')
+            if col_idx < len(values):
+                val = values[col_idx]
+                # Try to convert percentage to float
+                if isinstance(val, str) and val.endswith('%'):
+                    try:
+                        return float(val[:-1])
+                    except ValueError:
+                        return 0
+                # Try to convert to float
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    return str(val)
+            return ''
+        
+        children.sort(key=get_sort_value, reverse=True)
+        
+        # Reorder items
+        for index, item in enumerate(children):
+            self.comparison_tree.move(item, '', index)
+    
+    def on_sectoral_stock_double_click(self, event):
+        """Handle double-click on sectoral stock."""
+        selection = self.sectoral_stocks_tree.selection()
+        if not selection:
+            return
+        
+        item = self.sectoral_stocks_tree.item(selection[0])
+        values = item['values']
+        if not values:
+            return
+        
+        symbol = values[0]
+        self.display_stock_chart(symbol)
+    
+    def on_sector_comparison_double_click(self, event):
+        """Handle double-click on sector in comparison table to show detailed stocks."""
+        try:
+            selection = self.comparison_tree.selection()
+            if not selection:
+                messagebox.showinfo("No Selection", "Please select a sector row first.")
+                return
+            
+            item = self.comparison_tree.item(selection[0])
+            if not item['values']:
+                messagebox.showwarning("No Data", "Selected row has no data.")
+                return
+            
+            sector_name = item['values'][0]  # First column is sector name
+            
+            # Convert sector name back to sector code
+            sector_code = f"NIFTY-{sector_name}" if not sector_name.startswith('NIFTY') else sector_name
+            
+            # Get analysis date
+            analysis_date = self.get_sectoral_analysis_date()
+            
+            # Debug information
+            print(f"Opening sector detail for: {sector_code}")
+            print(f"Analysis date: {analysis_date}")
+            
+            # Open detailed sector window
+            try:
+                from gui.windows.sector_detail_window import SectorDetailWindow
+                # Use the parent window directly - this is most reliable
+                parent_window = self.parent
+                SectorDetailWindow(parent_window, sector_code, analysis_date)
+                print("Sector detail window opened successfully")
+                
+            except ImportError as e:
+                messagebox.showerror("Import Error", f"Could not import SectorDetailWindow:\n{str(e)}")
+            except Exception as e:
+                import traceback
+                error_details = traceback.format_exc()
+                print(f"Error opening sector window: {e}")
+                print(f"Error details: {error_details}")
+                messagebox.showerror("Error", f"Failed to open sector detail window:\n{str(e)}")
+                
+        except Exception as outer_e:
+            print(f"Outer error in double-click handler: {outer_e}")
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Handler Error", f"Error in double-click handler:\n{str(outer_e)}")
+    
+    def generate_sectoral_pdf_report(self):
+        """Generate PDF report for sectoral analysis."""
+        if not PDF_AVAILABLE:
+            messagebox.showerror(
+                "PDF Generation Unavailable",
+                "PDF generation requires the ReportLab library.\n\n"
+                "Please install it using:\n"
+                "pip install reportlab"
+            )
+            return
+        
+        # Get the selected analysis date
+        analysis_date = self.get_sectoral_analysis_date()
+        
+        # Convert date to string format for PDF generation
+        if analysis_date is None:
+            # Use latest date - need to get it from available dates
+            try:
+                from services.market_breadth_service import get_sectoral_analysis_dates
+                available_dates = get_sectoral_analysis_dates(1)
+                if available_dates:
+                    analysis_date_str = available_dates[0]
+                    display_date = analysis_date_str
+                else:
+                    analysis_date_str = datetime.now().strftime('%Y-%m-%d')
+                    display_date = "latest available"
+            except:
+                analysis_date_str = datetime.now().strftime('%Y-%m-%d')
+                display_date = "latest available"
+        else:
+            # Convert date object to string
+            if hasattr(analysis_date, 'strftime'):
+                analysis_date_str = analysis_date.strftime('%Y-%m-%d')
+                display_date = analysis_date_str
+            else:
+                analysis_date_str = str(analysis_date)
+                display_date = analysis_date_str
+        
+        # Show progress dialog
+        progress_window = tk.Toplevel(self.parent)
+        progress_window.title("Generating PDF Report")
+        progress_window.geometry("400x150")
+        progress_window.transient(self.parent)
+        progress_window.grab_set()
+        
+        # Center the progress window
+        progress_window.update_idletasks()
+        x = (progress_window.winfo_screenwidth() // 2) - (400 // 2)
+        y = (progress_window.winfo_screenheight() // 2) - (150 // 2)
+        progress_window.geometry(f"400x150+{x}+{y}")
+        
+        # Progress content
+        ttk.Label(progress_window, text="📄 Generating Sectoral Analysis PDF Report", 
+                 font=("Arial", 12, "bold")).pack(pady=10)
+        
+        progress_label = ttk.Label(progress_window, text=f"📅 Analysis Date: {display_date}")
+        progress_label.pack(pady=5)
+        
+        status_label = ttk.Label(progress_window, text="🔄 Collecting sectoral data...", 
+                               foreground="blue")
+        status_label.pack(pady=5)
+        
+        # Progress bar
+        progress_bar = ttk.Progressbar(progress_window, mode='indeterminate')
+        progress_bar.pack(pady=10, padx=20, fill=tk.X)
+        progress_bar.start()
+        
+        def generate_pdf():
+            """Generate PDF in background thread."""
+            try:
+                status_label.config(text="📊 Analyzing all major sectors...")
+                self.parent.update_idletasks()
+                
+                # Generate PDF report
+                success, result = generate_sectoral_pdf_report(analysis_date_str)
+                
+                self.parent.after(0, lambda: handle_pdf_result(success, result))
+                
+            except Exception as e:
+                self.parent.after(0, lambda: handle_pdf_result(False, f"Unexpected error: {str(e)}"))
+        
+        def handle_pdf_result(success, result):
+            """Handle PDF generation result."""
+            progress_bar.stop()
+            progress_window.destroy()
+            
+            if success:
+                # Success - show file location and options
+                result_window = tk.Toplevel(self.parent)
+                result_window.title("PDF Report Generated")
+                result_window.geometry("500x200")
+                result_window.transient(self.parent)
+                result_window.grab_set()
+                
+                # Center the result window
+                result_window.update_idletasks()
+                x = (result_window.winfo_screenwidth() // 2) - (500 // 2)
+                y = (result_window.winfo_screenheight() // 2) - (200 // 2)
+                result_window.geometry(f"500x200+{x}+{y}")
+                
+                ttk.Label(result_window, text="✅ PDF Report Generated Successfully!", 
+                         font=("Arial", 14, "bold"), foreground="green").pack(pady=10)
+                
+                ttk.Label(result_window, text=f"📁 File: {os.path.basename(result)}", 
+                         font=("Arial", 10)).pack(pady=5)
+                
+                ttk.Label(result_window, text=f"📍 Location: {os.path.dirname(os.path.abspath(result))}", 
+                         font=("Arial", 9), foreground="gray").pack(pady=5)
+                
+                # Action buttons
+                button_frame = ttk.Frame(result_window)
+                button_frame.pack(pady=20)
+                
+                ttk.Button(button_frame, text="📂 Open Folder", 
+                          command=lambda: self.open_file_location(result)).pack(side=tk.LEFT, padx=10)
+                
+                ttk.Button(button_frame, text="📄 Open PDF", 
+                          command=lambda: self.open_pdf_file(result)).pack(side=tk.LEFT, padx=10)
+                
+                ttk.Button(button_frame, text="✓ Close", 
+                          command=result_window.destroy).pack(side=tk.LEFT, padx=10)
+                
+                # Update status
+                self.sectoral_status.configure(text=f"✅ PDF report generated successfully ({display_date})", 
+                                             foreground="green")
+            else:
+                # Error - show error message
+                messagebox.showerror(
+                    "PDF Generation Failed", 
+                    f"Failed to generate PDF report:\n\n{result}\n\n"
+                    f"Please check:\n"
+                    f"• Database connection is working\n"
+                    f"• ReportLab library is installed\n"
+                    f"• Selected date has analysis data available"
+                )
+                
+                self.sectoral_status.configure(text=f"❌ PDF generation failed", foreground="red")
+        
+        # Start PDF generation in background
+        threading.Thread(target=generate_pdf, daemon=True).start()
+    
+    def open_file_location(self, file_path):
+        """Open the file location in system explorer."""
+        try:
+            import subprocess
+            import platform
+            
+            if platform.system() == 'Windows':
+                subprocess.run(['explorer', '/select,', file_path])
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', '-R', file_path])
+            else:  # Linux and others
+                subprocess.run(['xdg-open', os.path.dirname(file_path)])
+        except Exception as e:
+            messagebox.showinfo("File Location", f"File saved at:\n{os.path.abspath(file_path)}")
+    
+    def open_pdf_file(self, file_path):
+        """Open the PDF file with default application."""
+        try:
+            import subprocess
+            import platform
+            
+            if platform.system() == 'Windows':
+                os.startfile(file_path)
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', file_path])
+            else:  # Linux and others
+                subprocess.run(['xdg-open', file_path])
+        except Exception as e:
+            messagebox.showerror("Open PDF", f"Could not open PDF file:\n{str(e)}")
+    
+    def handle_sectoral_error(self, error_msg):
+        """Handle sectoral analysis errors."""
+        self.sectoral_status.configure(text="❌ Sectoral analysis failed", foreground="red")
+        messagebox.showerror("Sectoral Analysis Error", error_msg)
+        print(f"Sectoral analysis error: {error_msg}")
 
 
 # Test function for development

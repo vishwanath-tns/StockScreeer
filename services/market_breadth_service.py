@@ -3,6 +3,8 @@ Market Breadth Analysis Service
 
 This module provides market breadth analysis based on trend ratings to understand
 overall market sentiment and stock distribution across rating categories.
+
+Enhanced with sectoral analysis using index constituents.
 """
 
 import pandas as pd
@@ -952,5 +954,305 @@ def get_nifty_with_breadth_chart_data(start_date, end_date, index_name='NIFTY 50
         }
 
 
+def get_sectoral_analysis_dates(days: int = 30) -> List[date]:
+    """
+    Get available dates for sectoral analysis from trend_analysis table
+    
+    Args:
+        days: Number of recent days to retrieve
+        
+    Returns:
+        List of available dates sorted by most recent first
+    """
+    try:
+        engine = ensure_engine()
+        with engine.connect() as conn:
+            query = text("""
+                SELECT DISTINCT trade_date
+                FROM trend_analysis 
+                ORDER BY trade_date DESC
+                LIMIT :days
+            """)
+            
+            result = conn.execute(query, {"days": days})
+            dates = [row[0] for row in result.fetchall()]
+            
+            return dates
+            
+    except Exception as e:
+        print(f"❌ Error getting sectoral analysis dates: {e}")
+        return []
+
+
+def get_sectoral_breadth(sector_code: str, analysis_date: Optional[date] = None) -> Dict:
+    """
+    Get market breadth analysis for a specific sector
+    
+    Args:
+        sector_code: Index code (e.g., 'NIFTY-BANK', 'NIFTY-IT')
+        analysis_date: Date for analysis (defaults to latest)
+        
+    Returns:
+        Dict with sectoral breadth analysis
+    """
+    try:
+        # Import the index symbols API
+        from services.index_symbols_api import get_index_symbols
+        
+        # Get symbols for the sector
+        sector_symbols = get_index_symbols(sector_code)
+        
+        if not sector_symbols:
+            return {
+                'success': False,
+                'error': f'No symbols found for sector {sector_code}',
+                'sector_code': sector_code,
+                'analysis_date': analysis_date
+            }
+        
+        if analysis_date is None:
+            analysis_date = date.today()
+        
+        # Get breadth data filtered to sector symbols
+        engine = ensure_engine()
+        with engine.connect() as conn:
+            # Build the symbol list for SQL
+            symbol_list = ','.join(f"'{symbol}'" for symbol in sector_symbols)
+            
+            query = text(f"""
+                SELECT 
+                    symbol,
+                    trend_rating,
+                    daily_trend,
+                    weekly_trend,
+                    monthly_trend
+                FROM trend_analysis 
+                WHERE trade_date = :analysis_date
+                AND symbol IN ({symbol_list})
+                ORDER BY symbol
+            """)
+            
+            result = conn.execute(query, {"analysis_date": analysis_date})
+            df = pd.DataFrame(result.fetchall(), columns=[
+                'symbol', 'trend_rating', 'daily_trend', 
+                'weekly_trend', 'monthly_trend'
+            ])
+        
+        if df.empty:
+            # No data for the selected date - check for available dates nearby
+            with engine.connect() as conn:
+                # Check for the latest available date
+                latest_query = text("""
+                    SELECT MAX(trade_date) as latest_date
+                    FROM trend_analysis 
+                """)
+                latest_result = conn.execute(latest_query).fetchone()
+                latest_available = latest_result[0] if latest_result[0] else None
+                
+                # Check for available dates around the requested date
+                nearby_query = text("""
+                    SELECT DISTINCT trade_date 
+                    FROM trend_analysis 
+                    WHERE trade_date BETWEEN DATE_SUB(:analysis_date, INTERVAL 7 DAY) 
+                    AND DATE_ADD(:analysis_date, INTERVAL 7 DAY)
+                    ORDER BY ABS(DATEDIFF(trade_date, :analysis_date))
+                    LIMIT 5
+                """)
+                nearby_result = conn.execute(nearby_query, {"analysis_date": analysis_date})
+                nearby_dates = [str(row[0]) for row in nearby_result.fetchall()]
+                
+            # Build helpful error message
+            error_msg = f'No trend data found for {sector_code} on {analysis_date}'
+            if latest_available:
+                error_msg += f'\nLatest available data: {latest_available}'
+            if nearby_dates:
+                error_msg += f'\nNearby available dates: {", ".join(nearby_dates)}'
+            
+            return {
+                'success': False,
+                'error': error_msg,
+                'sector_code': sector_code,
+                'analysis_date': analysis_date,
+                'latest_available': latest_available,
+                'nearby_dates': nearby_dates
+            }
+        
+        # Calculate sectoral breadth metrics
+        total_stocks = len(df)
+        
+        # Rating distribution (using trend_rating numeric values)
+        # Convert numeric ratings to categories
+        def categorize_trend_rating(rating):
+            if rating >= 5:
+                return 'Very Bullish'
+            elif rating >= 2:
+                return 'Bullish'
+            elif rating >= -1.9:
+                return 'Neutral'
+            elif rating >= -5:
+                return 'Bearish'
+            else:
+                return 'Very Bearish'
+        
+        df['trend_category'] = df['trend_rating'].apply(categorize_trend_rating)
+        rating_dist = df['trend_category'].value_counts().to_dict()
+        rating_percentages = {
+            rating: (count / total_stocks) * 100 
+            for rating, count in rating_dist.items()
+        }
+        
+        # Bullish vs Bearish breakdown
+        bullish_count = df[df['trend_category'].isin(['Very Bullish', 'Bullish'])].shape[0]
+        bearish_count = df[df['trend_category'].isin(['Very Bearish', 'Bearish'])].shape[0]
+        neutral_count = df[df['trend_category'] == 'Neutral'].shape[0]
+        
+        # Trend breakdowns
+        daily_up = df[df['daily_trend'] == 'UP'].shape[0]
+        weekly_up = df[df['weekly_trend'] == 'UP'].shape[0]
+        monthly_up = df[df['monthly_trend'] == 'UP'].shape[0]
+        
+        return {
+            'success': True,
+            'sector_code': sector_code,
+            'analysis_date': analysis_date,
+            'total_stocks': total_stocks,
+            'symbols_analyzed': len(df),
+            'coverage_percent': (len(df) / len(sector_symbols)) * 100,
+            'rating_distribution': rating_dist,
+            'rating_percentages': rating_percentages,
+            'breadth_summary': {
+                'bullish_count': bullish_count,
+                'bullish_percent': (bullish_count / total_stocks) * 100,
+                'bearish_count': bearish_count,
+                'bearish_percent': (bearish_count / total_stocks) * 100,
+                'neutral_count': neutral_count,
+                'neutral_percent': (neutral_count / total_stocks) * 100,
+            },
+            'technical_breadth': {
+                'daily_uptrend_count': daily_up,
+                'daily_uptrend_percent': (daily_up / total_stocks) * 100,
+                'weekly_uptrend_count': weekly_up,
+                'weekly_uptrend_percent': (weekly_up / total_stocks) * 100,
+                'monthly_uptrend_count': monthly_up,
+                'monthly_uptrend_percent': (monthly_up / total_stocks) * 100,
+            },
+            'sector_data': df
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f'Error analyzing sectoral breadth: {str(e)}',
+            'sector_code': sector_code,
+            'analysis_date': analysis_date
+        }
+
+
+def compare_sectoral_breadth(sector_codes: List[str], analysis_date: Optional[date] = None) -> Dict:
+    """
+    Compare breadth analysis across multiple sectors
+    
+    Args:
+        sector_codes: List of sector index codes
+        analysis_date: Date for analysis (defaults to latest)
+        
+    Returns:
+        Dict with comparative sectoral analysis
+    """
+    if analysis_date is None:
+        analysis_date = date.today()
+    
+    sector_results = {}
+    comparison_summary = []
+    
+    for sector_code in sector_codes:
+        sector_data = get_sectoral_breadth(sector_code, analysis_date)
+        sector_results[sector_code] = sector_data
+        
+        if sector_data['success']:
+            comparison_summary.append({
+                'sector': sector_code,
+                'total_stocks': sector_data['total_stocks'],
+                'bullish_percent': sector_data['breadth_summary']['bullish_percent'],
+                'bearish_percent': sector_data['breadth_summary']['bearish_percent'],
+                'daily_uptrend_percent': sector_data['technical_breadth']['daily_uptrend_percent'],
+                'weekly_uptrend_percent': sector_data['technical_breadth']['weekly_uptrend_percent'],
+            })
+    
+    # Sort by bullish percentage
+    comparison_summary.sort(key=lambda x: x['bullish_percent'], reverse=True)
+    
+    return {
+        'analysis_date': analysis_date,
+        'sectors_analyzed': len(sector_codes),
+        'successful_analyses': len(comparison_summary),
+        'sector_results': sector_results,
+        'comparison_summary': comparison_summary,
+        'top_performing_sector': comparison_summary[0] if comparison_summary else None,
+        'weakest_performing_sector': comparison_summary[-1] if comparison_summary else None
+    }
+
+
+def get_all_sectoral_breadth(analysis_date: Optional[date] = None) -> Dict:
+    """
+    Get breadth analysis for all major sectors
+    
+    Args:
+        analysis_date: Date for analysis (defaults to latest)
+        
+    Returns:
+        Dict with all sectoral breadth data
+    """
+    major_sectors = [
+        'NIFTY-BANK', 'NIFTY-IT', 'NIFTY-AUTO', 'NIFTY-PHARMA', 
+        'NIFTY-METAL', 'NIFTY-FMCG', 'NIFTY-REALTY', 'NIFTY-MEDIA'
+    ]
+    
+    return compare_sectoral_breadth(major_sectors, analysis_date)
+
+
+def test_sectoral_breadth():
+    """Test sectoral breadth analysis"""
+    print("🧪 Testing Sectoral Breadth Analysis")
+    print("=" * 50)
+    
+    # Test single sector
+    print("\n📊 1. Single Sector Analysis (NIFTY-BANK):")
+    bank_data = get_sectoral_breadth('NIFTY-BANK')
+    if bank_data['success']:
+        print(f"   ✅ Banking sector: {bank_data['symbols_analyzed']}/{bank_data['total_stocks']} stocks analyzed")
+        print(f"   📈 Bullish: {bank_data['breadth_summary']['bullish_percent']:.1f}%")
+        print(f"   📉 Bearish: {bank_data['breadth_summary']['bearish_percent']:.1f}%")
+    else:
+        print(f"   ❌ Error: {bank_data['error']}")
+    
+    # Test multi-sector comparison
+    print("\n🔄 2. Multi-Sector Comparison:")
+    comparison = compare_sectoral_breadth(['NIFTY-BANK', 'NIFTY-IT', 'NIFTY-PHARMA'])
+    if comparison['comparison_summary']:
+        for sector_data in comparison['comparison_summary']:
+            print(f"   {sector_data['sector']:<15}: {sector_data['bullish_percent']:>5.1f}% bullish, "
+                  f"{sector_data['daily_uptrend_percent']:>5.1f}% daily uptrend")
+    
+    # Test all sectors
+    print("\n📈 3. All Major Sectors:")
+    all_sectors = get_all_sectoral_breadth()
+    if all_sectors['comparison_summary']:
+        print(f"   Analyzed {all_sectors['successful_analyses']} sectors:")
+        top_sector = all_sectors['top_performing_sector']
+        weak_sector = all_sectors['weakest_performing_sector']
+        print(f"   🥇 Best: {top_sector['sector']} ({top_sector['bullish_percent']:.1f}% bullish)")
+        print(f"   🥉 Weak: {weak_sector['sector']} ({weak_sector['bullish_percent']:.1f}% bullish)")
+
+
 if __name__ == "__main__":
+    print("🔍 Market Breadth Service with Sectoral Analysis")
+    print("=" * 60)
+    
+    # Run original market breadth test
     test_market_breadth()
+    
+    print("\n" + "=" * 60)
+    
+    # Run new sectoral breadth test
+    test_sectoral_breadth()
