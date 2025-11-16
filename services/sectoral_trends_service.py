@@ -117,10 +117,10 @@ class SectoralTrendsService:
         
         # Get available analysis dates from trend_analysis table
         available_dates_query = """
-        SELECT DISTINCT analysis_date 
+        SELECT DISTINCT trade_date 
         FROM trend_analysis 
-        WHERE analysis_date BETWEEN :start_date AND :end_date 
-        ORDER BY analysis_date
+        WHERE trade_date BETWEEN :start_date AND :end_date 
+        ORDER BY trade_date
         """
         
         try:
@@ -161,24 +161,32 @@ class SectoralTrendsService:
                 # Get sectoral data
                 result = get_sectoral_breadth(sector_code, analysis_date=analysis_date)
                 
-                if result and result.get('status') == 'success':
-                    summary = result.get('summary', {})
+                if result and result.get('success') == True:
+                    # Extract data from result structure
+                    breadth_summary = result.get('breadth_summary', {})
+                    technical_breadth = result.get('technical_breadth', {})
+                    
+                    # Calculate average trend rating from sector data if available
+                    avg_rating = 0.0
+                    sector_data = result.get('sector_data')
+                    if sector_data is not None and hasattr(sector_data, 'shape') and sector_data.shape[0] > 0:
+                        avg_rating = float(sector_data['trend_rating'].mean())
                     
                     # Prepare record
                     record = {
                         'analysis_date': analysis_date,
                         'sector_code': sector_code,
                         'sector_name': sector_code.replace('NIFTY-', '').replace('-', ' ').title(),
-                        'total_stocks': summary.get('total_stocks', 0),
-                        'bullish_count': summary.get('bullish_count', 0),
-                        'bearish_count': summary.get('bearish_count', 0),
-                        'bullish_percent': summary.get('bullish_percent', 0.0),
-                        'bearish_percent': summary.get('bearish_percent', 0.0),
-                        'daily_uptrend_count': summary.get('daily_uptrend_count', 0),
-                        'weekly_uptrend_count': summary.get('weekly_uptrend_count', 0),
-                        'daily_uptrend_percent': summary.get('daily_uptrend_percent', 0.0),
-                        'weekly_uptrend_percent': summary.get('weekly_uptrend_percent', 0.0),
-                        'avg_trend_rating': summary.get('avg_trend_rating', 0.0)
+                        'total_stocks': result.get('total_stocks', 0),
+                        'bullish_count': breadth_summary.get('bullish_count', 0),
+                        'bearish_count': breadth_summary.get('bearish_count', 0),
+                        'bullish_percent': breadth_summary.get('bullish_percent', 0.0),
+                        'bearish_percent': breadth_summary.get('bearish_percent', 0.0),
+                        'daily_uptrend_count': technical_breadth.get('daily_uptrend_count', 0),
+                        'weekly_uptrend_count': technical_breadth.get('weekly_uptrend_count', 0),
+                        'daily_uptrend_percent': technical_breadth.get('daily_uptrend_percent', 0.0),
+                        'weekly_uptrend_percent': technical_breadth.get('weekly_uptrend_percent', 0.0),
+                        'avg_trend_rating': avg_rating
                     }
                     
                     # Store in database
@@ -201,7 +209,9 @@ class SectoralTrendsService:
          bullish_percent, bearish_percent, daily_uptrend_count, weekly_uptrend_count,
          daily_uptrend_percent, weekly_uptrend_percent, avg_trend_rating)
         VALUES 
-        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        (:analysis_date, :sector_code, :sector_name, :total_stocks, :bullish_count, :bearish_count,
+         :bullish_percent, :bearish_percent, :daily_uptrend_count, :weekly_uptrend_count,
+         :daily_uptrend_percent, :weekly_uptrend_percent, :avg_trend_rating)
         ON DUPLICATE KEY UPDATE
         total_stocks = VALUES(total_stocks),
         bullish_count = VALUES(bullish_count),
@@ -217,18 +227,8 @@ class SectoralTrendsService:
         """
         
         try:
-            # Convert record to tuple for positional parameters
-            values = (
-                record['analysis_date'], record['sector_code'], record['sector_name'],
-                record['total_stocks'], record['bullish_count'], record['bearish_count'],
-                record['bullish_percent'], record['bearish_percent'],
-                record['daily_uptrend_count'], record['weekly_uptrend_count'],
-                record['daily_uptrend_percent'], record['weekly_uptrend_percent'],
-                record['avg_trend_rating']
-            )
-            
             with self.engine.connect() as conn:
-                conn.execute(text(insert_sql), values)
+                conn.execute(text(insert_sql), record)
                 conn.commit()
                 return True
         except Exception as e:
