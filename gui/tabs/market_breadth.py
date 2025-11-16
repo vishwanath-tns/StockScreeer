@@ -1273,6 +1273,10 @@ class MarketBreadthTab:
         ttk.Button(button_frame, text="📄 Generate PDF Report", 
                   command=self.generate_sectoral_pdf_report).pack(side=tk.LEFT, padx=(0, 10))
         
+        # Trends Analysis button
+        ttk.Button(button_frame, text="📈 Trends Analysis", 
+                  command=self.show_sectoral_trends).pack(side=tk.LEFT, padx=(0, 10))
+        
         # Results frame with notebook for different views
         results_frame = ttk.LabelFrame(sectoral_frame, text="Analysis Results", padding=10)
         results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
@@ -2023,6 +2027,14 @@ class MarketBreadthTab:
                 subprocess.run(['xdg-open', file_path])
         except Exception as e:
             messagebox.showerror("Open PDF", f"Could not open PDF file:\n{str(e)}")
+    
+    def show_sectoral_trends(self):
+        """Show the sectoral trends analysis window."""
+        try:
+            from gui.windows.sectoral_trends_window import show_sectoral_trends
+            show_sectoral_trends(self.parent)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open trends analysis:\n{str(e)}")
     
     def handle_sectoral_error(self, error_msg):
         """Handle sectoral analysis errors."""

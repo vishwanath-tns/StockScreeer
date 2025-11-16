@@ -132,8 +132,18 @@ def generate_simple_sectoral_pdf_report(analysis_date: str, output_path: Optiona
                     # Extract summary data from the result structure
                     breadth_summary = result.get('breadth_summary', {})
                     technical_breadth = result.get('technical_breadth', {})
+                    # Format sector name properly
+                    sector_name = sector
+                    if sector == 'NIFTY-50':
+                        sector_name = 'NIFTY 50'
+                    elif sector == 'NIFTY-NEXT-50':
+                        sector_name = 'NEXT 50'
+                    elif sector.startswith('NIFTY-'):
+                        sector_name = sector.replace('NIFTY-', '')
+                    
                     sector_results.append({
-                        'sector': sector.replace('NIFTY-', ''),
+                        'sector': sector_name,
+                        'original_code': sector,  # Store original sector code
                         'total_stocks': result.get('total_stocks', 0),
                         'bullish_count': breadth_summary.get('bullish_count', 0),
                         'bearish_count': breadth_summary.get('bearish_count', 0),
@@ -248,10 +258,11 @@ def generate_simple_sectoral_pdf_report(analysis_date: str, output_path: Optiona
         # Create detailed analysis for all sectors (same as shown in GUI)
         for sector_data in sector_results:  # Include all sectors to match GUI display
             sector_name = sector_data['sector']
-            sector_code = f"NIFTY-{sector_name}" if not sector_name.startswith('NIFTY') else sector_name
+            # Use the stored original sector code for API call
+            original_sector_code = sector_data['original_code']
             
-            # Get detailed stock data for this sector
-            sector_result = get_sectoral_breadth(sector_code, analysis_date=analysis_date_obj)
+            # Get detailed stock data for this sector using original code
+            sector_result = get_sectoral_breadth(original_sector_code, analysis_date=analysis_date_obj)
             if sector_result and sector_result.get('success'):
                 sector_df = sector_result.get('sector_data')
                 
