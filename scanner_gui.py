@@ -17,10 +17,28 @@ from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 from sqlalchemy import text
 import os
+import sys
+import subprocess
 
 # Import the dashboard and reports tabs
 from gui.tabs.dashboard import DashboardTab
 from gui.tabs.reports import ReportsTab
+
+# Import pattern scanner GUI
+try:
+    from gui.pattern_scanner_gui import PatternScannerGUI
+    PATTERN_SCANNER_AVAILABLE = True
+except ImportError:
+    print("Pattern Scanner GUI not available")
+    PATTERN_SCANNER_AVAILABLE = False
+
+# Import PDF report dialog
+try:
+    from gui.pdf_report_dialog import PDFReportDialog
+    PDF_REPORT_AVAILABLE = True
+except ImportError:
+    print("PDF Report Dialog not available")
+    PDF_REPORT_AVAILABLE = False
 
 LOG_MAX_LINES = 200
 
@@ -61,7 +79,9 @@ class ScannerGUI:
         self.most_active_frame = ttk.Frame(nb)
         self.trends_frame = ttk.Frame(nb)
         self.market_breadth_frame = ttk.Frame(nb)
+        self.momentum_frame = ttk.Frame(nb)  # Add Momentum tab frame
         self.reports_frame = ttk.Frame(nb)  # Add Reports tab frame
+        self.pattern_scanner_frame = ttk.Frame(nb)  # Add Pattern Scanner tab frame
 
         # Add dashboard tab first
         nb.add(self.dashboard_frame, text="Dashboard")
@@ -78,7 +98,9 @@ class ScannerGUI:
         nb.add(self.most_active_frame, text="Most Active")
         nb.add(self.trends_frame, text="Trend Analysis")
         nb.add(self.market_breadth_frame, text="Market Breadth")
+        nb.add(self.momentum_frame, text="🚀 Momentum Analysis")  # Add Momentum tab
         nb.add(self.reports_frame, text="📊 Reports")  # Add Reports tab
+        nb.add(self.pattern_scanner_frame, text="🕯️ Pattern Scanner")  # Add Pattern Scanner tab
 
         # Build dashboard tab first
         self._build_dashboard_tab()
@@ -101,7 +123,9 @@ class ScannerGUI:
         self._build_rsi_divergences_tab()
         self._build_trends_tab()
         self._build_market_breadth_tab()
-        self._build_reports_tab()  # Add Reports tab build method
+        self._build_momentum_tab()  # Add Momentum tab build method
+        self._build_reports_tab()
+        self._build_pattern_scanner_tab()  # Add Pattern Scanner tab build method  # Add Reports tab build method
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -4618,6 +4642,761 @@ class ScannerGUI:
             ttk.Label(f, text="Market Breadth Analysis - Error Loading").pack(pady=20)
             ttk.Label(f, text=f"Error: {str(e)}").pack(pady=10)
 
+    def _build_momentum_tab(self):
+        """Build the Momentum Analysis tab with comprehensive momentum features."""
+        f = self.momentum_frame
+        
+        # Main title
+        title_frame = ttk.Frame(f)
+        title_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(title_frame, text="🚀 Momentum Analysis", font=("Segoe UI", 14, "bold")).pack(side="left")
+        
+        # Create main container with scrollable content
+        main_container = ttk.Frame(f)
+        main_container.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Left panel for controls
+        left_panel = ttk.LabelFrame(main_container, text="Analysis Controls", padding="10")
+        left_panel.pack(side="left", fill="y", padx=(0, 5))
+        
+        # Right panel for results
+        right_panel = ttk.LabelFrame(main_container, text="Results", padding="10")
+        right_panel.pack(side="right", fill="both", expand=True, padx=(5, 0))
+        
+        # === LEFT PANEL - CONTROLS ===
+        
+        # 1. Quick Analysis Section
+        quick_frame = ttk.LabelFrame(left_panel, text="Quick Analysis", padding="5")
+        quick_frame.pack(fill="x", pady=(0, 10))
+        
+        ttk.Button(quick_frame, text="📊 Nifty 50 Full Report", 
+                  command=self._run_nifty50_momentum_report).pack(fill="x", pady=2)
+        ttk.Button(quick_frame, text="🚀 Nifty 500 Full Report", 
+                  command=self._run_nifty500_momentum_report).pack(fill="x", pady=2)
+        ttk.Button(quick_frame, text="📄 Generate PDF Report", 
+                  command=self._generate_pdf_report).pack(fill="x", pady=2)
+        ttk.Button(quick_frame, text="🎯 Stock Selection Guide", 
+                  command=self._run_stock_selection_strategy).pack(fill="x", pady=2)
+        ttk.Button(quick_frame, text="📈 All Durations CSV", 
+                  command=self._generate_all_durations_csv).pack(fill="x", pady=2)
+        
+        # 2. Momentum Calculation Section
+        calc_frame = ttk.LabelFrame(left_panel, text="Calculate Momentum", padding="5")
+        calc_frame.pack(fill="x", pady=(0, 10))
+        
+        # Stock symbol input
+        ttk.Label(calc_frame, text="Stock Symbol:").pack(anchor="w")
+        self.momentum_symbol = tk.StringVar(value="RELIANCE")
+        ttk.Entry(calc_frame, textvariable=self.momentum_symbol, width=15).pack(fill="x", pady=2)
+        
+        # Duration selection
+        ttk.Label(calc_frame, text="Timeframes:").pack(anchor="w", pady=(10, 0))
+        duration_frame = ttk.Frame(calc_frame)
+        duration_frame.pack(fill="x", pady=2)
+        
+        self.momentum_durations = {
+            '1W': tk.BooleanVar(value=True),
+            '1M': tk.BooleanVar(value=True),
+            '3M': tk.BooleanVar(value=False),
+            '6M': tk.BooleanVar(value=False),
+            '9M': tk.BooleanVar(value=False),
+            '12M': tk.BooleanVar(value=False)
+        }
+        
+        for i, (duration, var) in enumerate(self.momentum_durations.items()):
+            row = i // 3
+            col = i % 3
+            ttk.Checkbutton(duration_frame, text=duration, variable=var).grid(row=row, column=col, sticky="w", padx=5)
+        
+        ttk.Button(calc_frame, text="🚀 Calculate Momentum", 
+                  command=self._calculate_single_stock_momentum).pack(fill="x", pady=5)
+        
+        # 3. Batch Processing Section
+        batch_frame = ttk.LabelFrame(left_panel, text="Batch Processing", padding="5")
+        batch_frame.pack(fill="x", pady=(0, 10))
+        
+        # Nifty 50 buttons
+        ttk.Button(batch_frame, text="🏦 Scan All Nifty 50", 
+                  command=self._scan_all_nifty50).pack(fill="x", pady=2)
+        
+        # Nifty 500 buttons
+        ttk.Button(batch_frame, text="🌟 Scan Nifty 500 Sample", 
+                  command=self._scan_nifty500_sample).pack(fill="x", pady=2)
+        ttk.Button(batch_frame, text="🚀 Scan All Nifty 500", 
+                  command=self._scan_all_nifty500).pack(fill="x", pady=2)
+        
+        ttk.Button(batch_frame, text="🔄 Update Missing Durations", 
+                  command=self._update_missing_durations).pack(fill="x", pady=2)
+        
+        # Custom stock list
+        ttk.Label(batch_frame, text="Custom Stock List (comma separated):").pack(anchor="w", pady=(10, 0))
+        self.custom_stocks = tk.StringVar(value="RELIANCE,TCS,INFY,HDFCBANK,ICICIBANK")
+        custom_entry = tk.Text(batch_frame, height=3, width=25)
+        custom_entry.pack(fill="x", pady=2)
+        custom_entry.insert("1.0", self.custom_stocks.get())
+        self.custom_stocks_text = custom_entry
+        
+        ttk.Button(batch_frame, text="⚡ Scan Custom List", 
+                  command=self._scan_custom_stocks).pack(fill="x", pady=5)
+        
+        # 4. Database Status Section
+        status_frame = ttk.LabelFrame(left_panel, text="Database Status", padding="5")
+        status_frame.pack(fill="x", pady=(0, 10))
+        
+        ttk.Button(status_frame, text="📊 Check Database Status", 
+                  command=self._check_momentum_database_status).pack(fill="x", pady=2)
+        ttk.Button(status_frame, text="🗑️ Clear Old Data", 
+                  command=self._clear_old_momentum_data).pack(fill="x", pady=2)
+        
+        # === RIGHT PANEL - RESULTS ===
+        
+        # Create notebook for different views
+        results_notebook = ttk.Notebook(right_panel)
+        results_notebook.pack(fill="both", expand=True)
+        
+        # Results Tab
+        results_tab = ttk.Frame(results_notebook)
+        results_notebook.add(results_tab, text="Analysis Results")
+        
+        # Momentum Data Tab  
+        data_tab = ttk.Frame(results_notebook)
+        results_notebook.add(data_tab, text="Momentum Data")
+        
+        # Stock Selection Tab
+        selection_tab = ttk.Frame(results_notebook)
+        results_notebook.add(selection_tab, text="Stock Selection")
+        
+        # === RESULTS TAB ===
+        self.momentum_results_text = tk.Text(results_tab, height=25, width=70, wrap=tk.WORD)
+        results_scrollbar = ttk.Scrollbar(results_tab, orient="vertical", command=self.momentum_results_text.yview)
+        self.momentum_results_text.configure(yscrollcommand=results_scrollbar.set)
+        
+        self.momentum_results_text.pack(side="left", fill="both", expand=True)
+        results_scrollbar.pack(side="right", fill="y")
+        
+        # === DATA TAB ===
+        data_frame = ttk.Frame(data_tab)
+        data_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Treeview for momentum data
+        columns = ("Symbol", "1W", "1M", "3M", "6M", "9M", "12M", "Sector")
+        self.momentum_tree = ttk.Treeview(data_frame, columns=columns, show='headings', height=20)
+        
+        for col in columns:
+            self.momentum_tree.heading(col, text=col)
+            if col == "Symbol":
+                self.momentum_tree.column(col, width=80)
+            elif col == "Sector":
+                self.momentum_tree.column(col, width=120)
+            else:
+                self.momentum_tree.column(col, width=60)
+        
+        data_scrollbar_v = ttk.Scrollbar(data_frame, orient="vertical", command=self.momentum_tree.yview)
+        data_scrollbar_h = ttk.Scrollbar(data_frame, orient="horizontal", command=self.momentum_tree.xview)
+        self.momentum_tree.configure(yscrollcommand=data_scrollbar_v.set, xscrollcommand=data_scrollbar_h.set)
+        
+        self.momentum_tree.pack(side="left", fill="both", expand=True)
+        data_scrollbar_v.pack(side="right", fill="y")
+        data_scrollbar_h.pack(side="bottom", fill="x")
+        
+        # === SELECTION TAB ===
+        selection_frame = ttk.Frame(selection_tab)
+        selection_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        self.selection_results_text = tk.Text(selection_frame, height=25, width=70, wrap=tk.WORD)
+        selection_scrollbar = ttk.Scrollbar(selection_frame, orient="vertical", command=self.selection_results_text.yview)
+        self.selection_results_text.configure(yscrollcommand=selection_scrollbar.set)
+        
+        self.selection_results_text.pack(side="left", fill="both", expand=True)
+        selection_scrollbar.pack(side="right", fill="y")
+        
+        # Initialize with welcome message
+        self._show_momentum_welcome()
+
+    def _show_momentum_welcome(self):
+        """Show welcome message in momentum results"""
+        welcome_msg = """🚀 MOMENTUM ANALYSIS TOOLKIT
+
+Welcome to the comprehensive momentum analysis system!
+
+Available Features:
+===================
+
+📊 Quick Analysis:
+  • Nifty 50 Full Report - Complete sector-wise momentum analysis
+  • Nifty 500 Full Report - Comprehensive analysis of top 500 stocks
+  • Stock Selection Guide - Trading strategies for different timeframes
+  • All Durations CSV - Export complete momentum data
+
+🎯 Individual Analysis:
+  • Calculate momentum for specific stocks
+  • Choose from 6 timeframes (1W, 1M, 3M, 6M, 9M, 12M)
+  • View detailed momentum metrics
+
+⚡ Batch Processing:
+  • Scan all Nifty 50 stocks automatically
+  • Scan Nifty 500 sample (top 50 most active stocks)
+  • Scan all Nifty 500 stocks (500 most liquid stocks)
+  • Update missing momentum data
+  • Process custom stock lists
+
+📈 Database Management:
+  • Check database status and coverage
+  • Clear old momentum data
+  • Monitor calculation progress
+
+Getting Started:
+================
+1. Try 'Nifty 50 Full Report' for a complete market overview
+2. Use 'Nifty 500 Sample' for broader market momentum analysis
+3. Use 'Stock Selection Guide' for trading recommendations
+4. Calculate momentum for individual stocks using the controls
+
+The system tracks momentum across multiple timeframes to help identify:
+• Short-term trading opportunities (1W momentum)
+• Swing trading candidates (multi-timeframe alignment)  
+• Long-term investment prospects (6M+ momentum)
+
+Nifty 500 Analysis:
+==================
+• Covers the top 500 most actively traded stocks
+• Provides broader market momentum insights
+• Ideal for finding opportunities beyond Nifty 50
+• Sample scan analyzes top 50 for quick insights
+
+Click any button to begin your analysis!"""
+
+        self.momentum_results_text.delete(1.0, tk.END)
+        self.momentum_results_text.insert(tk.END, welcome_msg)
+
+    def _run_nifty50_momentum_report(self):
+        """Run the complete Nifty 50 momentum report"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "🚀 Generating Nifty 50 Momentum Report...\n\n")
+                self.momentum_results_text.update()
+                
+                # Import and run the report
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "final_working_nifty50_report.py"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.momentum_results_text.insert(tk.END, "✅ Report generated successfully!\n\n")
+                    self.momentum_results_text.insert(tk.END, result.stdout)
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ Error generating report:\n{result.stderr}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _run_nifty500_momentum_report(self):
+        """Run the complete Nifty 500 momentum report"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "🚀 Generating Nifty 500 Momentum Report...\n\n")
+                self.momentum_results_text.update()
+                
+                # Import and run the report
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "nifty500_momentum_report.py"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.momentum_results_text.insert(tk.END, "✅ Nifty 500 report generated successfully!\n\n")
+                    self.momentum_results_text.insert(tk.END, result.stdout)
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ Error generating Nifty 500 report:\n{result.stderr}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _run_stock_selection_strategy(self):
+        """Run the stock selection strategy analysis"""
+        def run():
+            try:
+                self.selection_results_text.delete(1.0, tk.END)
+                self.selection_results_text.insert(tk.END, "🎯 Analyzing Stock Selection Strategies...\n\n")
+                self.selection_results_text.update()
+                
+                # Import and run the strategy analysis
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "stock_selection_strategy.py"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.selection_results_text.insert(tk.END, "✅ Strategy analysis completed!\n\n")
+                    self.selection_results_text.insert(tk.END, result.stdout)
+                else:
+                    self.selection_results_text.insert(tk.END, f"❌ Error: {result.stderr}")
+                    
+            except Exception as e:
+                self.selection_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _generate_all_durations_csv(self):
+        """Generate CSV with all momentum durations"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "📈 Generating All Durations CSV...\n\n")
+                self.momentum_results_text.update()
+                
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "simple_all_durations_csv.py"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.momentum_results_text.insert(tk.END, "✅ CSV generated successfully!\n\n")
+                    self.momentum_results_text.insert(tk.END, result.stdout)
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ Error: {result.stderr}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _generate_pdf_report(self):
+        """Generate PDF report with top gainers and losers"""
+        if not PDF_REPORT_AVAILABLE:
+            messagebox.showerror("Error", "PDF Report functionality not available. Please check installation.")
+            return
+            
+        try:
+            dialog = PDFReportDialog(self.root)
+            dialog.show_dialog()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open PDF report dialog: {e}")
+
+    def _calculate_single_stock_momentum(self):
+        """Calculate momentum for a single stock"""
+        def run():
+            try:
+                symbol = self.momentum_symbol.get().strip().upper()
+                if not symbol:
+                    self.momentum_results_text.delete(1.0, tk.END)
+                    self.momentum_results_text.insert(tk.END, "❌ Please enter a stock symbol")
+                    return
+                
+                selected_durations = [duration for duration, var in self.momentum_durations.items() if var.get()]
+                if not selected_durations:
+                    self.momentum_results_text.delete(1.0, tk.END)
+                    self.momentum_results_text.insert(tk.END, "❌ Please select at least one timeframe")
+                    return
+                
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, f"🚀 Calculating momentum for {symbol}...\n")
+                self.momentum_results_text.insert(tk.END, f"Timeframes: {', '.join(selected_durations)}\n\n")
+                self.momentum_results_text.update()
+                
+                # Import momentum calculator
+                sys.path.append('.')
+                from services.momentum.momentum_calculator import MomentumCalculator, MomentumDuration
+                
+                # Convert duration strings to enum values
+                duration_map = {
+                    '1W': MomentumDuration.ONE_WEEK,
+                    '1M': MomentumDuration.ONE_MONTH,
+                    '3M': MomentumDuration.THREE_MONTHS,
+                    '6M': MomentumDuration.SIX_MONTHS,
+                    '9M': MomentumDuration.NINE_MONTHS,
+                    '12M': MomentumDuration.TWELVE_MONTHS
+                }
+                
+                durations = [duration_map[d] for d in selected_durations]
+                
+                # Calculate momentum
+                calculator = MomentumCalculator()
+                results = calculator.calculate_momentum_batch([symbol], durations)
+                
+                if results and symbol in results:
+                    self.momentum_results_text.insert(tk.END, f"✅ Momentum calculated for {symbol}:\n\n")
+                    
+                    for result in results[symbol]:
+                        self.momentum_results_text.insert(tk.END, f"📊 {result.duration_type} Momentum:\n")
+                        self.momentum_results_text.insert(tk.END, f"   Percentage Change: {result.percentage_change:+.2f}%\n")
+                        self.momentum_results_text.insert(tk.END, f"   Price Move: ₹{result.start_price:.2f} → ₹{result.end_price:.2f}\n")
+                        self.momentum_results_text.insert(tk.END, f"   Period: {result.start_date} to {result.end_date}\n")
+                        self.momentum_results_text.insert(tk.END, f"   Trading Days: {result.trading_days}\n\n")
+                    
+                    # Store results
+                    stored_count = calculator.store_momentum_results(results)
+                    self.momentum_results_text.insert(tk.END, f"💾 Stored {stored_count} records to database\n")
+                    
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ No momentum data calculated for {symbol}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error calculating momentum: {e}")
+                import traceback
+                self.momentum_results_text.insert(tk.END, f"\n\nDetails:\n{traceback.format_exc()}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _scan_all_nifty50(self):
+        """Scan momentum for all Nifty 50 stocks"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "🏦 Scanning All Nifty 50 Stocks...\n\n")
+                self.momentum_results_text.update()
+                
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "working_nifty50_scanner.py"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.momentum_results_text.insert(tk.END, "✅ Nifty 50 scan completed!\n\n")
+                    self.momentum_results_text.insert(tk.END, result.stdout)
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ Error: {result.stderr}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _scan_nifty500_sample(self):
+        """Scan momentum for top 50 Nifty 500 stocks"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "🌟 Scanning Nifty 500 Sample (Top 50 Active Stocks)...\n\n")
+                self.momentum_results_text.update()
+                
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "nifty500_momentum_scanner.py", "sample"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.momentum_results_text.insert(tk.END, "✅ Nifty 500 sample scan completed!\n\n")
+                    self.momentum_results_text.insert(tk.END, result.stdout)
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ Error: {result.stderr}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _scan_all_nifty500(self):
+        """Scan momentum for all Nifty 500 stocks"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "🚀 Scanning All Nifty 500 Stocks...\n\n")
+                self.momentum_results_text.insert(tk.END, "⚠️  This is a comprehensive scan that may take 15-20 minutes.\n\n")
+                self.momentum_results_text.update()
+                
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "nifty500_momentum_scanner.py"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.momentum_results_text.insert(tk.END, "✅ Nifty 500 scan completed!\n\n")
+                    self.momentum_results_text.insert(tk.END, result.stdout)
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ Error: {result.stderr}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _update_missing_durations(self):
+        """Update missing momentum durations"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "🔄 Updating Missing Durations...\n\n")
+                self.momentum_results_text.update()
+                
+                import subprocess
+                import sys
+                
+                result = subprocess.run([sys.executable, "complete_all_durations_scanner.py"], 
+                                      capture_output=True, text=True, cwd=".")
+                
+                if result.returncode == 0:
+                    self.momentum_results_text.insert(tk.END, "✅ Duration update completed!\n\n")
+                    self.momentum_results_text.insert(tk.END, result.stdout)
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, f"❌ Error: {result.stderr}")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _scan_custom_stocks(self):
+        """Scan momentum for custom stock list"""
+        def run():
+            try:
+                custom_text = self.custom_stocks_text.get("1.0", tk.END).strip()
+                if not custom_text:
+                    self.momentum_results_text.delete(1.0, tk.END)
+                    self.momentum_results_text.insert(tk.END, "❌ Please enter stock symbols")
+                    return
+                
+                # Parse stock symbols
+                symbols = [s.strip().upper() for s in custom_text.replace('\n', ',').split(',') if s.strip()]
+                
+                if not symbols:
+                    self.momentum_results_text.delete(1.0, tk.END)
+                    self.momentum_results_text.insert(tk.END, "❌ No valid stock symbols found")
+                    return
+                
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, f"⚡ Scanning {len(symbols)} custom stocks...\n")
+                self.momentum_results_text.insert(tk.END, f"Symbols: {', '.join(symbols)}\n\n")
+                self.momentum_results_text.update()
+                
+                # Import momentum calculator
+                sys.path.append('.')
+                from services.momentum.momentum_calculator import MomentumCalculator, MomentumDuration
+                
+                durations = [MomentumDuration.ONE_WEEK, MomentumDuration.ONE_MONTH]
+                
+                calculator = MomentumCalculator()
+                results = calculator.calculate_momentum_batch(symbols, durations)
+                
+                if results:
+                    total_calcs = sum(len(stock_results) for stock_results in results.values())
+                    self.momentum_results_text.insert(tk.END, f"✅ Calculated {total_calcs} momentum values\n\n")
+                    
+                    for symbol, stock_results in results.items():
+                        self.momentum_results_text.insert(tk.END, f"📊 {symbol}:\n")
+                        for result in stock_results:
+                            self.momentum_results_text.insert(tk.END, f"   {result.duration_type}: {result.percentage_change:+.2f}%\n")
+                        self.momentum_results_text.insert(tk.END, "\n")
+                    
+                    # Store results
+                    stored_count = calculator.store_momentum_results(results)
+                    self.momentum_results_text.insert(tk.END, f"💾 Stored {stored_count} records to database\n")
+                    self._load_momentum_data_to_tree()
+                else:
+                    self.momentum_results_text.insert(tk.END, "❌ No momentum data calculated")
+                    
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error: {e}")
+                import traceback
+                self.momentum_results_text.insert(tk.END, f"\n\nDetails:\n{traceback.format_exc()}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _check_momentum_database_status(self):
+        """Check momentum database status"""
+        def run():
+            try:
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "📊 Checking Database Status...\n\n")
+                self.momentum_results_text.update()
+                
+                from services.market_breadth_service import get_engine
+                from sqlalchemy import text
+                
+                engine = get_engine()
+                
+                with engine.connect() as conn:
+                    # Get record counts by duration
+                    query = text("""
+                        SELECT duration_type, COUNT(*) as count
+                        FROM momentum_analysis 
+                        WHERE DATE(calculation_date) = CURDATE()
+                        GROUP BY duration_type
+                        ORDER BY duration_type
+                    """)
+                    
+                    results = conn.execute(query).fetchall()
+                    
+                    self.momentum_results_text.insert(tk.END, "📈 Today's Momentum Records:\n")
+                    self.momentum_results_text.insert(tk.END, "-" * 30 + "\n")
+                    
+                    total_records = 0
+                    for duration, count in results:
+                        self.momentum_results_text.insert(tk.END, f"{duration:3}: {count:3} records\n")
+                        total_records += count
+                    
+                    self.momentum_results_text.insert(tk.END, f"{'Total':<3}: {total_records:3} records\n\n")
+                    
+                    # Get unique symbols
+                    symbol_query = text("""
+                        SELECT COUNT(DISTINCT symbol) as unique_symbols
+                        FROM momentum_analysis 
+                        WHERE DATE(calculation_date) = CURDATE()
+                    """)
+                    
+                    symbol_result = conn.execute(symbol_query).fetchone()
+                    unique_symbols = symbol_result[0]
+                    
+                    self.momentum_results_text.insert(tk.END, f"📊 Unique symbols: {unique_symbols}\n")
+                    
+                    # Expected for Nifty 50 (46 stocks × 6 durations = 276)
+                    expected_nifty50 = 46 * 6
+                    completion = total_records / expected_nifty50 * 100
+                    
+                    self.momentum_results_text.insert(tk.END, f"📈 Nifty 50 completion: {completion:.1f}%\n")
+                    
+                    if completion >= 90:
+                        self.momentum_results_text.insert(tk.END, "🎉 Excellent coverage!\n")
+                    elif completion >= 70:
+                        self.momentum_results_text.insert(tk.END, "✅ Good coverage\n")
+                    else:
+                        self.momentum_results_text.insert(tk.END, "⚠️ More data needed\n")
+                    
+                    self._load_momentum_data_to_tree()
+                        
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error checking database: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _clear_old_momentum_data(self):
+        """Clear old momentum data"""
+        def run():
+            try:
+                from tkinter import messagebox
+                
+                # Confirm deletion
+                if not messagebox.askyesno("Confirm", "Clear momentum data older than 7 days?"):
+                    return
+                
+                self.momentum_results_text.delete(1.0, tk.END)
+                self.momentum_results_text.insert(tk.END, "🗑️ Clearing Old Momentum Data...\n\n")
+                self.momentum_results_text.update()
+                
+                from services.market_breadth_service import get_engine
+                from sqlalchemy import text
+                
+                engine = get_engine()
+                
+                with engine.connect() as conn:
+                    # Delete old data
+                    delete_query = text("""
+                        DELETE FROM momentum_analysis 
+                        WHERE calculation_date < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                    """)
+                    
+                    result = conn.execute(delete_query)
+                    deleted_count = result.rowcount
+                    conn.commit()
+                    
+                    self.momentum_results_text.insert(tk.END, f"✅ Deleted {deleted_count} old records\n")
+                    self.momentum_results_text.insert(tk.END, "Database cleanup completed!\n")
+                        
+            except Exception as e:
+                self.momentum_results_text.insert(tk.END, f"❌ Error clearing data: {e}")
+        
+        threading.Thread(target=run, daemon=True).start()
+
+    def _load_momentum_data_to_tree(self):
+        """Load current momentum data into the treeview"""
+        def load():
+            try:
+                # Clear existing data
+                for item in self.momentum_tree.get_children():
+                    self.momentum_tree.delete(item)
+                
+                from services.market_breadth_service import get_engine
+                from sqlalchemy import text
+                
+                # Nifty 50 sectors mapping
+                nifty50_sectors = {
+                    'AXISBANK': 'Banking', 'HDFCBANK': 'Banking', 'ICICIBANK': 'Banking', 
+                    'INDUSINDBK': 'Banking', 'KOTAKBANK': 'Banking', 'SBIN': 'Banking',
+                    'BAJFINANCE': 'Financial Services', 'BAJAJFINSV': 'Financial Services', 
+                    'HDFCLIFE': 'Financial Services', 'SBILIFE': 'Financial Services',
+                    'INFY': 'IT Services', 'TCS': 'IT Services', 'TECHM': 'IT Services',
+                    'HCLTECH': 'IT Services', 'WIPRO': 'IT Services',
+                    'RELIANCE': 'Oil & Gas', 'ONGC': 'Oil & Gas', 'BPCL': 'Oil & Gas',
+                    'TATASTEEL': 'Metals & Mining', 'JSWSTEEL': 'Metals & Mining',
+                    'HINDALCO': 'Metals & Mining', 'COALINDIA': 'Metals & Mining',
+                    'MARUTI': 'Automotive', 'BAJAJ-AUTO': 'Automotive', 'M&M': 'Automotive',
+                    'HEROMOTOCO': 'Automotive', 'EICHERMOT': 'Automotive',
+                    'SUNPHARMA': 'Pharmaceuticals', 'DRREDDY': 'Pharmaceuticals',
+                    'CIPLA': 'Pharmaceuticals', 'DIVISLAB': 'Pharmaceuticals',
+                    'HINDUNILVR': 'FMCG', 'BRITANNIA': 'FMCG', 'NESTLEIND': 'FMCG',
+                    'ITC': 'FMCG', 'TATACONSUM': 'FMCG',
+                    'BHARTIARTL': 'Telecom', 'NTPC': 'Power', 'POWERGRID': 'Power',
+                    'ULTRACEMCO': 'Cement', 'GRASIM': 'Cement', 'LT': 'Infrastructure',
+                    'ASIANPAINT': 'Paints', 'UPL': 'Chemicals', 'TITAN': 'Consumer Goods',
+                    'ADANIPORTS': 'Logistics'
+                }
+                
+                engine = get_engine()
+                
+                with engine.connect() as conn:
+                    query = text("""
+                        SELECT symbol, duration_type, percentage_change
+                        FROM momentum_analysis 
+                        WHERE DATE(calculation_date) = CURDATE()
+                        ORDER BY symbol, 
+                            CASE duration_type 
+                                WHEN '1W' THEN 1 WHEN '1M' THEN 2 WHEN '3M' THEN 3
+                                WHEN '6M' THEN 4 WHEN '9M' THEN 5 WHEN '12M' THEN 6
+                            END
+                    """)
+                    
+                    results = conn.execute(query).fetchall()
+                    
+                    # Group by symbol
+                    symbol_data = {}
+                    for symbol, duration, pct_change in results:
+                        if symbol not in symbol_data:
+                            symbol_data[symbol] = {}
+                        symbol_data[symbol][duration] = f"{pct_change:+.1f}%"
+                    
+                    # Insert into treeview
+                    for symbol, durations in symbol_data.items():
+                        sector = nifty50_sectors.get(symbol, "Other")
+                        
+                        row_data = [
+                            symbol,
+                            durations.get('1W', ''),
+                            durations.get('1M', ''),
+                            durations.get('3M', ''),
+                            durations.get('6M', ''),
+                            durations.get('9M', ''),
+                            durations.get('12M', ''),
+                            sector
+                        ]
+                        
+                        self.momentum_tree.insert('', 'end', values=row_data)
+                        
+            except Exception as e:
+                print(f"Error loading momentum data: {e}")
+        
+        threading.Thread(target=load, daemon=True).start()
+
     def _build_reports_tab(self):
         """Build the Reports tab with PDF generation capabilities."""
         try:
@@ -4631,6 +5410,29 @@ class ScannerGUI:
             ttk.Label(f, text="📊 Reports - Error Loading", font=("Segoe UI", 12, "bold")).pack(pady=20)
             ttk.Label(f, text=f"Error: {str(e)}", foreground="red").pack(pady=10)
             ttk.Label(f, text="Please check that all report dependencies are installed.").pack(pady=5)
+
+    def _build_pattern_scanner_tab(self):
+        """Build the Pattern Scanner tab with candlestick pattern detection."""
+        try:
+            if PATTERN_SCANNER_AVAILABLE:
+                # Create the pattern scanner GUI directly in the existing frame
+                pattern_scanner_gui = PatternScannerGUI(self.pattern_scanner_frame)
+                # Pack the frame from the GUI
+                pattern_scanner_gui.get_frame().pack(fill=tk.BOTH, expand=True)
+                self.append_log("Pattern Scanner tab initialized successfully")
+            else:
+                # Fallback if import fails
+                f = self.pattern_scanner_frame
+                ttk.Label(f, text="🕯️ Candlestick Pattern Scanner", font=("Segoe UI", 14, "bold")).pack(pady=20)
+                ttk.Label(f, text="Pattern Scanner not available", foreground="red").pack(pady=10)
+                ttk.Label(f, text="Please check dependencies and database connection.").pack(pady=5)
+        except Exception as e:
+            # Fallback to a simple placeholder if there's an error
+            self.append_log(f"Error building pattern scanner tab: {e}")
+            f = self.pattern_scanner_frame
+            ttk.Label(f, text="🕯️ Pattern Scanner - Error Loading", font=("Segoe UI", 12, "bold")).pack(pady=20)
+            ttk.Label(f, text=f"Error: {str(e)}", foreground="red").pack(pady=10)
+            ttk.Label(f, text="Please check that pattern scanner dependencies are installed.").pack(pady=5)
 
     def _browse(self, var: tk.StringVar, folder: bool = False):
         """Set `var` to a selected path. If folder=True opens a folder dialog, otherwise a save-as CSV dialog."""
