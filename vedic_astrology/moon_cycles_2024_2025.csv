@@ -1,0 +1,732 @@
+date,phase,illumination,age_days,nakshatra,market_trend_prediction,volatility_score,suggested_strategy
+2024-01-01,Waning Gibbous,74.03,19.52,Hasta,bearish_pressure,1.3,defensive
+2024-01-02,Waning Gibbous,65.44,20.52,Chitra,bearish_pressure,1.3,defensive
+2024-01-03,Last Quarter,56.27,21.52,Chitra,bearish,1.1,value_hunting
+2024-01-04,Last Quarter,46.75,22.52,Swati,bearish,1.1,value_hunting
+2024-01-05,Waning Crescent,37.16,23.52,Vishakha,weak_bearish,0.9,contrarian
+2024-01-06,Waning Crescent,27.82,24.52,Anuradha,weak_bearish,0.9,contrarian
+2024-01-07,Waning Crescent,19.12,25.52,Jyeshtha,weak_bearish,0.9,contrarian
+2024-01-08,Waning Crescent,11.5,26.52,Mula,weak_bearish,0.9,contrarian
+2024-01-09,Waning Crescent,5.48,27.52,Purva Ashadha,weak_bearish,0.9,contrarian
+2024-01-10,Waning Crescent,1.56,28.52,Uttara Ashadha,weak_bearish,0.9,contrarian
+2024-01-11,New Moon,0.19,0.0,Shravana,neutral_to_bullish,0.7,accumulation
+2024-01-12,Waxing Crescent,1.62,1.0,Shatabhisha,bullish,0.8,momentum_building
+2024-01-13,Waxing Crescent,5.86,2.0,Purva Bhadrapada,bullish,0.8,momentum_building
+2024-01-14,Waxing Crescent,12.65,3.0,Uttara Bhadrapada,bullish,0.8,momentum_building
+2024-01-15,Waxing Crescent,21.48,4.0,Revati,bullish,0.8,momentum_building
+2024-01-16,Waxing Crescent,31.74,5.0,Ashwini,bullish,0.8,momentum_building
+2024-01-17,Waxing Crescent,42.74,6.0,Bharani,bullish,0.8,momentum_building
+2024-01-18,First Quarter,53.86,7.0,Krittika,bullish,1.0,trend_following
+2024-01-19,First Quarter,64.53,8.0,Rohini,bullish,1.0,trend_following
+2024-01-20,Waxing Gibbous,74.3,9.0,Mrigashira,strong_bullish,1.2,momentum_trading
+2024-01-21,Waxing Gibbous,82.81,10.0,Ardra,strong_bullish,1.2,momentum_trading
+2024-01-22,Waxing Gibbous,89.76,11.0,Punarvasu,strong_bullish,1.2,momentum_trading
+2024-01-23,Waxing Gibbous,94.98,12.0,Pushya,strong_bullish,1.2,momentum_trading
+2024-01-24,Waxing Gibbous,98.32,13.0,Ashlesha,strong_bullish,1.2,momentum_trading
+2024-01-25,Full Moon,99.76,14.0,Magha,volatile,1.5,profit_booking
+2024-01-26,Full Moon,99.32,15.0,Purva Phalguni,volatile,1.5,profit_booking
+2024-01-27,Waning Gibbous,97.07,16.0,Uttara Phalguni,bearish_pressure,1.3,defensive
+2024-01-28,Waning Gibbous,93.14,17.0,Hasta,bearish_pressure,1.3,defensive
+2024-01-29,Waning Gibbous,87.71,18.0,Hasta,bearish_pressure,1.3,defensive
+2024-01-30,Waning Gibbous,80.96,19.0,Chitra,bearish_pressure,1.3,defensive
+2024-01-31,Waning Gibbous,73.07,20.0,Swati,bearish_pressure,1.3,defensive
+2024-02-01,Waning Gibbous,64.27,21.0,Vishakha,bearish_pressure,1.3,defensive
+2024-02-02,Last Quarter,54.77,22.0,Anuradha,bearish,1.1,value_hunting
+2024-02-03,Last Quarter,44.86,23.0,Anuradha,bearish,1.1,value_hunting
+2024-02-04,Waning Crescent,34.85,24.0,Jyeshtha,weak_bearish,0.9,contrarian
+2024-02-05,Waning Crescent,25.15,25.0,Purva Ashadha,weak_bearish,0.9,contrarian
+2024-02-06,Waning Crescent,16.27,26.0,Uttara Ashadha,weak_bearish,0.9,contrarian
+2024-02-07,Waning Crescent,8.79,27.0,Shravana,weak_bearish,0.9,contrarian
+2024-02-08,Waning Crescent,3.34,28.0,Dhanishtha,weak_bearish,0.9,contrarian
+2024-02-09,Waning Crescent,0.48,29.0,Shatabhisha,weak_bearish,0.9,contrarian
+2024-02-10,New Moon,0.56,0.54,Purva Bhadrapada,neutral_to_bullish,0.7,accumulation
+2024-02-11,Waxing Crescent,3.66,1.54,Uttara Bhadrapada,bullish,0.8,momentum_building
+2024-02-12,Waxing Crescent,9.53,2.54,Revati,bullish,0.8,momentum_building
+2024-02-13,Waxing Crescent,17.65,3.54,Ashwini,bullish,0.8,momentum_building
+2024-02-14,Waxing Crescent,27.35,4.54,Bharani,bullish,0.8,momentum_building
+2024-02-15,Waxing Crescent,37.93,5.54,Krittika,bullish,0.8,momentum_building
+2024-02-16,First Quarter,48.77,6.54,Rohini,bullish,1.0,trend_following
+2024-02-17,First Quarter,59.33,7.54,Ardra,bullish,1.0,trend_following
+2024-02-18,Waxing Gibbous,69.2,8.54,Punarvasu,strong_bullish,1.2,momentum_trading
+2024-02-19,Waxing Gibbous,78.05,9.54,Pushya,strong_bullish,1.2,momentum_trading
+2024-02-20,Waxing Gibbous,85.62,10.54,Ashlesha,strong_bullish,1.2,momentum_trading
+2024-02-21,Waxing Gibbous,91.72,11.54,Magha,strong_bullish,1.2,momentum_trading
+2024-02-22,Waxing Gibbous,96.19,12.54,Purva Phalguni,strong_bullish,1.2,momentum_trading
+2024-02-23,Waxing Gibbous,98.94,13.54,Uttara Phalguni,strong_bullish,1.2,momentum_trading
+2024-02-24,Full Moon,99.91,14.54,Uttara Phalguni,volatile,1.5,profit_booking
+2024-02-25,Full Moon,99.1,15.54,Hasta,volatile,1.5,profit_booking
+2024-02-26,Waning Gibbous,96.55,16.54,Chitra,bearish_pressure,1.3,defensive
+2024-02-27,Waning Gibbous,92.34,17.54,Swati,bearish_pressure,1.3,defensive
+2024-02-28,Waning Gibbous,86.59,18.54,Vishakha,bearish_pressure,1.3,defensive
+2024-02-29,Waning Gibbous,79.44,19.54,Vishakha,bearish_pressure,1.3,defensive
+2024-03-01,Waning Gibbous,71.07,20.54,Anuradha,bearish_pressure,1.3,defensive
+2024-03-02,Last Quarter,61.71,21.54,Jyeshtha,bearish,1.1,value_hunting
+2024-03-03,Last Quarter,51.61,22.54,Mula,bearish,1.1,value_hunting
+2024-03-04,Waning Crescent,41.12,23.54,Purva Ashadha,weak_bearish,0.9,contrarian
+2024-03-05,Waning Crescent,30.67,24.54,Uttara Ashadha,weak_bearish,0.9,contrarian
+2024-03-06,Waning Crescent,20.81,25.54,Dhanishtha,weak_bearish,0.9,contrarian
+2024-03-07,Waning Crescent,12.17,26.54,Shatabhisha,weak_bearish,0.9,contrarian
+2024-03-08,Waning Crescent,5.45,27.54,Purva Bhadrapada,weak_bearish,0.9,contrarian
+2024-03-09,Waning Crescent,1.27,28.54,Uttara Bhadrapada,weak_bearish,0.9,contrarian
+2024-03-10,New Moon,0.06,0.12,Revati,neutral_to_bullish,0.7,accumulation
+2024-03-11,Waxing Crescent,1.94,1.12,Ashwini,bullish,0.8,momentum_building
+2024-03-12,Waxing Crescent,6.71,2.12,Bharani,bullish,0.8,momentum_building
+2024-03-13,Waxing Crescent,13.86,3.12,Krittika,bullish,0.8,momentum_building
+2024-03-14,Waxing Crescent,22.74,4.12,Rohini,bullish,0.8,momentum_building
+2024-03-15,Waxing Crescent,32.69,5.12,Mrigashira,bullish,0.8,momentum_building
+2024-03-16,Waxing Crescent,43.1,6.12,Ardra,bullish,0.8,momentum_building
+2024-03-17,First Quarter,53.46,7.12,Punarvasu,bullish,1.0,trend_following
+2024-03-18,First Quarter,63.38,8.12,Pushya,bullish,1.0,trend_following
+2024-03-19,Waxing Gibbous,72.54,9.12,Ashlesha,strong_bullish,1.2,momentum_trading
+2024-03-20,Waxing Gibbous,80.69,10.12,Magha,strong_bullish,1.2,momentum_trading
+2024-03-21,Waxing Gibbous,87.62,11.12,Purva Phalguni,strong_bullish,1.2,momentum_trading
+2024-03-22,Waxing Gibbous,93.14,12.12,Uttara Phalguni,strong_bullish,1.2,momentum_trading
+2024-03-23,Waxing Gibbous,97.12,13.12,Hasta,strong_bullish,1.2,momentum_trading
+2024-03-24,Full Moon,99.42,14.12,Chitra,volatile,1.5,profit_booking
+2024-03-25,Full Moon,99.96,15.12,Swati,volatile,1.5,profit_booking
+2024-03-26,Waning Gibbous,98.69,16.12,Swati,bearish_pressure,1.3,defensive
+2024-03-27,Waning Gibbous,95.62,17.12,Vishakha,bearish_pressure,1.3,defensive
+2024-03-28,Waning Gibbous,90.81,18.12,Anuradha,bearish_pressure,1.3,defensive
+2024-03-29,Waning Gibbous,84.34,19.12,Jyeshtha,bearish_pressure,1.3,defensive
+2024-03-30,Waning Gibbous,76.39,20.12,Mula,bearish_pressure,1.3,defensive
+2024-03-31,Waning Gibbous,67.17,21.12,Purva Ashadha,bearish_pressure,1.3,defensive
+2024-04-01,Last Quarter,56.97,22.12,Uttara Ashadha,bearish,1.1,value_hunting
+2024-04-02,Last Quarter,46.15,23.12,Shravana,bearish,1.1,value_hunting
+2024-04-03,Waning Crescent,35.19,24.12,Dhanishtha,weak_bearish,0.9,contrarian
+2024-04-04,Waning Crescent,24.66,25.12,Shatabhisha,weak_bearish,0.9,contrarian
+2024-04-05,Waning Crescent,15.23,26.12,Purva Bhadrapada,weak_bearish,0.9,contrarian
+2024-04-06,Waning Crescent,7.61,27.12,Uttara Bhadrapada,weak_bearish,0.9,contrarian
+2024-04-07,Waning Crescent,2.42,28.12,Revati,weak_bearish,0.9,contrarian
+2024-04-08,Waning Crescent,0.11,29.12,Ashwini,weak_bearish,0.9,contrarian
+2024-04-09,New Moon,0.82,0.74,Krittika,neutral_to_bullish,0.7,accumulation
+2024-04-10,Waxing Crescent,4.38,1.74,Rohini,bullish,0.8,momentum_building
+2024-04-11,Waxing Crescent,10.37,2.74,Mrigashira,bullish,0.8,momentum_building
+2024-04-12,Waxing Crescent,18.22,3.74,Ardra,bullish,0.8,momentum_building
+2024-04-13,Waxing Crescent,27.32,4.74,Punarvasu,bullish,0.8,momentum_building
+2024-04-14,Waxing Crescent,37.11,5.74,Pushya,bullish,0.8,momentum_building
+2024-04-15,First Quarter,47.12,6.74,Ashlesha,bullish,1.0,trend_following
+2024-04-16,First Quarter,56.98,7.74,Magha,bullish,1.0,trend_following
+2024-04-17,Waxing Gibbous,66.37,8.74,Purva Phalguni,strong_bullish,1.2,momentum_trading
+2024-04-18,Waxing Gibbous,75.02,9.74,Uttara Phalguni,strong_bullish,1.2,momentum_trading
+2024-04-19,Waxing Gibbous,82.72,10.74,Hasta,strong_bullish,1.2,momentum_trading
+2024-04-20,Waxing Gibbous,89.23,11.74,Chitra,strong_bullish,1.2,momentum_trading
+2024-04-21,Waxing Gibbous,94.37,12.74,Chitra,strong_bullish,1.2,momentum_trading
+2024-04-22,Waxing Gibbous,97.94,13.74,Swati,strong_bullish,1.2,momentum_trading
+2024-04-23,Full Moon,99.76,14.74,Vishakha,volatile,1.5,profit_booking
+2024-04-24,Full Moon,99.72,15.74,Anuradha,volatile,1.5,profit_booking
+2024-04-25,Waning Gibbous,97.72,16.74,Jyeshtha,bearish_pressure,1.3,defensive
+2024-04-26,Waning Gibbous,93.77,17.74,Mula,bearish_pressure,1.3,defensive
+2024-04-27,Waning Gibbous,87.92,18.74,Purva Ashadha,bearish_pressure,1.3,defensive
+2024-04-28,Waning Gibbous,80.33,19.74,Uttara Ashadha,bearish_pressure,1.3,defensive
+2024-04-29,Waning Gibbous,71.22,20.74,Shravana,bearish_pressure,1.3,defensive
+2024-04-30,Last Quarter,60.93,21.74,Dhanishtha,bearish,1.1,value_hunting
+2024-05-01,Last Quarter,49.88,22.74,Shatabhisha,bearish,1.1,value_hunting
+2024-05-02,Waning Crescent,38.6,23.74,Purva Bhadrapada,weak_bearish,0.9,contrarian
+2024-05-03,Waning Crescent,27.68,24.74,Uttara Bhadrapada,weak_bearish,0.9,contrarian
+2024-05-04,Waning Crescent,17.82,25.74,Revati,weak_bearish,0.9,contrarian
+2024-05-05,Waning Crescent,9.66,26.74,Ashwini,weak_bearish,0.9,contrarian
+2024-05-06,Waning Crescent,3.79,27.74,Bharani,weak_bearish,0.9,contrarian
+2024-05-07,Waning Crescent,0.61,28.74,Krittika,weak_bearish,0.9,contrarian
+2024-05-08,New Moon,0.26,0.36,Rohini,neutral_to_bullish,0.7,accumulation
+2024-05-09,Waxing Crescent,2.61,1.36,Mrigashira,bullish,0.8,momentum_building
+2024-05-10,Waxing Crescent,7.35,2.36,Ardra,bullish,0.8,momentum_building
+2024-05-11,Waxing Crescent,14.0,3.36,Pushya,bullish,0.8,momentum_building
+2024-05-12,Waxing Crescent,22.06,4.36,Ashlesha,bullish,0.8,momentum_building
+2024-05-13,Waxing Crescent,31.05,5.36,Magha,bullish,0.8,momentum_building
+2024-05-14,Waxing Crescent,40.55,6.36,Purva Phalguni,bullish,0.8,momentum_building
+2024-05-15,First Quarter,50.2,7.36,Uttara Phalguni,bullish,1.0,trend_following
+2024-05-16,First Quarter,59.69,8.36,Hasta,bullish,1.0,trend_following
+2024-05-17,Waxing Gibbous,68.76,9.36,Hasta,strong_bullish,1.2,momentum_trading
+2024-05-18,Waxing Gibbous,77.14,10.36,Chitra,strong_bullish,1.2,momentum_trading
+2024-05-19,Waxing Gibbous,84.59,11.36,Swati,strong_bullish,1.2,momentum_trading
+2024-05-20,Waxing Gibbous,90.84,12.36,Vishakha,strong_bullish,1.2,momentum_trading
+2024-05-21,Waxing Gibbous,95.64,13.36,Anuradha,strong_bullish,1.2,momentum_trading
+2024-05-22,Full Moon,98.73,14.36,Jyeshtha,volatile,1.5,profit_booking
+2024-05-23,Full Moon,99.89,15.36,Jyeshtha,volatile,1.5,profit_booking
+2024-05-24,Waning Gibbous,98.94,16.36,Purva Ashadha,bearish_pressure,1.3,defensive
+2024-05-25,Waning Gibbous,95.8,17.36,Uttara Ashadha,bearish_pressure,1.3,defensive
+2024-05-26,Waning Gibbous,90.5,18.36,Shravana,bearish_pressure,1.3,defensive
+2024-05-27,Waning Gibbous,83.2,19.36,Dhanishtha,bearish_pressure,1.3,defensive
+2024-05-28,Waning Gibbous,74.17,20.36,Shatabhisha,bearish_pressure,1.3,defensive
+2024-05-29,Last Quarter,63.81,21.36,Purva Bhadrapada,bearish,1.1,value_hunting
+2024-05-30,Last Quarter,52.62,22.36,Uttara Bhadrapada,bearish,1.1,value_hunting
+2024-05-31,Waning Crescent,41.18,23.36,Revati,weak_bearish,0.9,contrarian
+2024-06-01,Waning Crescent,30.11,24.36,Ashwini,weak_bearish,0.9,contrarian
+2024-06-02,Waning Crescent,20.07,25.36,Bharani,weak_bearish,0.9,contrarian
+2024-06-03,Waning Crescent,11.65,26.36,Krittika,weak_bearish,0.9,contrarian
+2024-06-04,Waning Crescent,5.33,27.36,Rohini,weak_bearish,0.9,contrarian
+2024-06-05,Waning Crescent,1.46,28.36,Mrigashira,weak_bearish,0.9,contrarian
+2024-06-06,Waning Crescent,0.15,29.36,Ardra,weak_bearish,0.9,contrarian
+2024-06-07,New Moon,1.35,0.97,Punarvasu,neutral_to_bullish,0.7,accumulation
+2024-06-08,Waxing Crescent,4.81,1.97,Pushya,bullish,0.8,momentum_building
+2024-06-09,Waxing Crescent,10.19,2.97,Ashlesha,bullish,0.8,momentum_building
+2024-06-10,Waxing Crescent,17.1,3.97,Magha,bullish,0.8,momentum_building
+2024-06-11,Waxing Crescent,25.16,4.97,Purva Phalguni,bullish,0.8,momentum_building
+2024-06-12,Waxing Crescent,34.0,5.97,Uttara Phalguni,bullish,0.8,momentum_building
+2024-06-13,First Quarter,43.3,6.97,Hasta,bullish,1.0,trend_following
+2024-06-14,First Quarter,52.76,7.97,Chitra,bullish,1.0,trend_following
+2024-06-15,Waxing Gibbous,62.12,8.97,Swati,strong_bullish,1.2,momentum_trading
+2024-06-16,Waxing Gibbous,71.1,9.97,Swati,strong_bullish,1.2,momentum_trading
+2024-06-17,Waxing Gibbous,79.41,10.97,Vishakha,strong_bullish,1.2,momentum_trading
+2024-06-18,Waxing Gibbous,86.74,11.97,Anuradha,strong_bullish,1.2,momentum_trading
+2024-06-19,Waxing Gibbous,92.76,12.97,Jyeshtha,strong_bullish,1.2,momentum_trading
+2024-06-20,Full Moon,97.12,13.97,Mula,volatile,1.5,profit_booking
+2024-06-21,Full Moon,99.47,14.97,Purva Ashadha,volatile,1.5,profit_booking
+2024-06-22,Waning Gibbous,99.56,15.97,Uttara Ashadha,bearish_pressure,1.3,defensive
+2024-06-23,Waning Gibbous,97.23,16.97,Dhanishtha,bearish_pressure,1.3,defensive
+2024-06-24,Waning Gibbous,92.46,17.97,Shatabhisha,bearish_pressure,1.3,defensive
+2024-06-25,Waning Gibbous,85.42,18.97,Purva Bhadrapada,bearish_pressure,1.3,defensive
+2024-06-26,Waning Gibbous,76.48,19.97,Uttara Bhadrapada,bearish_pressure,1.3,defensive
+2024-06-27,Waning Gibbous,66.1,20.97,Revati,bearish_pressure,1.3,defensive
+2024-06-28,Last Quarter,54.86,21.97,Ashwini,bearish,1.1,value_hunting
+2024-06-29,Last Quarter,43.41,22.97,Bharani,bearish,1.1,value_hunting
+2024-06-30,Waning Crescent,32.35,23.97,Krittika,weak_bearish,0.9,contrarian
+2024-07-01,Waning Crescent,22.3,24.97,Krittika,weak_bearish,0.9,contrarian
+2024-07-02,Waning Crescent,13.74,25.97,Mrigashira,weak_bearish,0.9,contrarian
+2024-07-03,Waning Crescent,7.09,26.97,Ardra,weak_bearish,0.9,contrarian
+2024-07-04,Waning Crescent,2.61,27.97,Punarvasu,weak_bearish,0.9,contrarian
+2024-07-05,Waning Crescent,0.43,28.97,Pushya,weak_bearish,0.9,contrarian
+2024-07-06,New Moon,0.51,0.54,Ashlesha,neutral_to_bullish,0.7,accumulation
+2024-07-07,Waxing Crescent,2.72,1.54,Magha,bullish,0.8,momentum_building
+2024-07-08,Waxing Crescent,6.83,2.54,Purva Phalguni,bullish,0.8,momentum_building
+2024-07-09,Waxing Crescent,12.56,3.54,Uttara Phalguni,bullish,0.8,momentum_building
+2024-07-10,Waxing Crescent,19.62,4.54,Hasta,bullish,0.8,momentum_building
+2024-07-11,Waxing Crescent,27.7,5.54,Chitra,bullish,0.8,momentum_building
+2024-07-12,First Quarter,36.53,6.54,Chitra,bullish,1.0,trend_following
+2024-07-13,First Quarter,45.84,7.54,Swati,bullish,1.0,trend_following
+2024-07-14,Waxing Gibbous,55.37,8.54,Vishakha,strong_bullish,1.2,momentum_trading
+2024-07-15,Waxing Gibbous,64.84,9.54,Anuradha,strong_bullish,1.2,momentum_trading
+2024-07-16,Waxing Gibbous,73.93,10.54,Jyeshtha,strong_bullish,1.2,momentum_trading
+2024-07-17,Waxing Gibbous,82.28,11.54,Mula,strong_bullish,1.2,momentum_trading
+2024-07-18,Waxing Gibbous,89.49,12.54,Purva Ashadha,strong_bullish,1.2,momentum_trading
+2024-07-19,Waxing Gibbous,95.11,13.54,Uttara Ashadha,strong_bullish,1.2,momentum_trading
+2024-07-20,Full Moon,98.68,14.54,Shravana,volatile,1.5,profit_booking
+2024-07-21,Full Moon,99.83,15.54,Dhanishtha,volatile,1.5,profit_booking
+2024-07-22,Waning Gibbous,98.31,16.54,Shatabhisha,bearish_pressure,1.3,defensive
+2024-07-23,Waning Gibbous,94.09,17.54,Purva Bhadrapada,bearish_pressure,1.3,defensive
+2024-07-24,Waning Gibbous,87.38,18.54,Uttara Bhadrapada,bearish_pressure,1.3,defensive
+2024-07-25,Waning Gibbous,78.6,19.54,Revati,bearish_pressure,1.3,defensive
+2024-07-26,Waning Gibbous,68.31,20.54,Ashwini,bearish_pressure,1.3,defensive
+2024-07-27,Last Quarter,57.17,21.54,Bharani,bearish,1.1,value_hunting
+2024-07-28,Last Quarter,45.83,22.54,Krittika,bearish,1.1,value_hunting
+2024-07-29,Waning Crescent,34.89,23.54,Rohini,weak_bearish,0.9,contrarian
+2024-07-30,Waning Crescent,24.88,24.54,Mrigashira,weak_bearish,0.9,contrarian
+2024-07-31,Waning Crescent,16.22,25.54,Ardra,weak_bearish,0.9,contrarian
+2024-08-01,Waning Crescent,9.24,26.54,Pushya,weak_bearish,0.9,contrarian
+2024-08-02,Waning Crescent,4.17,27.54,Ashlesha,weak_bearish,0.9,contrarian
+2024-08-03,Waning Crescent,1.12,28.54,Magha,weak_bearish,0.9,contrarian
+2024-08-04,New Moon,0.13,0.03,Purva Phalguni,neutral_to_bullish,0.7,accumulation
+2024-08-05,Waxing Crescent,1.14,1.03,Uttara Phalguni,bullish,0.8,momentum_building
+2024-08-06,Waxing Crescent,4.01,2.03,Uttara Phalguni,bullish,0.8,momentum_building
+2024-08-07,Waxing Crescent,8.55,3.03,Hasta,bullish,0.8,momentum_building
+2024-08-08,Waxing Crescent,14.57,4.03,Chitra,bullish,0.8,momentum_building
+2024-08-09,Waxing Crescent,21.84,5.03,Swati,bullish,0.8,momentum_building
+2024-08-10,Waxing Crescent,30.12,6.03,Vishakha,bullish,0.8,momentum_building
+2024-08-11,First Quarter,39.19,7.03,Anuradha,bullish,1.0,trend_following
+2024-08-12,First Quarter,48.78,8.03,Anuradha,bullish,1.0,trend_following
+2024-08-13,Waxing Gibbous,58.62,9.03,Jyeshtha,strong_bullish,1.2,momentum_trading
+2024-08-14,Waxing Gibbous,68.37,10.03,Mula,strong_bullish,1.2,momentum_trading
+2024-08-15,Waxing Gibbous,77.65,11.03,Uttara Ashadha,strong_bullish,1.2,momentum_trading
+2024-08-16,Waxing Gibbous,85.97,12.03,Shravana,strong_bullish,1.2,momentum_trading
+2024-08-17,Waxing Gibbous,92.8,13.03,Dhanishtha,strong_bullish,1.2,momentum_trading
+2024-08-18,Full Moon,97.57,14.03,Shatabhisha,volatile,1.5,profit_booking
+2024-08-19,Full Moon,99.8,15.03,Purva Bhadrapada,volatile,1.5,profit_booking
+2024-08-20,Waning Gibbous,99.16,16.03,Uttara Bhadrapada,bearish_pressure,1.3,defensive
+2024-08-21,Waning Gibbous,95.61,17.03,Revati,bearish_pressure,1.3,defensive
+2024-08-22,Waning Gibbous,89.37,18.03,Ashwini,bearish_pressure,1.3,defensive
+2024-08-23,Waning Gibbous,80.93,19.03,Bharani,bearish_pressure,1.3,defensive
+2024-08-24,Waning Gibbous,70.92,20.03,Krittika,bearish_pressure,1.3,defensive
+2024-08-25,Waning Gibbous,60.05,21.03,Rohini,bearish_pressure,1.3,defensive
+2024-08-26,Last Quarter,48.94,22.03,Mrigashira,bearish,1.1,value_hunting
+2024-08-27,Last Quarter,38.18,23.03,Ardra,bearish,1.1,value_hunting
+2024-08-28,Waning Crescent,28.21,24.03,Punarvasu,weak_bearish,0.9,contrarian
+2024-08-29,Waning Crescent,19.41,25.03,Pushya,weak_bearish,0.9,contrarian
+2024-08-30,Waning Crescent,12.06,26.03,Ashlesha,weak_bearish,0.9,contrarian
+2024-08-31,Waning Crescent,6.35,27.03,Magha,weak_bearish,0.9,contrarian
+2024-09-01,Waning Crescent,2.43,28.03,Purva Phalguni,weak_bearish,0.9,contrarian
+2024-09-02,Waning Crescent,0.37,29.03,Uttara Phalguni,weak_bearish,0.9,contrarian
+2024-09-03,New Moon,0.19,0.42,Hasta,neutral_to_bullish,0.7,accumulation
+2024-09-04,Waxing Crescent,1.83,1.42,Chitra,bullish,0.8,momentum_building
+2024-09-05,Waxing Crescent,5.2,2.42,Swati,bullish,0.8,momentum_building
+2024-09-06,Waxing Crescent,10.18,3.42,Swati,bullish,0.8,momentum_building
+2024-09-07,Waxing Crescent,16.6,4.42,Vishakha,bullish,0.8,momentum_building
+2024-09-08,Waxing Crescent,24.28,5.42,Anuradha,bullish,0.8,momentum_building
+2024-09-09,First Quarter,33.01,6.42,Jyeshtha,bullish,1.0,trend_following
+2024-09-10,First Quarter,42.56,7.42,Mula,bullish,1.0,trend_following
+2024-09-11,Waxing Gibbous,52.64,8.42,Purva Ashadha,strong_bullish,1.2,momentum_trading
+2024-09-12,Waxing Gibbous,62.92,9.42,Uttara Ashadha,strong_bullish,1.2,momentum_trading
+2024-09-13,Waxing Gibbous,72.97,10.42,Shravana,strong_bullish,1.2,momentum_trading
+2024-09-14,Waxing Gibbous,82.27,11.42,Shatabhisha,strong_bullish,1.2,momentum_trading
+2024-09-15,Waxing Gibbous,90.19,12.42,Purva Bhadrapada,strong_bullish,1.2,momentum_trading
+2024-09-16,Waxing Gibbous,96.09,13.42,Uttara Bhadrapada,strong_bullish,1.2,momentum_trading
+2024-09-17,Full Moon,99.41,14.42,Revati,volatile,1.5,profit_booking
+2024-09-18,Full Moon,99.76,15.42,Ashwini,volatile,1.5,profit_booking
+2024-09-19,Waning Gibbous,97.06,16.42,Bharani,bearish_pressure,1.3,defensive
+2024-09-20,Waning Gibbous,91.55,17.42,Krittika,bearish_pressure,1.3,defensive
+2024-09-21,Waning Gibbous,83.74,18.42,Rohini,bearish_pressure,1.3,defensive
+2024-09-22,Waning Gibbous,74.29,19.42,Mrigashira,bearish_pressure,1.3,defensive
+2024-09-23,Waning Gibbous,63.89,20.42,Ardra,bearish_pressure,1.3,defensive
+2024-09-24,Last Quarter,53.16,21.42,Punarvasu,bearish,1.1,value_hunting
+2024-09-25,Last Quarter,42.63,22.42,Pushya,bearish,1.1,value_hunting
+2024-09-26,Waning Crescent,32.7,23.42,Ashlesha,weak_bearish,0.9,contrarian
+2024-09-27,Waning Crescent,23.7,24.42,Magha,weak_bearish,0.9,contrarian
+2024-09-28,Waning Crescent,15.9,25.42,Purva Phalguni,weak_bearish,0.9,contrarian
+2024-09-29,Waning Crescent,9.49,26.42,Uttara Phalguni,weak_bearish,0.9,contrarian
+2024-09-30,Waning Crescent,4.64,27.42,Hasta,weak_bearish,0.9,contrarian
+2024-10-01,Waning Crescent,1.48,28.42,Chitra,weak_bearish,0.9,contrarian
+2024-10-02,Waning Crescent,0.07,29.42,Chitra,weak_bearish,0.9,contrarian
+2024-10-03,New Moon,0.47,0.72,Swati,neutral_to_bullish,0.7,accumulation
+2024-10-04,Waxing Crescent,2.64,1.72,Vishakha,bullish,0.8,momentum_building
+2024-10-05,Waxing Crescent,6.55,2.72,Anuradha,bullish,0.8,momentum_building
+2024-10-06,Waxing Crescent,12.09,3.72,Jyeshtha,bullish,0.8,momentum_building
+2024-10-07,Waxing Crescent,19.12,4.72,Mula,bullish,0.8,momentum_building
+2024-10-08,Waxing Crescent,27.45,5.72,Purva Ashadha,bullish,0.8,momentum_building
+2024-10-09,First Quarter,36.87,6.72,Uttara Ashadha,bullish,1.0,trend_following
+2024-10-10,First Quarter,47.08,7.72,Shravana,bullish,1.0,trend_following
+2024-10-11,Waxing Gibbous,57.74,8.72,Dhanishtha,strong_bullish,1.2,momentum_trading
+2024-10-12,Waxing Gibbous,68.37,9.72,Shatabhisha,strong_bullish,1.2,momentum_trading
+2024-10-13,Waxing Gibbous,78.43,10.72,Purva Bhadrapada,strong_bullish,1.2,momentum_trading
+2024-10-14,Waxing Gibbous,87.26,11.72,Uttara Bhadrapada,strong_bullish,1.2,momentum_trading
+2024-10-15,Waxing Gibbous,94.17,12.72,Revati,strong_bullish,1.2,momentum_trading
+2024-10-16,Waxing Gibbous,98.54,13.72,Ashwini,strong_bullish,1.2,momentum_trading
+2024-10-17,Full Moon,99.98,14.72,Bharani,volatile,1.5,profit_booking
+2024-10-18,Full Moon,98.36,15.72,Krittika,volatile,1.5,profit_booking
+2024-10-19,Waning Gibbous,93.9,16.72,Rohini,bearish_pressure,1.3,defensive
+2024-10-20,Waning Gibbous,87.08,17.72,Ardra,bearish_pressure,1.3,defensive
+2024-10-21,Waning Gibbous,78.52,18.72,Punarvasu,bearish_pressure,1.3,defensive
+2024-10-22,Waning Gibbous,68.86,19.72,Pushya,bearish_pressure,1.3,defensive
+2024-10-23,Waning Gibbous,58.68,20.72,Ashlesha,bearish_pressure,1.3,defensive
+2024-10-24,Last Quarter,48.46,21.72,Magha,bearish,1.1,value_hunting
+2024-10-25,Last Quarter,38.59,22.72,Purva Phalguni,bearish,1.1,value_hunting
+2024-10-26,Waning Crescent,29.37,23.72,Uttara Phalguni,weak_bearish,0.9,contrarian
+2024-10-27,Waning Crescent,21.07,24.72,Hasta,weak_bearish,0.9,contrarian
+2024-10-28,Waning Crescent,13.9,25.72,Hasta,weak_bearish,0.9,contrarian
+2024-10-29,Waning Crescent,8.05,26.72,Chitra,weak_bearish,0.9,contrarian
+2024-10-30,Waning Crescent,3.7,27.72,Swati,weak_bearish,0.9,contrarian
+2024-10-31,Waning Crescent,1.0,28.72,Vishakha,weak_bearish,0.9,contrarian
+2024-11-01,Waning Crescent,0.06,29.72,Anuradha,weak_bearish,0.9,contrarian
+2024-11-02,New Moon,0.97,0.97,Jyeshtha,neutral_to_bullish,0.7,accumulation
+2024-11-03,Waxing Crescent,3.74,1.97,Jyeshtha,bullish,0.8,momentum_building
+2024-11-04,Waxing Crescent,8.34,2.97,Mula,bullish,0.8,momentum_building
+2024-11-05,Waxing Crescent,14.67,3.97,Uttara Ashadha,bullish,0.8,momentum_building
+2024-11-06,Waxing Crescent,22.56,4.97,Shravana,bullish,0.8,momentum_building
+2024-11-07,Waxing Crescent,31.78,5.97,Dhanishtha,bullish,0.8,momentum_building
+2024-11-08,First Quarter,42.03,6.97,Shatabhisha,bullish,1.0,trend_following
+2024-11-09,First Quarter,52.92,7.97,Purva Bhadrapada,bullish,1.0,trend_following
+2024-11-10,Waxing Gibbous,63.95,8.97,Uttara Bhadrapada,strong_bullish,1.2,momentum_trading
+2024-11-11,Waxing Gibbous,74.54,9.97,Revati,strong_bullish,1.2,momentum_trading
+2024-11-12,Waxing Gibbous,84.04,10.97,Ashwini,strong_bullish,1.2,momentum_trading
+2024-11-13,Waxing Gibbous,91.76,11.97,Bharani,strong_bullish,1.2,momentum_trading
+2024-11-14,Waxing Gibbous,97.11,12.97,Krittika,strong_bullish,1.2,momentum_trading
+2024-11-15,Full Moon,99.68,13.97,Rohini,volatile,1.5,profit_booking
+2024-11-16,Full Moon,99.33,14.97,Mrigashira,volatile,1.5,profit_booking
+2024-11-17,Waning Gibbous,96.22,15.97,Ardra,bearish_pressure,1.3,defensive
+2024-11-18,Waning Gibbous,90.73,16.97,Punarvasu,bearish_pressure,1.3,defensive
+2024-11-19,Waning Gibbous,83.39,17.97,Ashlesha,bearish_pressure,1.3,defensive
+2024-11-20,Waning Gibbous,74.76,18.97,Magha,bearish_pressure,1.3,defensive
+2024-11-21,Waning Gibbous,65.35,19.97,Purva Phalguni,bearish_pressure,1.3,defensive
+2024-11-22,Waning Gibbous,55.6,20.97,Uttara Phalguni,bearish_pressure,1.3,defensive
+2024-11-23,Last Quarter,45.88,21.97,Uttara Phalguni,bearish,1.1,value_hunting
+2024-11-24,Last Quarter,36.5,22.97,Hasta,bearish,1.1,value_hunting
+2024-11-25,Waning Crescent,27.7,23.97,Chitra,weak_bearish,0.9,contrarian
+2024-11-26,Waning Crescent,19.73,24.97,Swati,weak_bearish,0.9,contrarian
+2024-11-27,Waning Crescent,12.82,25.97,Vishakha,weak_bearish,0.9,contrarian
+2024-11-28,Waning Crescent,7.2,26.97,Vishakha,weak_bearish,0.9,contrarian
+2024-11-29,Waning Crescent,3.1,27.97,Anuradha,weak_bearish,0.9,contrarian
+2024-11-30,Waning Crescent,0.71,28.97,Jyeshtha,weak_bearish,0.9,contrarian
+2024-12-01,New Moon,0.22,0.24,Mula,neutral_to_bullish,0.7,accumulation
+2024-12-02,Waxing Crescent,1.75,1.24,Purva Ashadha,bullish,0.8,momentum_building
+2024-12-03,Waxing Crescent,5.32,2.24,Uttara Ashadha,bullish,0.8,momentum_building
+2024-12-04,Waxing Crescent,10.88,3.24,Shravana,bullish,0.8,momentum_building
+2024-12-05,Waxing Crescent,18.29,4.24,Shatabhisha,bullish,0.8,momentum_building
+2024-12-06,Waxing Crescent,27.28,5.24,Purva Bhadrapada,bullish,0.8,momentum_building
+2024-12-07,Waxing Crescent,37.5,6.24,Uttara Bhadrapada,bullish,0.8,momentum_building
+2024-12-08,First Quarter,48.51,7.24,Revati,bullish,1.0,trend_following
+2024-12-09,First Quarter,59.78,8.24,Revati,bullish,1.0,trend_following
+2024-12-10,Waxing Gibbous,70.69,9.24,Ashwini,strong_bullish,1.2,momentum_trading
+2024-12-11,Waxing Gibbous,80.63,10.24,Bharani,strong_bullish,1.2,momentum_trading
+2024-12-12,Waxing Gibbous,88.96,11.24,Krittika,strong_bullish,1.2,momentum_trading
+2024-12-13,Waxing Gibbous,95.14,12.24,Mrigashira,strong_bullish,1.2,momentum_trading
+2024-12-14,Waxing Gibbous,98.8,13.24,Ardra,strong_bullish,1.2,momentum_trading
+2024-12-15,Full Moon,99.79,14.24,Punarvasu,volatile,1.5,profit_booking
+2024-12-16,Full Moon,98.19,15.24,Pushya,volatile,1.5,profit_booking
+2024-12-17,Waning Gibbous,94.26,16.24,Ashlesha,bearish_pressure,1.3,defensive
+2024-12-18,Waning Gibbous,88.4,17.24,Magha,bearish_pressure,1.3,defensive
+2024-12-19,Waning Gibbous,81.05,18.24,Purva Phalguni,bearish_pressure,1.3,defensive
+2024-12-20,Waning Gibbous,72.65,19.24,Uttara Phalguni,bearish_pressure,1.3,defensive
+2024-12-21,Waning Gibbous,63.58,20.24,Hasta,bearish_pressure,1.3,defensive
+2024-12-22,Last Quarter,54.19,21.24,Chitra,bearish,1.1,value_hunting
+2024-12-23,Last Quarter,44.76,22.24,Swati,bearish,1.1,value_hunting
+2024-12-24,Waning Crescent,35.57,23.24,Swati,weak_bearish,0.9,contrarian
+2024-12-25,Waning Crescent,26.86,24.24,Vishakha,weak_bearish,0.9,contrarian
+2024-12-26,Waning Crescent,18.9,25.24,Anuradha,weak_bearish,0.9,contrarian
+2024-12-27,Waning Crescent,11.97,26.24,Jyeshtha,weak_bearish,0.9,contrarian
+2024-12-28,Waning Crescent,6.38,27.24,Mula,weak_bearish,0.9,contrarian
+2024-12-29,Waning Crescent,2.43,28.24,Purva Ashadha,weak_bearish,0.9,contrarian
+2024-12-30,Waning Crescent,0.4,29.24,Uttara Ashadha,weak_bearish,0.9,contrarian
+2024-12-31,New Moon,0.54,0.56,Shravana,neutral_to_bullish,0.7,accumulation
+2025-01-01,Waxing Crescent,2.97,1.56,Dhanishtha,bullish,0.8,momentum_building
+2025-01-02,Waxing Crescent,7.69,2.56,Shatabhisha,bullish,0.8,momentum_building
+2025-01-03,Waxing Crescent,14.56,3.56,Purva Bhadrapada,bullish,0.8,momentum_building
+2025-01-04,Waxing Crescent,23.28,4.56,Uttara Bhadrapada,bullish,0.8,momentum_building
+2025-01-05,Waxing Crescent,33.43,5.56,Revati,bullish,0.8,momentum_building
+2025-01-06,First Quarter,44.47,6.56,Ashwini,bullish,1.0,trend_following
+2025-01-07,First Quarter,55.84,7.56,Bharani,bullish,1.0,trend_following
+2025-01-08,Waxing Gibbous,66.92,8.56,Krittika,strong_bullish,1.2,momentum_trading
+2025-01-09,Waxing Gibbous,77.1,9.56,Rohini,strong_bullish,1.2,momentum_trading
+2025-01-10,Waxing Gibbous,85.85,10.56,Mrigashira,strong_bullish,1.2,momentum_trading
+2025-01-11,Waxing Gibbous,92.71,11.56,Punarvasu,strong_bullish,1.2,momentum_trading
+2025-01-12,Waxing Gibbous,97.34,12.56,Pushya,strong_bullish,1.2,momentum_trading
+2025-01-13,Waxing Gibbous,99.6,13.56,Ashlesha,strong_bullish,1.2,momentum_trading
+2025-01-14,Full Moon,99.49,14.56,Magha,volatile,1.5,profit_booking
+2025-01-15,Full Moon,97.17,15.56,Purva Phalguni,volatile,1.5,profit_booking
+2025-01-16,Waning Gibbous,92.9,16.56,Uttara Phalguni,bearish_pressure,1.3,defensive
+2025-01-17,Waning Gibbous,86.99,17.56,Hasta,bearish_pressure,1.3,defensive
+2025-01-18,Waning Gibbous,79.78,18.56,Chitra,bearish_pressure,1.3,defensive
+2025-01-19,Waning Gibbous,71.6,19.56,Chitra,bearish_pressure,1.3,defensive
+2025-01-20,Waning Gibbous,62.74,20.56,Swati,bearish_pressure,1.3,defensive
+2025-01-21,Last Quarter,53.47,21.56,Vishakha,bearish,1.1,value_hunting
+2025-01-22,Last Quarter,44.06,22.56,Anuradha,bearish,1.1,value_hunting
+2025-01-23,Waning Crescent,34.76,23.56,Jyeshtha,weak_bearish,0.9,contrarian
+2025-01-24,Waning Crescent,25.87,24.56,Mula,weak_bearish,0.9,contrarian
+2025-01-25,Waning Crescent,17.71,25.56,Purva Ashadha,weak_bearish,0.9,contrarian
+2025-01-26,Waning Crescent,10.65,26.56,Uttara Ashadha,weak_bearish,0.9,contrarian
+2025-01-27,Waning Crescent,5.1,27.56,Shravana,weak_bearish,0.9,contrarian
+2025-01-28,Waning Crescent,1.47,28.56,Dhanishtha,weak_bearish,0.9,contrarian
+2025-01-29,Waning Crescent,0.11,29.56,Shatabhisha,weak_bearish,0.9,contrarian
+2025-01-30,New Moon,1.3,0.98,Purva Bhadrapada,neutral_to_bullish,0.7,accumulation
+2025-01-31,Waxing Crescent,5.08,1.98,Uttara Bhadrapada,bullish,0.8,momentum_building
+2025-02-01,Waxing Crescent,11.33,2.98,Revati,bullish,0.8,momentum_building
+2025-02-02,Waxing Crescent,19.7,3.98,Ashwini,bullish,0.8,momentum_building
+2025-02-03,Waxing Crescent,29.67,4.98,Bharani,bullish,0.8,momentum_building
+2025-02-04,Waxing Crescent,40.65,5.98,Krittika,bullish,0.8,momentum_building
+2025-02-05,First Quarter,52.0,6.98,Rohini,bullish,1.0,trend_following
+2025-02-06,First Quarter,63.1,7.98,Mrigashira,bullish,1.0,trend_following
+2025-02-07,Waxing Gibbous,73.41,8.98,Ardra,strong_bullish,1.2,momentum_trading
+2025-02-08,Waxing Gibbous,82.44,9.98,Punarvasu,strong_bullish,1.2,momentum_trading
+2025-02-09,Waxing Gibbous,89.83,10.98,Ashlesha,strong_bullish,1.2,momentum_trading
+2025-02-10,Waxing Gibbous,95.29,11.98,Magha,strong_bullish,1.2,momentum_trading
+2025-02-11,Waxing Gibbous,98.67,12.98,Purva Phalguni,strong_bullish,1.2,momentum_trading
+2025-02-12,Full Moon,99.93,13.98,Uttara Phalguni,volatile,1.5,profit_booking
+2025-02-13,Full Moon,99.12,14.98,Uttara Phalguni,volatile,1.5,profit_booking
+2025-02-14,Waning Gibbous,96.39,15.98,Hasta,bearish_pressure,1.3,defensive
+2025-02-15,Waning Gibbous,91.94,16.98,Chitra,bearish_pressure,1.3,defensive
+2025-02-16,Waning Gibbous,86.01,17.98,Swati,bearish_pressure,1.3,defensive
+2025-02-17,Waning Gibbous,78.84,18.98,Vishakha,bearish_pressure,1.3,defensive
+2025-02-18,Waning Gibbous,70.68,19.98,Vishakha,bearish_pressure,1.3,defensive
+2025-02-19,Waning Gibbous,61.77,20.98,Anuradha,bearish_pressure,1.3,defensive
+2025-02-20,Last Quarter,52.36,21.98,Jyeshtha,bearish,1.1,value_hunting
+2025-02-21,Last Quarter,42.7,22.98,Mula,bearish,1.1,value_hunting
+2025-02-22,Waning Crescent,33.09,23.98,Purva Ashadha,weak_bearish,0.9,contrarian
+2025-02-23,Waning Crescent,23.89,24.98,Uttara Ashadha,weak_bearish,0.9,contrarian
+2025-02-24,Waning Crescent,15.51,25.98,Shravana,weak_bearish,0.9,contrarian
+2025-02-25,Waning Crescent,8.47,26.98,Dhanishtha,weak_bearish,0.9,contrarian
+2025-02-26,Waning Crescent,3.28,27.98,Purva Bhadrapada,weak_bearish,0.9,contrarian
+2025-02-27,Waning Crescent,0.44,28.98,Uttara Bhadrapada,weak_bearish,0.9,contrarian
+2025-02-28,New Moon,0.32,0.47,Revati,neutral_to_bullish,0.7,accumulation
+2025-03-01,Waxing Crescent,3.08,1.47,Ashwini,bullish,0.8,momentum_building
+2025-03-02,Waxing Crescent,8.59,2.47,Bharani,bullish,0.8,momentum_building
+2025-03-03,Waxing Crescent,16.45,3.47,Krittika,bullish,0.8,momentum_building
+2025-03-04,Waxing Crescent,26.1,4.47,Rohini,bullish,0.8,momentum_building
+2025-03-05,Waxing Crescent,36.84,5.47,Mrigashira,bullish,0.8,momentum_building
+2025-03-06,First Quarter,48.01,6.47,Ardra,bullish,1.0,trend_following
+2025-03-07,First Quarter,59.02,7.47,Punarvasu,bullish,1.0,trend_following
+2025-03-08,Waxing Gibbous,69.35,8.47,Pushya,strong_bullish,1.2,momentum_trading
+2025-03-09,Waxing Gibbous,78.59,9.47,Ashlesha,strong_bullish,1.2,momentum_trading
+2025-03-10,Waxing Gibbous,86.41,10.47,Magha,strong_bullish,1.2,momentum_trading
+2025-03-11,Waxing Gibbous,92.58,11.47,Purva Phalguni,strong_bullish,1.2,momentum_trading
+2025-03-12,Waxing Gibbous,96.94,12.47,Uttara Phalguni,strong_bullish,1.2,momentum_trading
+2025-03-13,Waxing Gibbous,99.41,13.47,Hasta,strong_bullish,1.2,momentum_trading
+2025-03-14,Full Moon,99.96,14.47,Chitra,volatile,1.5,profit_booking
+2025-03-15,Full Moon,98.65,15.47,Swati,volatile,1.5,profit_booking
+2025-03-16,Waning Gibbous,95.59,16.47,Swati,bearish_pressure,1.3,defensive
+2025-03-17,Waning Gibbous,90.91,17.47,Vishakha,bearish_pressure,1.3,defensive
+2025-03-18,Waning Gibbous,84.79,18.47,Anuradha,bearish_pressure,1.3,defensive
+2025-03-19,Waning Gibbous,77.42,19.47,Jyeshtha,bearish_pressure,1.3,defensive
+2025-03-20,Waning Gibbous,69.0,20.47,Mula,bearish_pressure,1.3,defensive
+2025-03-21,Last Quarter,59.75,21.47,Purva Ashadha,bearish,1.1,value_hunting
+2025-03-22,Last Quarter,49.93,22.47,Uttara Ashadha,bearish,1.1,value_hunting
+2025-03-23,Waning Crescent,39.83,23.47,Shravana,weak_bearish,0.9,contrarian
+2025-03-24,Waning Crescent,29.83,24.47,Dhanishtha,weak_bearish,0.9,contrarian
+2025-03-25,Waning Crescent,20.4,25.47,Shatabhisha,weak_bearish,0.9,contrarian
+2025-03-26,Waning Crescent,12.11,26.47,Purva Bhadrapada,weak_bearish,0.9,contrarian
+2025-03-27,Waning Crescent,5.56,27.47,Uttara Bhadrapada,weak_bearish,0.9,contrarian
+2025-03-28,Waning Crescent,1.37,28.47,Revati,weak_bearish,0.9,contrarian
+2025-03-29,New Moon,0.01,0.04,Ashwini,neutral_to_bullish,0.7,accumulation
+2025-03-30,Waxing Crescent,1.7,1.04,Bharani,bullish,0.8,momentum_building
+2025-03-31,Waxing Crescent,6.33,2.04,Krittika,bullish,0.8,momentum_building
+2025-04-01,Waxing Crescent,13.49,3.04,Rohini,bullish,0.8,momentum_building
+2025-04-02,Waxing Crescent,22.56,4.04,Mrigashira,bullish,0.8,momentum_building
+2025-04-03,Waxing Crescent,32.85,5.04,Punarvasu,bullish,0.8,momentum_building
+2025-04-04,Waxing Crescent,43.68,6.04,Pushya,bullish,0.8,momentum_building
+2025-04-05,First Quarter,54.47,7.04,Ashlesha,bullish,1.0,trend_following
+2025-04-06,First Quarter,64.74,8.04,Magha,bullish,1.0,trend_following
+2025-04-07,Waxing Gibbous,74.13,9.04,Purva Phalguni,strong_bullish,1.2,momentum_trading
+2025-04-08,Waxing Gibbous,82.34,10.04,Uttara Phalguni,strong_bullish,1.2,momentum_trading
+2025-04-09,Waxing Gibbous,89.15,11.04,Hasta,strong_bullish,1.2,momentum_trading
+2025-04-10,Waxing Gibbous,94.4,12.04,Chitra,strong_bullish,1.2,momentum_trading
+2025-04-11,Waxing Gibbous,97.95,13.04,Chitra,strong_bullish,1.2,momentum_trading
+2025-04-12,Full Moon,99.74,14.04,Swati,volatile,1.5,profit_booking
+2025-04-13,Full Moon,99.73,15.04,Vishakha,volatile,1.5,profit_booking
+2025-04-14,Waning Gibbous,97.95,16.04,Anuradha,bearish_pressure,1.3,defensive
+2025-04-15,Waning Gibbous,94.46,17.04,Jyeshtha,bearish_pressure,1.3,defensive
+2025-04-16,Waning Gibbous,89.36,18.04,Mula,bearish_pressure,1.3,defensive
+2025-04-17,Waning Gibbous,82.77,19.04,Purva Ashadha,bearish_pressure,1.3,defensive
+2025-04-18,Waning Gibbous,74.87,20.04,Uttara Ashadha,bearish_pressure,1.3,defensive
+2025-04-19,Waning Gibbous,65.87,21.04,Shravana,bearish_pressure,1.3,defensive
+2025-04-20,Last Quarter,56.0,22.04,Dhanishtha,bearish,1.1,value_hunting
+2025-04-21,Last Quarter,45.58,23.04,Shatabhisha,bearish,1.1,value_hunting
+2025-04-22,Waning Crescent,35.02,24.04,Purva Bhadrapada,weak_bearish,0.9,contrarian
+2025-04-23,Waning Crescent,24.81,25.04,Uttara Bhadrapada,weak_bearish,0.9,contrarian
+2025-04-24,Waning Crescent,15.56,26.04,Revati,weak_bearish,0.9,contrarian
+2025-04-25,Waning Crescent,7.97,27.04,Ashwini,weak_bearish,0.9,contrarian
+2025-04-26,Waning Crescent,2.68,28.04,Bharani,weak_bearish,0.9,contrarian
+2025-04-27,Waning Crescent,0.22,29.04,Krittika,weak_bearish,0.9,contrarian
+2025-04-28,New Moon,0.86,0.69,Rohini,neutral_to_bullish,0.7,accumulation
+2025-04-29,Waxing Crescent,4.49,1.69,Mrigashira,bullish,0.8,momentum_building
+2025-04-30,Waxing Crescent,10.74,2.69,Ardra,bullish,0.8,momentum_building
+2025-05-01,Waxing Crescent,19.0,3.69,Punarvasu,bullish,0.8,momentum_building
+2025-05-02,Waxing Crescent,28.59,4.69,Ashlesha,bullish,0.8,momentum_building
+2025-05-03,Waxing Crescent,38.88,5.69,Magha,bullish,0.8,momentum_building
+2025-05-04,First Quarter,49.32,6.69,Purva Phalguni,bullish,1.0,trend_following
+2025-05-05,First Quarter,59.46,7.69,Uttara Phalguni,bullish,1.0,trend_following
+2025-05-06,Waxing Gibbous,68.96,8.69,Hasta,strong_bullish,1.2,momentum_trading
+2025-05-07,Waxing Gibbous,77.54,9.69,Hasta,strong_bullish,1.2,momentum_trading
+2025-05-08,Waxing Gibbous,84.97,10.69,Chitra,strong_bullish,1.2,momentum_trading
+2025-05-09,Waxing Gibbous,91.06,11.69,Swati,strong_bullish,1.2,momentum_trading
+2025-05-10,Waxing Gibbous,95.65,12.69,Vishakha,strong_bullish,1.2,momentum_trading
+2025-05-11,Waxing Gibbous,98.61,13.69,Anuradha,strong_bullish,1.2,momentum_trading
+2025-05-12,Full Moon,99.83,14.69,Jyeshtha,volatile,1.5,profit_booking
+2025-05-13,Full Moon,99.26,15.69,Jyeshtha,volatile,1.5,profit_booking
+2025-05-14,Waning Gibbous,96.88,16.69,Mula,bearish_pressure,1.3,defensive
+2025-05-15,Waning Gibbous,92.72,17.69,Purva Ashadha,bearish_pressure,1.3,defensive
+2025-05-16,Waning Gibbous,86.86,18.69,Uttara Ashadha,bearish_pressure,1.3,defensive
+2025-05-17,Waning Gibbous,79.44,19.69,Dhanishtha,bearish_pressure,1.3,defensive
+2025-05-18,Waning Gibbous,70.66,20.69,Shatabhisha,bearish_pressure,1.3,defensive
+2025-05-19,Last Quarter,60.78,21.69,Shatabhisha,bearish,1.1,value_hunting
+2025-05-20,Last Quarter,50.13,22.69,Purva Bhadrapada,bearish,1.1,value_hunting
+2025-05-21,Waning Crescent,39.16,23.69,Uttara Bhadrapada,weak_bearish,0.9,contrarian
+2025-05-22,Waning Crescent,28.41,24.69,Revati,weak_bearish,0.9,contrarian
+2025-05-23,Waning Crescent,18.52,25.69,Ashwini,weak_bearish,0.9,contrarian
+2025-05-24,Waning Crescent,10.2,26.69,Bharani,weak_bearish,0.9,contrarian
+2025-05-25,Waning Crescent,4.1,27.69,Krittika,weak_bearish,0.9,contrarian
+2025-05-26,Waning Crescent,0.75,28.69,Rohini,weak_bearish,0.9,contrarian
+2025-05-27,New Moon,0.39,0.37,Ardra,neutral_to_bullish,0.7,accumulation
+2025-05-28,Waxing Crescent,2.97,1.37,Punarvasu,bullish,0.8,momentum_building
+2025-05-29,Waxing Crescent,8.14,2.37,Pushya,bullish,0.8,momentum_building
+2025-05-30,Waxing Crescent,15.37,3.37,Ashlesha,bullish,0.8,momentum_building
+2025-05-31,Waxing Crescent,24.07,4.37,Magha,bullish,0.8,momentum_building
+2025-06-01,Waxing Crescent,33.64,5.37,Purva Phalguni,bullish,0.8,momentum_building
+2025-06-02,Waxing Crescent,43.6,6.37,Uttara Phalguni,bullish,0.8,momentum_building
+2025-06-03,First Quarter,53.53,7.37,Hasta,bullish,1.0,trend_following
+2025-06-04,First Quarter,63.1,8.37,Chitra,bullish,1.0,trend_following
+2025-06-05,Waxing Gibbous,72.02,9.37,Swati,strong_bullish,1.2,momentum_trading
+2025-06-06,Waxing Gibbous,80.06,10.37,Vishakha,strong_bullish,1.2,momentum_trading
+2025-06-07,Waxing Gibbous,87.0,11.37,Vishakha,strong_bullish,1.2,momentum_trading
+2025-06-08,Waxing Gibbous,92.62,12.37,Anuradha,strong_bullish,1.2,momentum_trading
+2025-06-09,Waxing Gibbous,96.74,13.37,Jyeshtha,strong_bullish,1.2,momentum_trading
+2025-06-10,Full Moon,99.17,14.37,Mula,volatile,1.5,profit_booking
+2025-06-11,Full Moon,99.78,15.37,Purva Ashadha,volatile,1.5,profit_booking
+2025-06-12,Waning Gibbous,98.46,16.37,Uttara Ashadha,bearish_pressure,1.3,defensive
+2025-06-13,Waning Gibbous,95.18,17.37,Shravana,bearish_pressure,1.3,defensive
+2025-06-14,Waning Gibbous,89.97,18.37,Dhanishtha,bearish_pressure,1.3,defensive
+2025-06-15,Waning Gibbous,82.95,19.37,Shatabhisha,bearish_pressure,1.3,defensive
+2025-06-16,Waning Gibbous,74.33,20.37,Purva Bhadrapada,bearish_pressure,1.3,defensive
+2025-06-17,Last Quarter,64.4,21.37,Uttara Bhadrapada,bearish,1.1,value_hunting
+2025-06-18,Last Quarter,53.55,22.37,Revati,bearish,1.1,value_hunting
+2025-06-19,Waning Crescent,42.29,23.37,Ashwini,weak_bearish,0.9,contrarian
+2025-06-20,Waning Crescent,31.2,24.37,Bharani,weak_bearish,0.9,contrarian
+2025-06-21,Waning Crescent,20.93,25.37,Krittika,weak_bearish,0.9,contrarian
+2025-06-22,Waning Crescent,12.16,26.37,Rohini,weak_bearish,0.9,contrarian
+2025-06-23,Waning Crescent,5.52,27.37,Mrigashira,weak_bearish,0.9,contrarian
+2025-06-24,Waning Crescent,1.45,28.37,Ardra,weak_bearish,0.9,contrarian
+2025-06-25,New Moon,0.19,0.06,Pushya,neutral_to_bullish,0.7,accumulation
+2025-06-26,Waxing Crescent,1.69,1.06,Ashlesha,bullish,0.8,momentum_building
+2025-06-27,Waxing Crescent,5.69,2.06,Magha,bullish,0.8,momentum_building
+2025-06-28,Waxing Crescent,11.76,3.06,Purva Phalguni,bullish,0.8,momentum_building
+2025-06-29,Waxing Crescent,19.4,4.06,Uttara Phalguni,bullish,0.8,momentum_building
+2025-06-30,Waxing Crescent,28.13,5.06,Hasta,bullish,0.8,momentum_building
+2025-07-01,Waxing Crescent,37.49,6.06,Chitra,bullish,0.8,momentum_building
+2025-07-02,First Quarter,47.11,7.06,Chitra,bullish,1.0,trend_following
+2025-07-03,First Quarter,56.67,8.06,Swati,bullish,1.0,trend_following
+2025-07-04,Waxing Gibbous,65.9,9.06,Vishakha,strong_bullish,1.2,momentum_trading
+2025-07-05,Waxing Gibbous,74.52,10.06,Anuradha,strong_bullish,1.2,momentum_trading
+2025-07-06,Waxing Gibbous,82.29,11.06,Jyeshtha,strong_bullish,1.2,momentum_trading
+2025-07-07,Waxing Gibbous,88.96,12.06,Mula,strong_bullish,1.2,momentum_trading
+2025-07-08,Waxing Gibbous,94.25,13.06,Purva Ashadha,strong_bullish,1.2,momentum_trading
+2025-07-09,Full Moon,97.91,14.06,Uttara Ashadha,volatile,1.5,profit_booking
+2025-07-10,Full Moon,99.7,15.06,Shravana,volatile,1.5,profit_booking
+2025-07-11,Waning Gibbous,99.43,16.06,Dhanishtha,bearish_pressure,1.3,defensive
+2025-07-12,Waning Gibbous,96.99,17.06,Shatabhisha,bearish_pressure,1.3,defensive
+2025-07-13,Waning Gibbous,92.37,18.06,Purva Bhadrapada,bearish_pressure,1.3,defensive
+2025-07-14,Waning Gibbous,85.67,19.06,Uttara Bhadrapada,bearish_pressure,1.3,defensive
+2025-07-15,Waning Gibbous,77.14,20.06,Revati,bearish_pressure,1.3,defensive
+2025-07-16,Waning Gibbous,67.14,21.06,Ashwini,bearish_pressure,1.3,defensive
+2025-07-17,Last Quarter,56.14,22.06,Bharani,bearish,1.1,value_hunting
+2025-07-18,Last Quarter,44.69,23.06,Krittika,bearish,1.1,value_hunting
+2025-07-19,Waning Crescent,33.43,24.06,Rohini,weak_bearish,0.9,contrarian
+2025-07-20,Waning Crescent,22.99,25.06,Mrigashira,weak_bearish,0.9,contrarian
+2025-07-21,Waning Crescent,14.0,26.06,Ardra,weak_bearish,0.9,contrarian
+2025-07-22,Waning Crescent,6.99,27.06,Punarvasu,weak_bearish,0.9,contrarian
+2025-07-23,Waning Crescent,2.33,28.06,Pushya,weak_bearish,0.9,contrarian
+2025-07-24,Waning Crescent,0.24,29.06,Ashlesha,weak_bearish,0.9,contrarian
+2025-07-25,New Moon,0.68,0.7,Purva Phalguni,neutral_to_bullish,0.7,accumulation
+2025-07-26,Waxing Crescent,3.48,1.7,Uttara Phalguni,bullish,0.8,momentum_building
+2025-07-27,Waxing Crescent,8.31,2.7,Uttara Phalguni,bullish,0.8,momentum_building
+2025-07-28,Waxing Crescent,14.8,3.7,Hasta,bullish,0.8,momentum_building
+2025-07-29,Waxing Crescent,22.55,4.7,Chitra,bullish,0.8,momentum_building
+2025-07-30,Waxing Crescent,31.2,5.7,Swati,bullish,0.8,momentum_building
+2025-07-31,First Quarter,40.39,6.7,Vishakha,bullish,1.0,trend_following
+2025-08-01,First Quarter,49.85,7.7,Anuradha,bullish,1.0,trend_following
+2025-08-02,Waxing Gibbous,59.28,8.7,Jyeshtha,strong_bullish,1.2,momentum_trading
+2025-08-03,Waxing Gibbous,68.43,9.7,Mula,strong_bullish,1.2,momentum_trading
+2025-08-04,Waxing Gibbous,76.99,10.7,Purva Ashadha,strong_bullish,1.2,momentum_trading
+2025-08-05,Waxing Gibbous,84.69,11.7,Uttara Ashadha,strong_bullish,1.2,momentum_trading
+2025-08-06,Waxing Gibbous,91.17,12.7,Shravana,strong_bullish,1.2,momentum_trading
+2025-08-07,Waxing Gibbous,96.09,13.7,Dhanishtha,strong_bullish,1.2,momentum_trading
+2025-08-08,Full Moon,99.1,14.7,Shatabhisha,volatile,1.5,profit_booking
+2025-08-09,Full Moon,99.92,15.7,Purva Bhadrapada,volatile,1.5,profit_booking
+2025-08-10,Waning Gibbous,98.33,16.7,Uttara Bhadrapada,bearish_pressure,1.3,defensive
+2025-08-11,Waning Gibbous,94.28,17.7,Revati,bearish_pressure,1.3,defensive
+2025-08-12,Waning Gibbous,87.89,18.7,Ashwini,bearish_pressure,1.3,defensive
+2025-08-13,Waning Gibbous,79.46,19.7,Ashwini,bearish_pressure,1.3,defensive
+2025-08-14,Waning Gibbous,69.43,20.7,Bharani,bearish_pressure,1.3,defensive
+2025-08-15,Last Quarter,58.36,21.7,Krittika,bearish,1.1,value_hunting
+2025-08-16,Last Quarter,46.87,22.7,Mrigashira,bearish,1.1,value_hunting
+2025-08-17,Waning Crescent,35.6,23.7,Ardra,weak_bearish,0.9,contrarian
+2025-08-18,Waning Crescent,25.15,24.7,Punarvasu,weak_bearish,0.9,contrarian
+2025-08-19,Waning Crescent,16.06,25.7,Pushya,weak_bearish,0.9,contrarian
+2025-08-20,Waning Crescent,8.77,26.7,Ashlesha,weak_bearish,0.9,contrarian
+2025-08-21,Waning Crescent,3.59,27.7,Magha,weak_bearish,0.9,contrarian
+2025-08-22,Waning Crescent,0.69,28.7,Purva Phalguni,weak_bearish,0.9,contrarian
+2025-08-23,New Moon,0.08,0.25,Uttara Phalguni,neutral_to_bullish,0.7,accumulation
+2025-08-24,Waxing Crescent,1.66,1.25,Hasta,bullish,0.8,momentum_building
+2025-08-25,Waxing Crescent,5.22,2.25,Chitra,bullish,0.8,momentum_building
+2025-08-26,Waxing Crescent,10.49,3.25,Swati,bullish,0.8,momentum_building
+2025-08-27,Waxing Crescent,17.18,4.25,Swati,bullish,0.8,momentum_building
+2025-08-28,Waxing Crescent,24.99,5.25,Vishakha,bullish,0.8,momentum_building
+2025-08-29,Waxing Crescent,33.63,6.25,Anuradha,bullish,0.8,momentum_building
+2025-08-30,First Quarter,42.84,7.25,Jyeshtha,bullish,1.0,trend_following
+2025-08-31,First Quarter,52.35,8.25,Mula,bullish,1.0,trend_following
+2025-09-01,Waxing Gibbous,61.89,9.25,Purva Ashadha,strong_bullish,1.2,momentum_trading
+2025-09-02,Waxing Gibbous,71.16,10.25,Uttara Ashadha,strong_bullish,1.2,momentum_trading
+2025-09-03,Waxing Gibbous,79.82,11.25,Shravana,strong_bullish,1.2,momentum_trading
+2025-09-04,Waxing Gibbous,87.46,12.25,Dhanishtha,strong_bullish,1.2,momentum_trading
+2025-09-05,Waxing Gibbous,93.66,13.25,Shatabhisha,strong_bullish,1.2,momentum_trading
+2025-09-06,Full Moon,97.95,14.25,Purva Bhadrapada,volatile,1.5,profit_booking
+2025-09-07,Full Moon,99.91,15.25,Uttara Bhadrapada,volatile,1.5,profit_booking
+2025-09-08,Waning Gibbous,99.25,16.25,Revati,bearish_pressure,1.3,defensive
+2025-09-09,Waning Gibbous,95.87,17.25,Ashwini,bearish_pressure,1.3,defensive
+2025-09-10,Waning Gibbous,89.89,18.25,Bharani,bearish_pressure,1.3,defensive
+2025-09-11,Waning Gibbous,81.68,19.25,Krittika,bearish_pressure,1.3,defensive
+2025-09-12,Waning Gibbous,71.77,20.25,Rohini,bearish_pressure,1.3,defensive
+2025-09-13,Last Quarter,60.8,21.25,Mrigashira,bearish,1.1,value_hunting
+2025-09-14,Last Quarter,49.44,22.25,Punarvasu,bearish,1.1,value_hunting
+2025-09-15,Waning Crescent,38.3,23.25,Pushya,weak_bearish,0.9,contrarian
+2025-09-16,Waning Crescent,27.93,24.25,Ashlesha,weak_bearish,0.9,contrarian
+2025-09-17,Waning Crescent,18.78,25.25,Magha,weak_bearish,0.9,contrarian
+2025-09-18,Waning Crescent,11.22,26.25,Purva Phalguni,weak_bearish,0.9,contrarian
+2025-09-19,Waning Crescent,5.5,27.25,Uttara Phalguni,weak_bearish,0.9,contrarian
+2025-09-20,Waning Crescent,1.78,28.25,Hasta,weak_bearish,0.9,contrarian
+2025-09-21,Waning Crescent,0.11,29.25,Chitra,weak_bearish,0.9,contrarian
+2025-09-22,New Moon,0.46,0.67,Chitra,neutral_to_bullish,0.7,accumulation
+2025-09-23,Waxing Crescent,2.72,1.67,Swati,bullish,0.8,momentum_building
+2025-09-24,Waxing Crescent,6.72,2.67,Vishakha,bullish,0.8,momentum_building
+2025-09-25,Waxing Crescent,12.26,3.67,Anuradha,bullish,0.8,momentum_building
+2025-09-26,Waxing Crescent,19.12,4.67,Jyeshtha,bullish,0.8,momentum_building
+2025-09-27,Waxing Crescent,27.07,5.67,Mula,bullish,0.8,momentum_building
+2025-09-28,First Quarter,35.88,6.67,Purva Ashadha,bullish,1.0,trend_following
+2025-09-29,First Quarter,45.31,7.67,Uttara Ashadha,bullish,1.0,trend_following
+2025-09-30,Waxing Gibbous,55.08,8.67,Shravana,strong_bullish,1.2,momentum_trading
+2025-10-01,Waxing Gibbous,64.91,9.67,Dhanishtha,strong_bullish,1.2,momentum_trading
+2025-10-02,Waxing Gibbous,74.41,10.67,Shatabhisha,strong_bullish,1.2,momentum_trading
+2025-10-03,Waxing Gibbous,83.14,11.67,Purva Bhadrapada,strong_bullish,1.2,momentum_trading
+2025-10-04,Waxing Gibbous,90.58,12.67,Uttara Bhadrapada,strong_bullish,1.2,momentum_trading
+2025-10-05,Waxing Gibbous,96.16,13.67,Revati,strong_bullish,1.2,momentum_trading
+2025-10-06,Full Moon,99.36,14.67,Ashwini,volatile,1.5,profit_booking
+2025-10-07,Full Moon,99.77,15.67,Bharani,volatile,1.5,profit_booking
+2025-10-08,Waning Gibbous,97.25,16.67,Krittika,bearish_pressure,1.3,defensive
+2025-10-09,Waning Gibbous,91.91,17.67,Rohini,bearish_pressure,1.3,defensive
+2025-10-10,Waning Gibbous,84.19,18.67,Mrigashira,bearish_pressure,1.3,defensive
+2025-10-11,Waning Gibbous,74.67,19.67,Ardra,bearish_pressure,1.3,defensive
+2025-10-12,Waning Gibbous,64.05,20.67,Pushya,bearish_pressure,1.3,defensive
+2025-10-13,Last Quarter,52.98,21.67,Ashlesha,bearish,1.1,value_hunting
+2025-10-14,Last Quarter,42.08,22.67,Magha,bearish,1.1,value_hunting
+2025-10-15,Waning Crescent,31.81,23.67,Purva Phalguni,weak_bearish,0.9,contrarian
+2025-10-16,Waning Crescent,22.58,24.67,Uttara Phalguni,weak_bearish,0.9,contrarian
+2025-10-17,Waning Crescent,14.69,25.67,Hasta,weak_bearish,0.9,contrarian
+2025-10-18,Waning Crescent,8.37,26.67,Hasta,weak_bearish,0.9,contrarian
+2025-10-19,Waning Crescent,3.78,27.67,Chitra,weak_bearish,0.9,contrarian
+2025-10-20,Waning Crescent,1.0,28.67,Swati,weak_bearish,0.9,contrarian
+2025-10-21,Waning Crescent,0.09,29.67,Vishakha,weak_bearish,0.9,contrarian
+2025-10-22,New Moon,1.0,0.98,Anuradha,neutral_to_bullish,0.7,accumulation
+2025-10-23,Waxing Crescent,3.68,1.98,Jyeshtha,bullish,0.8,momentum_building
+2025-10-24,Waxing Crescent,8.01,2.98,Mula,bullish,0.8,momentum_building
+2025-10-25,Waxing Crescent,13.83,3.98,Mula,bullish,0.8,momentum_building
+2025-10-26,Waxing Crescent,20.97,4.98,Uttara Ashadha,bullish,0.8,momentum_building
+2025-10-27,Waxing Crescent,29.25,5.98,Shravana,bullish,0.8,momentum_building
+2025-10-28,First Quarter,38.44,6.98,Dhanishtha,bullish,1.0,trend_following
+2025-10-29,First Quarter,48.3,7.98,Shatabhisha,bullish,1.0,trend_following
+2025-10-30,Waxing Gibbous,58.5,8.98,Purva Bhadrapada,strong_bullish,1.2,momentum_trading
+2025-10-31,Waxing Gibbous,68.68,9.98,Uttara Bhadrapada,strong_bullish,1.2,momentum_trading
+2025-11-01,Waxing Gibbous,78.34,10.98,Uttara Bhadrapada,strong_bullish,1.2,momentum_trading
+2025-11-02,Waxing Gibbous,86.91,11.98,Revati,strong_bullish,1.2,momentum_trading
+2025-11-03,Waxing Gibbous,93.74,12.98,Ashwini,strong_bullish,1.2,momentum_trading
+2025-11-04,Full Moon,98.22,13.98,Bharani,volatile,1.5,profit_booking
+2025-11-05,Full Moon,99.86,14.98,Krittika,volatile,1.5,profit_booking
+2025-11-06,Waning Gibbous,98.45,15.98,Mrigashira,bearish_pressure,1.3,defensive
+2025-11-07,Waning Gibbous,94.09,16.98,Ardra,bearish_pressure,1.3,defensive
+2025-11-08,Waning Gibbous,87.22,17.98,Punarvasu,bearish_pressure,1.3,defensive
+2025-11-09,Waning Gibbous,78.43,18.98,Pushya,bearish_pressure,1.3,defensive
+2025-11-10,Waning Gibbous,68.43,19.98,Ashlesha,bearish_pressure,1.3,defensive
+2025-11-11,Waning Gibbous,57.86,20.98,Purva Phalguni,bearish_pressure,1.3,defensive
+2025-11-12,Last Quarter,47.27,21.98,Purva Phalguni,bearish,1.1,value_hunting
+2025-11-13,Last Quarter,37.12,22.98,Uttara Phalguni,bearish,1.1,value_hunting
+2025-11-14,Waning Crescent,27.76,23.98,Hasta,weak_bearish,0.9,contrarian
+2025-11-15,Waning Crescent,19.46,24.98,Chitra,weak_bearish,0.9,contrarian
+2025-11-16,Waning Crescent,12.45,25.98,Swati,weak_bearish,0.9,contrarian
+2025-11-17,Waning Crescent,6.9,26.98,Vishakha,weak_bearish,0.9,contrarian
+2025-11-18,Waning Crescent,2.95,27.98,Vishakha,weak_bearish,0.9,contrarian
+2025-11-19,Waning Crescent,0.7,28.98,Anuradha,weak_bearish,0.9,contrarian
+2025-11-20,New Moon,0.22,0.22,Jyeshtha,neutral_to_bullish,0.7,accumulation
+2025-11-21,Waxing Crescent,1.52,1.22,Mula,bullish,0.8,momentum_building
+2025-11-22,Waxing Crescent,4.56,2.22,Purva Ashadha,bullish,0.8,momentum_building
+2025-11-23,Waxing Crescent,9.28,3.22,Uttara Ashadha,bullish,0.8,momentum_building
+2025-11-24,Waxing Crescent,15.55,4.22,Shravana,bullish,0.8,momentum_building
+2025-11-25,Waxing Crescent,23.22,5.22,Dhanishtha,bullish,0.8,momentum_building
+2025-11-26,Waxing Crescent,32.09,6.22,Shatabhisha,bullish,0.8,momentum_building
+2025-11-27,First Quarter,41.9,7.22,Purva Bhadrapada,bullish,1.0,trend_following
+2025-11-28,First Quarter,52.35,8.22,Uttara Bhadrapada,bullish,1.0,trend_following
+2025-11-29,Waxing Gibbous,63.02,9.22,Revati,strong_bullish,1.2,momentum_trading
+2025-11-30,Waxing Gibbous,73.42,10.22,Ashwini,strong_bullish,1.2,momentum_trading
+2025-12-01,Waxing Gibbous,82.92,11.22,Bharani,strong_bullish,1.2,momentum_trading
+2025-12-02,Waxing Gibbous,90.85,12.22,Krittika,strong_bullish,1.2,momentum_trading
+2025-12-03,Waxing Gibbous,96.54,13.22,Rohini,strong_bullish,1.2,momentum_trading
+2025-12-04,Full Moon,99.47,14.22,Mrigashira,volatile,1.5,profit_booking
+2025-12-05,Full Moon,99.38,15.22,Punarvasu,volatile,1.5,profit_booking
+2025-12-06,Waning Gibbous,96.32,16.22,Pushya,bearish_pressure,1.3,defensive
+2025-12-07,Waning Gibbous,90.66,17.22,Ashlesha,bearish_pressure,1.3,defensive
+2025-12-08,Waning Gibbous,82.97,18.22,Magha,bearish_pressure,1.3,defensive
+2025-12-09,Waning Gibbous,73.88,19.22,Purva Phalguni,bearish_pressure,1.3,defensive
+2025-12-10,Waning Gibbous,64.0,20.22,Uttara Phalguni,bearish_pressure,1.3,defensive
+2025-12-11,Last Quarter,53.85,21.22,Hasta,bearish,1.1,value_hunting
+2025-12-12,Last Quarter,43.86,22.22,Chitra,bearish,1.1,value_hunting
+2025-12-13,Waning Crescent,34.35,23.22,Swati,weak_bearish,0.9,contrarian
+2025-12-14,Waning Crescent,25.6,24.22,Swati,weak_bearish,0.9,contrarian
+2025-12-15,Waning Crescent,17.83,25.22,Vishakha,weak_bearish,0.9,contrarian
+2025-12-16,Waning Crescent,11.27,26.22,Anuradha,weak_bearish,0.9,contrarian
+2025-12-17,Waning Crescent,6.08,27.22,Jyeshtha,weak_bearish,0.9,contrarian
+2025-12-18,Waning Crescent,2.44,28.22,Mula,weak_bearish,0.9,contrarian
+2025-12-19,Waning Crescent,0.49,29.22,Purva Ashadha,weak_bearish,0.9,contrarian
+2025-12-20,New Moon,0.34,0.43,Uttara Ashadha,neutral_to_bullish,0.7,accumulation
+2025-12-21,Waxing Crescent,2.04,1.43,Shravana,bullish,0.8,momentum_building
+2025-12-22,Waxing Crescent,5.61,2.43,Dhanishtha,bullish,0.8,momentum_building
+2025-12-23,Waxing Crescent,10.97,3.43,Shatabhisha,bullish,0.8,momentum_building
+2025-12-24,Waxing Crescent,18.01,4.43,Purva Bhadrapada,bullish,0.8,momentum_building
+2025-12-25,Waxing Crescent,26.53,5.43,Uttara Bhadrapada,bullish,0.8,momentum_building
+2025-12-26,First Quarter,36.26,6.43,Revati,bullish,1.0,trend_following
+2025-12-27,First Quarter,46.86,7.43,Ashwini,bullish,1.0,trend_following
+2025-12-28,Waxing Gibbous,57.89,8.43,Bharani,strong_bullish,1.2,momentum_trading
+2025-12-29,Waxing Gibbous,68.8,9.43,Krittika,strong_bullish,1.2,momentum_trading
+2025-12-30,Waxing Gibbous,78.98,10.43,Rohini,strong_bullish,1.2,momentum_trading
+2025-12-31,Waxing Gibbous,87.75,11.43,Mrigashira,strong_bullish,1.2,momentum_trading

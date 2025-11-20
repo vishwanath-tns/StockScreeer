@@ -1,0 +1,1229 @@
+{
+  "forecast_date": "2025-11-19",
+  "forecast_period": "4 weeks",
+  "weekly_forecasts": [
+    {
+      "week_period": "2025-11-17 to 2025-11-23",
+      "week_number": 47,
+      "volatility_analysis": {
+        "average": 1.26,
+        "range": "0.8x - 1.5x",
+        "classification": "High Volatility"
+      },
+      "dominant_element": "Water",
+      "risk_assessment": {
+        "high_risk_days": 3,
+        "total_trading_days": 5,
+        "risk_percentage": 60.0
+      },
+      "trading_strategy": {
+        "primary_strategy": "Risk Management Focus",
+        "position_sizing": "Reduce positions by 30-50%",
+        "trade_type": "Intraday only, avoid overnight",
+        "stops": "Tight stops (2-3%)",
+        "approach": "Defensive, capital preservation"
+      },
+      "sector_focus": {
+        "primary": [
+          "HEALTHCARE",
+          "CHEMICALS",
+          "HOSPITALITY"
+        ],
+        "secondary": [
+          "BEVERAGES",
+          "MARINE",
+          "EMOTIONAL_SECTORS"
+        ],
+        "weight_multiplier": 1.2
+      },
+      "daily_details": [
+        {
+          "date": "2025-11-17",
+          "day_name": "Monday",
+          "analysis": {
+            "date": "2025-11-17",
+            "moon_sign": "Libra",
+            "moon_degree": 19.21,
+            "influence": {
+              "sign": "Libra",
+              "element": "Air",
+              "quality": "Cardinal",
+              "ruling_planet": "Venus",
+              "market_tendency": "Balanced Trading",
+              "volatility_factor": 0.8,
+              "favored_sectors": [
+                "Luxury",
+                "Fashion",
+                "Legal",
+                "Partnerships",
+                "Beauty"
+              ],
+              "price_direction": "Balanced Range",
+              "volume_pattern": "Balanced",
+              "risk_level": "Low",
+              "trading_strategy": "Range Trading"
+            },
+            "market_prediction": {
+              "overall_trend": "Balanced Trading",
+              "price_expectation": "Balanced Range",
+              "volatility_forecast": "0.8x normal",
+              "volume_prediction": "Balanced",
+              "recommended_strategy": "Range Trading"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Luxury",
+                "Fashion",
+                "Legal",
+                "Partnerships",
+                "Beauty"
+              ],
+              "element_focus": "Air",
+              "quality_approach": "Cardinal",
+              "planetary_ruler": "Venus"
+            },
+            "risk_assessment": {
+              "risk_level": "Low",
+              "volatility_factor": 0.8,
+              "position_sizing": "Normal position sizing"
+            }
+          }
+        },
+        {
+          "date": "2025-11-18",
+          "day_name": "Tuesday",
+          "analysis": {
+            "date": "2025-11-18",
+            "moon_sign": "Scorpio",
+            "moon_degree": 0.49,
+            "influence": {
+              "sign": "Scorpio",
+              "element": "Water",
+              "quality": "Fixed",
+              "ruling_planet": "Mars",
+              "market_tendency": "Deep Transformations",
+              "volatility_factor": 1.5,
+              "favored_sectors": [
+                "Mining",
+                "Oil",
+                "Investigation",
+                "Transformation",
+                "Hidden"
+              ],
+              "price_direction": "Intense Moves",
+              "volume_pattern": "Concentrated Bursts",
+              "risk_level": "Very High",
+              "trading_strategy": "Deep Value"
+            },
+            "market_prediction": {
+              "overall_trend": "Deep Transformations",
+              "price_expectation": "Intense Moves",
+              "volatility_forecast": "1.5x normal",
+              "volume_prediction": "Concentrated Bursts",
+              "recommended_strategy": "Deep Value"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Mining",
+                "Oil",
+                "Investigation",
+                "Transformation",
+                "Hidden"
+              ],
+              "element_focus": "Water",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Mars"
+            },
+            "risk_assessment": {
+              "risk_level": "Very High",
+              "volatility_factor": 1.5,
+              "position_sizing": "Avoid or hedge positions"
+            }
+          }
+        },
+        {
+          "date": "2025-11-19",
+          "day_name": "Wednesday",
+          "analysis": {
+            "date": "2025-11-19",
+            "moon_sign": "Scorpio",
+            "moon_degree": 12.29,
+            "influence": {
+              "sign": "Scorpio",
+              "element": "Water",
+              "quality": "Fixed",
+              "ruling_planet": "Mars",
+              "market_tendency": "Deep Transformations",
+              "volatility_factor": 1.5,
+              "favored_sectors": [
+                "Mining",
+                "Oil",
+                "Investigation",
+                "Transformation",
+                "Hidden"
+              ],
+              "price_direction": "Intense Moves",
+              "volume_pattern": "Concentrated Bursts",
+              "risk_level": "Very High",
+              "trading_strategy": "Deep Value"
+            },
+            "market_prediction": {
+              "overall_trend": "Deep Transformations",
+              "price_expectation": "Intense Moves",
+              "volatility_forecast": "1.5x normal",
+              "volume_prediction": "Concentrated Bursts",
+              "recommended_strategy": "Deep Value"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Mining",
+                "Oil",
+                "Investigation",
+                "Transformation",
+                "Hidden"
+              ],
+              "element_focus": "Water",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Mars"
+            },
+            "risk_assessment": {
+              "risk_level": "Very High",
+              "volatility_factor": 1.5,
+              "position_sizing": "Avoid or hedge positions"
+            }
+          }
+        },
+        {
+          "date": "2025-11-20",
+          "day_name": "Thursday",
+          "analysis": {
+            "date": "2025-11-20",
+            "moon_sign": "Scorpio",
+            "moon_degree": 24.71,
+            "influence": {
+              "sign": "Scorpio",
+              "element": "Water",
+              "quality": "Fixed",
+              "ruling_planet": "Mars",
+              "market_tendency": "Deep Transformations",
+              "volatility_factor": 1.5,
+              "favored_sectors": [
+                "Mining",
+                "Oil",
+                "Investigation",
+                "Transformation",
+                "Hidden"
+              ],
+              "price_direction": "Intense Moves",
+              "volume_pattern": "Concentrated Bursts",
+              "risk_level": "Very High",
+              "trading_strategy": "Deep Value"
+            },
+            "market_prediction": {
+              "overall_trend": "Deep Transformations",
+              "price_expectation": "Intense Moves",
+              "volatility_forecast": "1.5x normal",
+              "volume_prediction": "Concentrated Bursts",
+              "recommended_strategy": "Deep Value"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Mining",
+                "Oil",
+                "Investigation",
+                "Transformation",
+                "Hidden"
+              ],
+              "element_focus": "Water",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Mars"
+            },
+            "risk_assessment": {
+              "risk_level": "Very High",
+              "volatility_factor": 1.5,
+              "position_sizing": "Avoid or hedge positions"
+            }
+          }
+        },
+        {
+          "date": "2025-11-21",
+          "day_name": "Friday",
+          "analysis": {
+            "date": "2025-11-21",
+            "moon_sign": "Sagittarius",
+            "moon_degree": 7.74,
+            "influence": {
+              "sign": "Sagittarius",
+              "element": "Fire",
+              "quality": "Mutable",
+              "ruling_planet": "Jupiter",
+              "market_tendency": "Expansive Growth",
+              "volatility_factor": 1.0,
+              "favored_sectors": [
+                "Export",
+                "Education",
+                "Travel",
+                "Foreign",
+                "Philosophy"
+              ],
+              "price_direction": "Expansive Upward",
+              "volume_pattern": "Growing",
+              "risk_level": "Medium",
+              "trading_strategy": "Growth Investing"
+            },
+            "market_prediction": {
+              "overall_trend": "Expansive Growth",
+              "price_expectation": "Expansive Upward",
+              "volatility_forecast": "1.0x normal",
+              "volume_prediction": "Growing",
+              "recommended_strategy": "Growth Investing"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Export",
+                "Education",
+                "Travel",
+                "Foreign",
+                "Philosophy"
+              ],
+              "element_focus": "Fire",
+              "quality_approach": "Mutable",
+              "planetary_ruler": "Jupiter"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium",
+              "volatility_factor": 1.0,
+              "position_sizing": "Moderate position sizing with stops"
+            }
+          }
+        }
+      ],
+      "confidence_level": "Medium",
+      "key_alerts": [
+        "\ud83d\udea8 High volatility expected on: Tuesday, Wednesday, Thursday",
+        "\u26a0\ufe0f Moon in Scorpio on: Tuesday, Wednesday, Thursday - Expect intense movements",
+        "\u2705 Safe accumulation days: Monday",
+        "\ud83d\udd04 Multiple elements active - Good for sector rotation"
+      ]
+    },
+    {
+      "week_period": "2025-11-24 to 2025-11-30",
+      "week_number": 48,
+      "volatility_analysis": {
+        "average": 1.02,
+        "range": "0.6x - 1.2x",
+        "classification": "Moderate Volatility"
+      },
+      "dominant_element": "Air",
+      "risk_assessment": {
+        "high_risk_days": 0,
+        "total_trading_days": 5,
+        "risk_percentage": 0.0
+      },
+      "trading_strategy": {
+        "primary_strategy": "Balanced Approach",
+        "position_sizing": "Normal sizing",
+        "trade_type": "Mixed strategies",
+        "stops": "Standard stops (4-5%)",
+        "approach": "Diversified, moderate risk"
+      },
+      "sector_focus": {
+        "primary": [
+          "IT",
+          "TELECOM",
+          "MEDIA",
+          "AVIATION"
+        ],
+        "secondary": [
+          "ECOMMERCE",
+          "FINTECH",
+          "CONSULTING"
+        ],
+        "weight_multiplier": 1.1
+      },
+      "daily_details": [
+        {
+          "date": "2025-11-24",
+          "day_name": "Monday",
+          "analysis": {
+            "date": "2025-11-24",
+            "moon_sign": "Capricorn",
+            "moon_degree": 18.58,
+            "influence": {
+              "sign": "Capricorn",
+              "element": "Earth",
+              "quality": "Cardinal",
+              "ruling_planet": "Saturn",
+              "market_tendency": "Disciplined Climb",
+              "volatility_factor": 0.6,
+              "favored_sectors": [
+                "Infrastructure",
+                "Cement",
+                "Long-term",
+                "Government",
+                "Authority"
+              ],
+              "price_direction": "Slow and Steady",
+              "volume_pattern": "Disciplined",
+              "risk_level": "Very Low",
+              "trading_strategy": "Long-term Holdings"
+            },
+            "market_prediction": {
+              "overall_trend": "Disciplined Climb",
+              "price_expectation": "Slow and Steady",
+              "volatility_forecast": "0.6x normal",
+              "volume_prediction": "Disciplined",
+              "recommended_strategy": "Long-term Holdings"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Infrastructure",
+                "Cement",
+                "Long-term",
+                "Government",
+                "Authority"
+              ],
+              "element_focus": "Earth",
+              "quality_approach": "Cardinal",
+              "planetary_ruler": "Saturn"
+            },
+            "risk_assessment": {
+              "risk_level": "Very Low",
+              "volatility_factor": 0.6,
+              "position_sizing": "Aggressive position sizing allowed"
+            }
+          }
+        },
+        {
+          "date": "2025-11-25",
+          "day_name": "Tuesday",
+          "analysis": {
+            "date": "2025-11-25",
+            "moon_sign": "Aquarius",
+            "moon_degree": 1.84,
+            "influence": {
+              "sign": "Aquarius",
+              "element": "Air",
+              "quality": "Fixed",
+              "ruling_planet": "Saturn",
+              "market_tendency": "Innovation Spurts",
+              "volatility_factor": 1.1,
+              "favored_sectors": [
+                "Technology",
+                "Innovation",
+                "Social",
+                "Humanitarian",
+                "Future"
+              ],
+              "price_direction": "Innovative Jumps",
+              "volume_pattern": "Tech-driven",
+              "risk_level": "Medium",
+              "trading_strategy": "Innovation Focus"
+            },
+            "market_prediction": {
+              "overall_trend": "Innovation Spurts",
+              "price_expectation": "Innovative Jumps",
+              "volatility_forecast": "1.1x normal",
+              "volume_prediction": "Tech-driven",
+              "recommended_strategy": "Innovation Focus"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Technology",
+                "Innovation",
+                "Social",
+                "Humanitarian",
+                "Future"
+              ],
+              "element_focus": "Air",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Saturn"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium",
+              "volatility_factor": 1.1,
+              "position_sizing": "Moderate position sizing with stops"
+            }
+          }
+        },
+        {
+          "date": "2025-11-26",
+          "day_name": "Wednesday",
+          "analysis": {
+            "date": "2025-11-26",
+            "moon_sign": "Aquarius",
+            "moon_degree": 14.64,
+            "influence": {
+              "sign": "Aquarius",
+              "element": "Air",
+              "quality": "Fixed",
+              "ruling_planet": "Saturn",
+              "market_tendency": "Innovation Spurts",
+              "volatility_factor": 1.1,
+              "favored_sectors": [
+                "Technology",
+                "Innovation",
+                "Social",
+                "Humanitarian",
+                "Future"
+              ],
+              "price_direction": "Innovative Jumps",
+              "volume_pattern": "Tech-driven",
+              "risk_level": "Medium",
+              "trading_strategy": "Innovation Focus"
+            },
+            "market_prediction": {
+              "overall_trend": "Innovation Spurts",
+              "price_expectation": "Innovative Jumps",
+              "volatility_forecast": "1.1x normal",
+              "volume_prediction": "Tech-driven",
+              "recommended_strategy": "Innovation Focus"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Technology",
+                "Innovation",
+                "Social",
+                "Humanitarian",
+                "Future"
+              ],
+              "element_focus": "Air",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Saturn"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium",
+              "volatility_factor": 1.1,
+              "position_sizing": "Moderate position sizing with stops"
+            }
+          }
+        },
+        {
+          "date": "2025-11-27",
+          "day_name": "Thursday",
+          "analysis": {
+            "date": "2025-11-27",
+            "moon_sign": "Aquarius",
+            "moon_degree": 26.97,
+            "influence": {
+              "sign": "Aquarius",
+              "element": "Air",
+              "quality": "Fixed",
+              "ruling_planet": "Saturn",
+              "market_tendency": "Innovation Spurts",
+              "volatility_factor": 1.1,
+              "favored_sectors": [
+                "Technology",
+                "Innovation",
+                "Social",
+                "Humanitarian",
+                "Future"
+              ],
+              "price_direction": "Innovative Jumps",
+              "volume_pattern": "Tech-driven",
+              "risk_level": "Medium",
+              "trading_strategy": "Innovation Focus"
+            },
+            "market_prediction": {
+              "overall_trend": "Innovation Spurts",
+              "price_expectation": "Innovative Jumps",
+              "volatility_forecast": "1.1x normal",
+              "volume_prediction": "Tech-driven",
+              "recommended_strategy": "Innovation Focus"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Technology",
+                "Innovation",
+                "Social",
+                "Humanitarian",
+                "Future"
+              ],
+              "element_focus": "Air",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Saturn"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium",
+              "volatility_factor": 1.1,
+              "position_sizing": "Moderate position sizing with stops"
+            }
+          }
+        },
+        {
+          "date": "2025-11-28",
+          "day_name": "Friday",
+          "analysis": {
+            "date": "2025-11-28",
+            "moon_sign": "Pisces",
+            "moon_degree": 8.98,
+            "influence": {
+              "sign": "Pisces",
+              "element": "Water",
+              "quality": "Mutable",
+              "ruling_planet": "Jupiter",
+              "market_tendency": "Intuitive Flows",
+              "volatility_factor": 1.2,
+              "favored_sectors": [
+                "Chemicals",
+                "Liquids",
+                "Spirituality",
+                "Arts",
+                "Intuition"
+              ],
+              "price_direction": "Flowing Trends",
+              "volume_pattern": "Intuitive",
+              "risk_level": "Medium-High",
+              "trading_strategy": "Intuitive Trading"
+            },
+            "market_prediction": {
+              "overall_trend": "Intuitive Flows",
+              "price_expectation": "Flowing Trends",
+              "volatility_forecast": "1.2x normal",
+              "volume_prediction": "Intuitive",
+              "recommended_strategy": "Intuitive Trading"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Chemicals",
+                "Liquids",
+                "Spirituality",
+                "Arts",
+                "Intuition"
+              ],
+              "element_focus": "Water",
+              "quality_approach": "Mutable",
+              "planetary_ruler": "Jupiter"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium-High",
+              "volatility_factor": 1.2,
+              "position_sizing": "Reduced position sizing"
+            }
+          }
+        }
+      ],
+      "confidence_level": "Medium",
+      "key_alerts": [
+        "\u2705 Safe accumulation days: Monday",
+        "\ud83d\udd04 Multiple elements active - Good for sector rotation"
+      ]
+    },
+    {
+      "week_period": "2025-12-01 to 2025-12-07",
+      "week_number": 49,
+      "volatility_analysis": {
+        "average": 1.08,
+        "range": "0.7x - 1.4x",
+        "classification": "Moderate Volatility"
+      },
+      "dominant_element": "Fire",
+      "risk_assessment": {
+        "high_risk_days": 2,
+        "total_trading_days": 5,
+        "risk_percentage": 40.0
+      },
+      "trading_strategy": {
+        "primary_strategy": "Momentum Trading",
+        "position_sizing": "Normal with quick profits",
+        "trade_type": "Breakout plays, sector rotation",
+        "stops": "Medium stops (3-4%)",
+        "approach": "Opportunistic, trend following"
+      },
+      "sector_focus": {
+        "primary": [
+          "ENERGY",
+          "DEFENSE",
+          "AUTO",
+          "STEEL"
+        ],
+        "secondary": [
+          "CONSTRUCTION",
+          "SPORTS",
+          "LOGISTICS"
+        ],
+        "weight_multiplier": 1.3
+      },
+      "daily_details": [
+        {
+          "date": "2025-12-01",
+          "day_name": "Monday",
+          "analysis": {
+            "date": "2025-12-01",
+            "moon_sign": "Aries",
+            "moon_degree": 15.62,
+            "influence": {
+              "sign": "Aries",
+              "element": "Fire",
+              "quality": "Cardinal",
+              "ruling_planet": "Mars",
+              "market_tendency": "Aggressive Bull Runs",
+              "volatility_factor": 1.4,
+              "favored_sectors": [
+                "Defense",
+                "Steel",
+                "Auto",
+                "Energy",
+                "Sports"
+              ],
+              "price_direction": "Sharp Upward",
+              "volume_pattern": "High with Spikes",
+              "risk_level": "High",
+              "trading_strategy": "Momentum Trading"
+            },
+            "market_prediction": {
+              "overall_trend": "Aggressive Bull Runs",
+              "price_expectation": "Sharp Upward",
+              "volatility_forecast": "1.4x normal",
+              "volume_prediction": "High with Spikes",
+              "recommended_strategy": "Momentum Trading"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Defense",
+                "Steel",
+                "Auto",
+                "Energy",
+                "Sports"
+              ],
+              "element_focus": "Fire",
+              "quality_approach": "Cardinal",
+              "planetary_ruler": "Mars"
+            },
+            "risk_assessment": {
+              "risk_level": "High",
+              "volatility_factor": 1.4,
+              "position_sizing": "Small positions only"
+            }
+          }
+        },
+        {
+          "date": "2025-12-02",
+          "day_name": "Tuesday",
+          "analysis": {
+            "date": "2025-12-02",
+            "moon_sign": "Aries",
+            "moon_degree": 29.06,
+            "influence": {
+              "sign": "Aries",
+              "element": "Fire",
+              "quality": "Cardinal",
+              "ruling_planet": "Mars",
+              "market_tendency": "Aggressive Bull Runs",
+              "volatility_factor": 1.4,
+              "favored_sectors": [
+                "Defense",
+                "Steel",
+                "Auto",
+                "Energy",
+                "Sports"
+              ],
+              "price_direction": "Sharp Upward",
+              "volume_pattern": "High with Spikes",
+              "risk_level": "High",
+              "trading_strategy": "Momentum Trading"
+            },
+            "market_prediction": {
+              "overall_trend": "Aggressive Bull Runs",
+              "price_expectation": "Sharp Upward",
+              "volatility_forecast": "1.4x normal",
+              "volume_prediction": "High with Spikes",
+              "recommended_strategy": "Momentum Trading"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Defense",
+                "Steel",
+                "Auto",
+                "Energy",
+                "Sports"
+              ],
+              "element_focus": "Fire",
+              "quality_approach": "Cardinal",
+              "planetary_ruler": "Mars"
+            },
+            "risk_assessment": {
+              "risk_level": "High",
+              "volatility_factor": 1.4,
+              "position_sizing": "Small positions only"
+            }
+          }
+        },
+        {
+          "date": "2025-12-03",
+          "day_name": "Wednesday",
+          "analysis": {
+            "date": "2025-12-03",
+            "moon_sign": "Taurus",
+            "moon_degree": 13.6,
+            "influence": {
+              "sign": "Taurus",
+              "element": "Earth",
+              "quality": "Fixed",
+              "ruling_planet": "Venus",
+              "market_tendency": "Steady Accumulation",
+              "volatility_factor": 0.7,
+              "favored_sectors": [
+                "Banking",
+                "FMCG",
+                "Real Estate",
+                "Agriculture",
+                "Luxury"
+              ],
+              "price_direction": "Steady Upward",
+              "volume_pattern": "Consistent",
+              "risk_level": "Low",
+              "trading_strategy": "Value Investing"
+            },
+            "market_prediction": {
+              "overall_trend": "Steady Accumulation",
+              "price_expectation": "Steady Upward",
+              "volatility_forecast": "0.7x normal",
+              "volume_prediction": "Consistent",
+              "recommended_strategy": "Value Investing"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Banking",
+                "FMCG",
+                "Real Estate",
+                "Agriculture",
+                "Luxury"
+              ],
+              "element_focus": "Earth",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Venus"
+            },
+            "risk_assessment": {
+              "risk_level": "Low",
+              "volatility_factor": 0.7,
+              "position_sizing": "Normal position sizing"
+            }
+          }
+        },
+        {
+          "date": "2025-12-04",
+          "day_name": "Thursday",
+          "analysis": {
+            "date": "2025-12-04",
+            "moon_sign": "Taurus",
+            "moon_degree": 29.3,
+            "influence": {
+              "sign": "Taurus",
+              "element": "Earth",
+              "quality": "Fixed",
+              "ruling_planet": "Venus",
+              "market_tendency": "Steady Accumulation",
+              "volatility_factor": 0.7,
+              "favored_sectors": [
+                "Banking",
+                "FMCG",
+                "Real Estate",
+                "Agriculture",
+                "Luxury"
+              ],
+              "price_direction": "Steady Upward",
+              "volume_pattern": "Consistent",
+              "risk_level": "Low",
+              "trading_strategy": "Value Investing"
+            },
+            "market_prediction": {
+              "overall_trend": "Steady Accumulation",
+              "price_expectation": "Steady Upward",
+              "volatility_forecast": "0.7x normal",
+              "volume_prediction": "Consistent",
+              "recommended_strategy": "Value Investing"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Banking",
+                "FMCG",
+                "Real Estate",
+                "Agriculture",
+                "Luxury"
+              ],
+              "element_focus": "Earth",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Venus"
+            },
+            "risk_assessment": {
+              "risk_level": "Low",
+              "volatility_factor": 0.7,
+              "position_sizing": "Normal position sizing"
+            }
+          }
+        },
+        {
+          "date": "2025-12-05",
+          "day_name": "Friday",
+          "analysis": {
+            "date": "2025-12-05",
+            "moon_sign": "Gemini",
+            "moon_degree": 15.9,
+            "influence": {
+              "sign": "Gemini",
+              "element": "Air",
+              "quality": "Mutable",
+              "ruling_planet": "Mercury",
+              "market_tendency": "Quick Reversals",
+              "volatility_factor": 1.2,
+              "favored_sectors": [
+                "IT",
+                "Telecom",
+                "Media",
+                "Airlines",
+                "Trading"
+              ],
+              "price_direction": "Sideways with Swings",
+              "volume_pattern": "Erratic",
+              "risk_level": "Medium-High",
+              "trading_strategy": "Swing Trading"
+            },
+            "market_prediction": {
+              "overall_trend": "Quick Reversals",
+              "price_expectation": "Sideways with Swings",
+              "volatility_forecast": "1.2x normal",
+              "volume_prediction": "Erratic",
+              "recommended_strategy": "Swing Trading"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "IT",
+                "Telecom",
+                "Media",
+                "Airlines",
+                "Trading"
+              ],
+              "element_focus": "Air",
+              "quality_approach": "Mutable",
+              "planetary_ruler": "Mercury"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium-High",
+              "volatility_factor": 1.2,
+              "position_sizing": "Reduced position sizing"
+            }
+          }
+        }
+      ],
+      "confidence_level": "Medium",
+      "key_alerts": [
+        "\ud83d\udea8 High volatility expected on: Monday, Tuesday",
+        "\u2705 Safe accumulation days: Wednesday, Thursday",
+        "\ud83d\udd04 Multiple elements active - Good for sector rotation"
+      ]
+    },
+    {
+      "week_period": "2025-12-08 to 2025-12-14",
+      "week_number": 50,
+      "volatility_analysis": {
+        "average": 0.98,
+        "range": "0.9x - 1.1x",
+        "classification": "Moderate Volatility"
+      },
+      "dominant_element": "Earth",
+      "risk_assessment": {
+        "high_risk_days": 0,
+        "total_trading_days": 5,
+        "risk_percentage": 0.0
+      },
+      "trading_strategy": {
+        "primary_strategy": "Balanced Approach",
+        "position_sizing": "Normal sizing",
+        "trade_type": "Mixed strategies",
+        "stops": "Standard stops (4-5%)",
+        "approach": "Diversified, moderate risk"
+      },
+      "sector_focus": {
+        "primary": [
+          "BANKING",
+          "FMCG",
+          "REALESTATE",
+          "INFRASTRUCTURE"
+        ],
+        "secondary": [
+          "AGRICULTURE",
+          "CEMENT",
+          "UTILITIES"
+        ],
+        "weight_multiplier": 0.8
+      },
+      "daily_details": [
+        {
+          "date": "2025-12-08",
+          "day_name": "Monday",
+          "analysis": {
+            "date": "2025-12-08",
+            "moon_sign": "Leo",
+            "moon_degree": 4.41,
+            "influence": {
+              "sign": "Leo",
+              "element": "Fire",
+              "quality": "Fixed",
+              "ruling_planet": "Sun",
+              "market_tendency": "Strong Leadership",
+              "volatility_factor": 1.1,
+              "favored_sectors": [
+                "Banking",
+                "Government",
+                "Gold",
+                "Entertainment",
+                "Leadership"
+              ],
+              "price_direction": "Confident Upward",
+              "volume_pattern": "Strong and Sustained",
+              "risk_level": "Medium",
+              "trading_strategy": "Blue Chip Focus"
+            },
+            "market_prediction": {
+              "overall_trend": "Strong Leadership",
+              "price_expectation": "Confident Upward",
+              "volatility_forecast": "1.1x normal",
+              "volume_prediction": "Strong and Sustained",
+              "recommended_strategy": "Blue Chip Focus"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Banking",
+                "Government",
+                "Gold",
+                "Entertainment",
+                "Leadership"
+              ],
+              "element_focus": "Fire",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Sun"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium",
+              "volatility_factor": 1.1,
+              "position_sizing": "Moderate position sizing with stops"
+            }
+          }
+        },
+        {
+          "date": "2025-12-09",
+          "day_name": "Tuesday",
+          "analysis": {
+            "date": "2025-12-09",
+            "moon_sign": "Leo",
+            "moon_degree": 18.39,
+            "influence": {
+              "sign": "Leo",
+              "element": "Fire",
+              "quality": "Fixed",
+              "ruling_planet": "Sun",
+              "market_tendency": "Strong Leadership",
+              "volatility_factor": 1.1,
+              "favored_sectors": [
+                "Banking",
+                "Government",
+                "Gold",
+                "Entertainment",
+                "Leadership"
+              ],
+              "price_direction": "Confident Upward",
+              "volume_pattern": "Strong and Sustained",
+              "risk_level": "Medium",
+              "trading_strategy": "Blue Chip Focus"
+            },
+            "market_prediction": {
+              "overall_trend": "Strong Leadership",
+              "price_expectation": "Confident Upward",
+              "volatility_forecast": "1.1x normal",
+              "volume_prediction": "Strong and Sustained",
+              "recommended_strategy": "Blue Chip Focus"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Banking",
+                "Government",
+                "Gold",
+                "Entertainment",
+                "Leadership"
+              ],
+              "element_focus": "Fire",
+              "quality_approach": "Fixed",
+              "planetary_ruler": "Sun"
+            },
+            "risk_assessment": {
+              "risk_level": "Medium",
+              "volatility_factor": 1.1,
+              "position_sizing": "Moderate position sizing with stops"
+            }
+          }
+        },
+        {
+          "date": "2025-12-10",
+          "day_name": "Wednesday",
+          "analysis": {
+            "date": "2025-12-10",
+            "moon_sign": "Virgo",
+            "moon_degree": 1.16,
+            "influence": {
+              "sign": "Virgo",
+              "element": "Earth",
+              "quality": "Mutable",
+              "ruling_planet": "Mercury",
+              "market_tendency": "Analytical Corrections",
+              "volatility_factor": 0.9,
+              "favored_sectors": [
+                "Healthcare",
+                "IT Services",
+                "Analytics",
+                "Pharma",
+                "Quality"
+              ],
+              "price_direction": "Corrective Moves",
+              "volume_pattern": "Measured",
+              "risk_level": "Low-Medium",
+              "trading_strategy": "Technical Analysis"
+            },
+            "market_prediction": {
+              "overall_trend": "Analytical Corrections",
+              "price_expectation": "Corrective Moves",
+              "volatility_forecast": "0.9x normal",
+              "volume_prediction": "Measured",
+              "recommended_strategy": "Technical Analysis"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Healthcare",
+                "IT Services",
+                "Analytics",
+                "Pharma",
+                "Quality"
+              ],
+              "element_focus": "Earth",
+              "quality_approach": "Mutable",
+              "planetary_ruler": "Mercury"
+            },
+            "risk_assessment": {
+              "risk_level": "Low-Medium",
+              "volatility_factor": 0.9,
+              "position_sizing": "Caution advised"
+            }
+          }
+        },
+        {
+          "date": "2025-12-11",
+          "day_name": "Thursday",
+          "analysis": {
+            "date": "2025-12-11",
+            "moon_sign": "Virgo",
+            "moon_degree": 12.99,
+            "influence": {
+              "sign": "Virgo",
+              "element": "Earth",
+              "quality": "Mutable",
+              "ruling_planet": "Mercury",
+              "market_tendency": "Analytical Corrections",
+              "volatility_factor": 0.9,
+              "favored_sectors": [
+                "Healthcare",
+                "IT Services",
+                "Analytics",
+                "Pharma",
+                "Quality"
+              ],
+              "price_direction": "Corrective Moves",
+              "volume_pattern": "Measured",
+              "risk_level": "Low-Medium",
+              "trading_strategy": "Technical Analysis"
+            },
+            "market_prediction": {
+              "overall_trend": "Analytical Corrections",
+              "price_expectation": "Corrective Moves",
+              "volatility_forecast": "0.9x normal",
+              "volume_prediction": "Measured",
+              "recommended_strategy": "Technical Analysis"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Healthcare",
+                "IT Services",
+                "Analytics",
+                "Pharma",
+                "Quality"
+              ],
+              "element_focus": "Earth",
+              "quality_approach": "Mutable",
+              "planetary_ruler": "Mercury"
+            },
+            "risk_assessment": {
+              "risk_level": "Low-Medium",
+              "volatility_factor": 0.9,
+              "position_sizing": "Caution advised"
+            }
+          }
+        },
+        {
+          "date": "2025-12-12",
+          "day_name": "Friday",
+          "analysis": {
+            "date": "2025-12-12",
+            "moon_sign": "Virgo",
+            "moon_degree": 24.21,
+            "influence": {
+              "sign": "Virgo",
+              "element": "Earth",
+              "quality": "Mutable",
+              "ruling_planet": "Mercury",
+              "market_tendency": "Analytical Corrections",
+              "volatility_factor": 0.9,
+              "favored_sectors": [
+                "Healthcare",
+                "IT Services",
+                "Analytics",
+                "Pharma",
+                "Quality"
+              ],
+              "price_direction": "Corrective Moves",
+              "volume_pattern": "Measured",
+              "risk_level": "Low-Medium",
+              "trading_strategy": "Technical Analysis"
+            },
+            "market_prediction": {
+              "overall_trend": "Analytical Corrections",
+              "price_expectation": "Corrective Moves",
+              "volatility_forecast": "0.9x normal",
+              "volume_prediction": "Measured",
+              "recommended_strategy": "Technical Analysis"
+            },
+            "sector_recommendations": {
+              "favored_sectors": [
+                "Healthcare",
+                "IT Services",
+                "Analytics",
+                "Pharma",
+                "Quality"
+              ],
+              "element_focus": "Earth",
+              "quality_approach": "Mutable",
+              "planetary_ruler": "Mercury"
+            },
+            "risk_assessment": {
+              "risk_level": "Low-Medium",
+              "volatility_factor": 0.9,
+              "position_sizing": "Caution advised"
+            }
+          }
+        }
+      ],
+      "confidence_level": "High",
+      "key_alerts": []
+    }
+  ],
+  "overall_outlook": {
+    "overall_volatility": 1.08,
+    "risk_percentage": 25.0,
+    "market_outlook": "Mixed",
+    "recommendation": "Balanced approach with selective opportunities",
+    "best_weeks": [
+      "Week 50 - 2025-12-08 to 2025-12-14"
+    ],
+    "challenging_weeks": [
+      "Week 47 - 2025-11-17 to 2025-11-23"
+    ]
+  }
+}

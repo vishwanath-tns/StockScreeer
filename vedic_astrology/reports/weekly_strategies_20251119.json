@@ -1,0 +1,903 @@
+{
+  "generation_date": "2025-11-19",
+  "weeks_ahead": 2,
+  "weekly_strategies": [
+    {
+      "week_number": 1,
+      "week_start": "2025-11-17",
+      "summary": {
+        "week_theme": "Week 1 - Water Dominant",
+        "average_volatility": "1.3x normal",
+        "high_risk_days": 3,
+        "recommended_approach": "Intuitive contrarian trading, emotional sectors",
+        "key_focus": "Water element strategies"
+      },
+      "daily_strategies": [
+        {
+          "date": "2025-11-17",
+          "day_name": "Monday",
+          "moon_position": {
+            "sign": "Libra",
+            "degree": 19.2,
+            "element": "Air",
+            "quality": "Cardinal"
+          },
+          "market_outlook": {
+            "overall_outlook": "Low Volatility - Good for accumulation",
+            "volatility_expectation": "0.8x normal",
+            "price_expectation": "Stable price action, good for value buying",
+            "market_tendency": "Balanced Trading",
+            "dominant_element": "Air",
+            "recommended_approach": "Flexible swing trading, technology focus"
+          },
+          "risk_management": {
+            "risk_level": "Low",
+            "max_position_size": "8% of portfolio per stock",
+            "max_total_exposure": "40% of total portfolio",
+            "stop_loss_recommendation": "5-7% (Wide)",
+            "profit_target": "10-15% (Patient targets)",
+            "leverage_advice": "Use moderate leverage",
+            "overnight_holdings": "Allowed with stops"
+          },
+          "sector_strategy": {
+            "element_focus": "Air",
+            "primary_sectors": [
+              "IT",
+              "TELECOM",
+              "AVIATION",
+              "MEDIA"
+            ],
+            "secondary_sectors": [
+              "Luxury",
+              "Fashion",
+              "Legal",
+              "Partnerships",
+              "Beauty"
+            ],
+            "sectors_to_avoid": [
+              "HEAVY_INDUSTRY",
+              "MINING"
+            ],
+            "rotation_strategy": "Technology and communication focus",
+            "sector_allocation": {
+              "IT": "25.0%",
+              "TELECOM": "25.0%",
+              "AVIATION": "25.0%",
+              "MEDIA": "25.0%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [],
+            "accumulation_candidates": [],
+            "momentum_plays": [],
+            "avoid_list": []
+          },
+          "trading_tactics": {
+            "primary_strategy": "Range Trading",
+            "entry_method": "Buy on dips and support levels",
+            "exit_strategy": "Target-based exits with standard trailing stops",
+            "scaling_approach": "Scale in on weakness",
+            "ideal_holding_period": "1-2 weeks (Swing trading)",
+            "technical_indicators": [
+              "Bollinger Bands",
+              "Volatility indicators",
+              "Trend lines"
+            ],
+            "market_timing": "Normal trading hours, any time suitable"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Any time with good setups",
+            "best_exit_time": "Target-based exits",
+            "avoid_periods": "None specifically",
+            "overnight_strategy": "Allowed with stops"
+          },
+          "alerts_and_warnings": [
+            "\ud83c\udfaf SECTOR FOCUS: Luxury expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-18",
+          "day_name": "Tuesday",
+          "moon_position": {
+            "sign": "Scorpio",
+            "degree": 0.5,
+            "element": "Water",
+            "quality": "Fixed"
+          },
+          "market_outlook": {
+            "overall_outlook": "Highly Volatile - Extreme caution required",
+            "volatility_expectation": "1.5x normal",
+            "price_expectation": "Large price swings, gaps, emotional trading",
+            "market_tendency": "Deep Transformations",
+            "dominant_element": "Water",
+            "recommended_approach": "Intuitive contrarian trading, emotional sectors"
+          },
+          "risk_management": {
+            "risk_level": "Very High",
+            "max_position_size": "2% of portfolio per stock",
+            "max_total_exposure": "10% of total portfolio",
+            "stop_loss_recommendation": "2-3% (Very tight)",
+            "profit_target": "4-6% (Quick profits)",
+            "leverage_advice": "Avoid leverage",
+            "overnight_holdings": "Avoid"
+          },
+          "sector_strategy": {
+            "element_focus": "Water",
+            "primary_sectors": [
+              "HEALTHCARE",
+              "CHEMICALS",
+              "HOSPITALITY"
+            ],
+            "secondary_sectors": [
+              "Mining",
+              "Oil",
+              "Investigation",
+              "Transformation",
+              "Hidden"
+            ],
+            "sectors_to_avoid": [
+              "MECHANICAL",
+              "CONSTRUCTION"
+            ],
+            "rotation_strategy": "Emotional and intuitive sectors",
+            "sector_allocation": {
+              "HEALTHCARE": "33.3%",
+              "CHEMICALS": "33.3%",
+              "HOSPITALITY": "33.3%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [
+              "HINDZINC",
+              "COALINDIA"
+            ],
+            "accumulation_candidates": [],
+            "momentum_plays": [
+              "HINDZINC",
+              "COALINDIA"
+            ],
+            "avoid_list": [
+              "Small-cap stocks",
+              "Penny stocks",
+              "Highly leveraged companies"
+            ]
+          },
+          "trading_tactics": {
+            "primary_strategy": "Deep Value",
+            "entry_method": "Wait for clear breakouts with volume confirmation",
+            "exit_strategy": "Contrarian exits, sell strength, buy weakness",
+            "scaling_approach": "Scale in with small positions",
+            "ideal_holding_period": "Intraday to 1-2 days (Very short)",
+            "technical_indicators": [
+              "Stochastic",
+              "Williams %R",
+              "Sentiment indicators"
+            ],
+            "market_timing": "Trade only during market hours, avoid pre/post market"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Wait for clear patterns",
+            "best_exit_time": "Quick profit taking",
+            "avoid_periods": "High volatility spikes",
+            "overnight_strategy": "Strictly avoid"
+          },
+          "alerts_and_warnings": [
+            "\ud83d\udea8 SCORPIO MOON: Expect intense, transformative movements. Trade very carefully!",
+            "\u26a0\ufe0f EXTREME VOLATILITY: Consider staying in cash or very small positions",
+            "\ud83d\uded1 VERY HIGH RISK: Maximum position size 2% per stock",
+            "\ud83d\udca7 WATER ELEMENT: Market may be driven by emotions and sentiment",
+            "\ud83c\udfaf SECTOR FOCUS: Mining expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-19",
+          "day_name": "Wednesday",
+          "moon_position": {
+            "sign": "Scorpio",
+            "degree": 12.3,
+            "element": "Water",
+            "quality": "Fixed"
+          },
+          "market_outlook": {
+            "overall_outlook": "Highly Volatile - Extreme caution required",
+            "volatility_expectation": "1.5x normal",
+            "price_expectation": "Large price swings, gaps, emotional trading",
+            "market_tendency": "Deep Transformations",
+            "dominant_element": "Water",
+            "recommended_approach": "Intuitive contrarian trading, emotional sectors"
+          },
+          "risk_management": {
+            "risk_level": "Very High",
+            "max_position_size": "2% of portfolio per stock",
+            "max_total_exposure": "10% of total portfolio",
+            "stop_loss_recommendation": "2-3% (Very tight)",
+            "profit_target": "4-6% (Quick profits)",
+            "leverage_advice": "Avoid leverage",
+            "overnight_holdings": "Avoid"
+          },
+          "sector_strategy": {
+            "element_focus": "Water",
+            "primary_sectors": [
+              "HEALTHCARE",
+              "CHEMICALS",
+              "HOSPITALITY"
+            ],
+            "secondary_sectors": [
+              "Mining",
+              "Oil",
+              "Investigation",
+              "Transformation",
+              "Hidden"
+            ],
+            "sectors_to_avoid": [
+              "MECHANICAL",
+              "CONSTRUCTION"
+            ],
+            "rotation_strategy": "Emotional and intuitive sectors",
+            "sector_allocation": {
+              "HEALTHCARE": "33.3%",
+              "CHEMICALS": "33.3%",
+              "HOSPITALITY": "33.3%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [
+              "HINDZINC",
+              "COALINDIA"
+            ],
+            "accumulation_candidates": [],
+            "momentum_plays": [
+              "HINDZINC",
+              "COALINDIA"
+            ],
+            "avoid_list": [
+              "Small-cap stocks",
+              "Penny stocks",
+              "Highly leveraged companies"
+            ]
+          },
+          "trading_tactics": {
+            "primary_strategy": "Deep Value",
+            "entry_method": "Wait for clear breakouts with volume confirmation",
+            "exit_strategy": "Contrarian exits, sell strength, buy weakness",
+            "scaling_approach": "Scale in with small positions",
+            "ideal_holding_period": "Intraday to 1-2 days (Very short)",
+            "technical_indicators": [
+              "Stochastic",
+              "Williams %R",
+              "Sentiment indicators"
+            ],
+            "market_timing": "Trade only during market hours, avoid pre/post market"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Wait for clear patterns",
+            "best_exit_time": "Quick profit taking",
+            "avoid_periods": "High volatility spikes",
+            "overnight_strategy": "Strictly avoid"
+          },
+          "alerts_and_warnings": [
+            "\ud83d\udea8 SCORPIO MOON: Expect intense, transformative movements. Trade very carefully!",
+            "\u26a0\ufe0f EXTREME VOLATILITY: Consider staying in cash or very small positions",
+            "\ud83d\uded1 VERY HIGH RISK: Maximum position size 2% per stock",
+            "\ud83d\udca7 WATER ELEMENT: Market may be driven by emotions and sentiment",
+            "\ud83c\udfaf SECTOR FOCUS: Mining expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-20",
+          "day_name": "Thursday",
+          "moon_position": {
+            "sign": "Scorpio",
+            "degree": 24.7,
+            "element": "Water",
+            "quality": "Fixed"
+          },
+          "market_outlook": {
+            "overall_outlook": "Highly Volatile - Extreme caution required",
+            "volatility_expectation": "1.5x normal",
+            "price_expectation": "Large price swings, gaps, emotional trading",
+            "market_tendency": "Deep Transformations",
+            "dominant_element": "Water",
+            "recommended_approach": "Intuitive contrarian trading, emotional sectors"
+          },
+          "risk_management": {
+            "risk_level": "Very High",
+            "max_position_size": "2% of portfolio per stock",
+            "max_total_exposure": "10% of total portfolio",
+            "stop_loss_recommendation": "2-3% (Very tight)",
+            "profit_target": "4-6% (Quick profits)",
+            "leverage_advice": "Avoid leverage",
+            "overnight_holdings": "Avoid"
+          },
+          "sector_strategy": {
+            "element_focus": "Water",
+            "primary_sectors": [
+              "HEALTHCARE",
+              "CHEMICALS",
+              "HOSPITALITY"
+            ],
+            "secondary_sectors": [
+              "Mining",
+              "Oil",
+              "Investigation",
+              "Transformation",
+              "Hidden"
+            ],
+            "sectors_to_avoid": [
+              "MECHANICAL",
+              "CONSTRUCTION"
+            ],
+            "rotation_strategy": "Emotional and intuitive sectors",
+            "sector_allocation": {
+              "HEALTHCARE": "33.3%",
+              "CHEMICALS": "33.3%",
+              "HOSPITALITY": "33.3%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [
+              "HINDZINC",
+              "COALINDIA"
+            ],
+            "accumulation_candidates": [],
+            "momentum_plays": [
+              "HINDZINC",
+              "COALINDIA"
+            ],
+            "avoid_list": [
+              "Small-cap stocks",
+              "Penny stocks",
+              "Highly leveraged companies"
+            ]
+          },
+          "trading_tactics": {
+            "primary_strategy": "Deep Value",
+            "entry_method": "Wait for clear breakouts with volume confirmation",
+            "exit_strategy": "Contrarian exits, sell strength, buy weakness",
+            "scaling_approach": "Scale in with small positions",
+            "ideal_holding_period": "Intraday to 1-2 days (Very short)",
+            "technical_indicators": [
+              "Stochastic",
+              "Williams %R",
+              "Sentiment indicators"
+            ],
+            "market_timing": "Trade only during market hours, avoid pre/post market"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Wait for clear patterns",
+            "best_exit_time": "Quick profit taking",
+            "avoid_periods": "High volatility spikes",
+            "overnight_strategy": "Strictly avoid"
+          },
+          "alerts_and_warnings": [
+            "\ud83d\udea8 SCORPIO MOON: Expect intense, transformative movements. Trade very carefully!",
+            "\u26a0\ufe0f EXTREME VOLATILITY: Consider staying in cash or very small positions",
+            "\ud83d\uded1 VERY HIGH RISK: Maximum position size 2% per stock",
+            "\ud83d\udca7 WATER ELEMENT: Market may be driven by emotions and sentiment",
+            "\ud83c\udfaf SECTOR FOCUS: Mining expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-21",
+          "day_name": "Friday",
+          "moon_position": {
+            "sign": "Sagittarius",
+            "degree": 7.7,
+            "element": "Fire",
+            "quality": "Mutable"
+          },
+          "market_outlook": {
+            "overall_outlook": "Normal Volatility - Standard trading conditions",
+            "volatility_expectation": "1.0x normal",
+            "price_expectation": "Regular price patterns, balanced opportunities",
+            "market_tendency": "Expansive Growth",
+            "dominant_element": "Fire",
+            "recommended_approach": "Aggressive momentum trading, quick decisions"
+          },
+          "risk_management": {
+            "risk_level": "Medium",
+            "max_position_size": "5% of portfolio per stock",
+            "max_total_exposure": "25% of total portfolio",
+            "stop_loss_recommendation": "4-5% (Standard)",
+            "profit_target": "8-12% (Normal targets)",
+            "leverage_advice": "Use moderate leverage",
+            "overnight_holdings": "Allowed with stops"
+          },
+          "sector_strategy": {
+            "element_focus": "Fire",
+            "primary_sectors": [
+              "ENERGY",
+              "DEFENSE",
+              "AUTO",
+              "STEEL"
+            ],
+            "secondary_sectors": [
+              "Export",
+              "Education",
+              "Travel",
+              "Foreign",
+              "Philosophy"
+            ],
+            "sectors_to_avoid": [
+              "FMCG",
+              "UTILITIES"
+            ],
+            "rotation_strategy": "Momentum-based sector rotation",
+            "sector_allocation": {
+              "ENERGY": "25.0%",
+              "DEFENSE": "25.0%",
+              "AUTO": "25.0%",
+              "STEEL": "25.0%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [],
+            "accumulation_candidates": [],
+            "momentum_plays": [],
+            "avoid_list": []
+          },
+          "trading_tactics": {
+            "primary_strategy": "Growth Investing",
+            "entry_method": "Follow technical patterns",
+            "exit_strategy": "Quick profit taking, trail stops aggressively",
+            "scaling_approach": "Normal position building",
+            "ideal_holding_period": "2-5 days (Short momentum)",
+            "technical_indicators": [
+              "RSI",
+              "MACD",
+              "Volume",
+              "Momentum oscillators"
+            ],
+            "market_timing": "Normal trading hours, any time suitable"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Any time with good setups",
+            "best_exit_time": "Target-based exits",
+            "avoid_periods": "None specifically",
+            "overnight_strategy": "Allowed with stops"
+          },
+          "alerts_and_warnings": [
+            "\ud83d\udd25 FIRE ELEMENT: Momentum and energy sectors favored",
+            "\ud83c\udfaf SECTOR FOCUS: Export expected to outperform"
+          ]
+        }
+      ]
+    },
+    {
+      "week_number": 2,
+      "week_start": "2025-11-24",
+      "summary": {
+        "week_theme": "Week 2 - Air Dominant",
+        "average_volatility": "1.0x normal",
+        "high_risk_days": 1,
+        "recommended_approach": "Flexible swing trading, technology focus",
+        "key_focus": "Air element strategies"
+      },
+      "daily_strategies": [
+        {
+          "date": "2025-11-24",
+          "day_name": "Monday",
+          "moon_position": {
+            "sign": "Capricorn",
+            "degree": 18.6,
+            "element": "Earth",
+            "quality": "Cardinal"
+          },
+          "market_outlook": {
+            "overall_outlook": "Low Volatility - Good for accumulation",
+            "volatility_expectation": "0.6x normal",
+            "price_expectation": "Stable price action, good for value buying",
+            "market_tendency": "Disciplined Climb",
+            "dominant_element": "Earth",
+            "recommended_approach": "Conservative value investing, patient accumulation"
+          },
+          "risk_management": {
+            "risk_level": "Very Low",
+            "max_position_size": "10% of portfolio per stock",
+            "max_total_exposure": "50% of total portfolio",
+            "stop_loss_recommendation": "5-7% (Wide)",
+            "profit_target": "10-15% (Patient targets)",
+            "leverage_advice": "Use moderate leverage",
+            "overnight_holdings": "Allowed with stops"
+          },
+          "sector_strategy": {
+            "element_focus": "Earth",
+            "primary_sectors": [
+              "BANKING",
+              "FMCG",
+              "INFRASTRUCTURE",
+              "REALESTATE"
+            ],
+            "secondary_sectors": [
+              "Infrastructure",
+              "Cement",
+              "Long-term",
+              "Government",
+              "Authority"
+            ],
+            "sectors_to_avoid": [
+              "TECHNOLOGY",
+              "SPECULATION"
+            ],
+            "rotation_strategy": "Value-based sector accumulation",
+            "sector_allocation": {
+              "BANKING": "25.0%",
+              "FMCG": "25.0%",
+              "INFRASTRUCTURE": "25.0%",
+              "REALESTATE": "25.0%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [
+              "ULTRACEMCO",
+              "LT"
+            ],
+            "accumulation_candidates": [
+              "ACC",
+              "ULTRACEMCO",
+              "LT"
+            ],
+            "momentum_plays": [],
+            "avoid_list": []
+          },
+          "trading_tactics": {
+            "primary_strategy": "Long-term Holdings",
+            "entry_method": "Buy on dips and support levels",
+            "exit_strategy": "Target-based exits with standard trailing stops",
+            "scaling_approach": "Scale in on weakness",
+            "ideal_holding_period": "2-4 weeks (Medium term)",
+            "technical_indicators": [
+              "Moving averages",
+              "Support/Resistance",
+              "Value metrics"
+            ],
+            "market_timing": "Normal trading hours, any time suitable"
+          },
+          "timing_strategy": {
+            "best_entry_time": "10:00-11:00 AM (After opening volatility)",
+            "best_exit_time": "End of day for profits",
+            "avoid_periods": "First 15 minutes (Gap volatility)",
+            "overnight_strategy": "Suitable for swing trades"
+          },
+          "alerts_and_warnings": [
+            "\ud83c\udfaf SECTOR FOCUS: Infrastructure expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-25",
+          "day_name": "Tuesday",
+          "moon_position": {
+            "sign": "Aquarius",
+            "degree": 1.8,
+            "element": "Air",
+            "quality": "Fixed"
+          },
+          "market_outlook": {
+            "overall_outlook": "Normal Volatility - Standard trading conditions",
+            "volatility_expectation": "1.1x normal",
+            "price_expectation": "Regular price patterns, balanced opportunities",
+            "market_tendency": "Innovation Spurts",
+            "dominant_element": "Air",
+            "recommended_approach": "Flexible swing trading, technology focus"
+          },
+          "risk_management": {
+            "risk_level": "Medium",
+            "max_position_size": "5% of portfolio per stock",
+            "max_total_exposure": "25% of total portfolio",
+            "stop_loss_recommendation": "4-5% (Standard)",
+            "profit_target": "8-12% (Normal targets)",
+            "leverage_advice": "Use moderate leverage",
+            "overnight_holdings": "Allowed with stops"
+          },
+          "sector_strategy": {
+            "element_focus": "Air",
+            "primary_sectors": [
+              "IT",
+              "TELECOM",
+              "AVIATION",
+              "MEDIA"
+            ],
+            "secondary_sectors": [
+              "Technology",
+              "Innovation",
+              "Social",
+              "Humanitarian",
+              "Future"
+            ],
+            "sectors_to_avoid": [
+              "HEAVY_INDUSTRY",
+              "MINING"
+            ],
+            "rotation_strategy": "Technology and communication focus",
+            "sector_allocation": {
+              "IT": "25.0%",
+              "TELECOM": "25.0%",
+              "AVIATION": "25.0%",
+              "MEDIA": "25.0%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [],
+            "accumulation_candidates": [],
+            "momentum_plays": [],
+            "avoid_list": []
+          },
+          "trading_tactics": {
+            "primary_strategy": "Innovation Focus",
+            "entry_method": "Follow technical patterns",
+            "exit_strategy": "Target-based exits with standard trailing stops",
+            "scaling_approach": "Normal position building",
+            "ideal_holding_period": "1-2 weeks (Swing trading)",
+            "technical_indicators": [
+              "Bollinger Bands",
+              "Volatility indicators",
+              "Trend lines"
+            ],
+            "market_timing": "Normal trading hours, any time suitable"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Any time with good setups",
+            "best_exit_time": "Target-based exits",
+            "avoid_periods": "None specifically",
+            "overnight_strategy": "Allowed with stops"
+          },
+          "alerts_and_warnings": [
+            "\ud83c\udfaf SECTOR FOCUS: Technology expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-26",
+          "day_name": "Wednesday",
+          "moon_position": {
+            "sign": "Aquarius",
+            "degree": 14.6,
+            "element": "Air",
+            "quality": "Fixed"
+          },
+          "market_outlook": {
+            "overall_outlook": "Normal Volatility - Standard trading conditions",
+            "volatility_expectation": "1.1x normal",
+            "price_expectation": "Regular price patterns, balanced opportunities",
+            "market_tendency": "Innovation Spurts",
+            "dominant_element": "Air",
+            "recommended_approach": "Flexible swing trading, technology focus"
+          },
+          "risk_management": {
+            "risk_level": "Medium",
+            "max_position_size": "5% of portfolio per stock",
+            "max_total_exposure": "25% of total portfolio",
+            "stop_loss_recommendation": "4-5% (Standard)",
+            "profit_target": "8-12% (Normal targets)",
+            "leverage_advice": "Use moderate leverage",
+            "overnight_holdings": "Allowed with stops"
+          },
+          "sector_strategy": {
+            "element_focus": "Air",
+            "primary_sectors": [
+              "IT",
+              "TELECOM",
+              "AVIATION",
+              "MEDIA"
+            ],
+            "secondary_sectors": [
+              "Technology",
+              "Innovation",
+              "Social",
+              "Humanitarian",
+              "Future"
+            ],
+            "sectors_to_avoid": [
+              "HEAVY_INDUSTRY",
+              "MINING"
+            ],
+            "rotation_strategy": "Technology and communication focus",
+            "sector_allocation": {
+              "IT": "25.0%",
+              "TELECOM": "25.0%",
+              "AVIATION": "25.0%",
+              "MEDIA": "25.0%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [],
+            "accumulation_candidates": [],
+            "momentum_plays": [],
+            "avoid_list": []
+          },
+          "trading_tactics": {
+            "primary_strategy": "Innovation Focus",
+            "entry_method": "Follow technical patterns",
+            "exit_strategy": "Target-based exits with standard trailing stops",
+            "scaling_approach": "Normal position building",
+            "ideal_holding_period": "1-2 weeks (Swing trading)",
+            "technical_indicators": [
+              "Bollinger Bands",
+              "Volatility indicators",
+              "Trend lines"
+            ],
+            "market_timing": "Normal trading hours, any time suitable"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Any time with good setups",
+            "best_exit_time": "Target-based exits",
+            "avoid_periods": "None specifically",
+            "overnight_strategy": "Allowed with stops"
+          },
+          "alerts_and_warnings": [
+            "\ud83c\udfaf SECTOR FOCUS: Technology expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-27",
+          "day_name": "Thursday",
+          "moon_position": {
+            "sign": "Aquarius",
+            "degree": 27.0,
+            "element": "Air",
+            "quality": "Fixed"
+          },
+          "market_outlook": {
+            "overall_outlook": "Normal Volatility - Standard trading conditions",
+            "volatility_expectation": "1.1x normal",
+            "price_expectation": "Regular price patterns, balanced opportunities",
+            "market_tendency": "Innovation Spurts",
+            "dominant_element": "Air",
+            "recommended_approach": "Flexible swing trading, technology focus"
+          },
+          "risk_management": {
+            "risk_level": "Medium",
+            "max_position_size": "5% of portfolio per stock",
+            "max_total_exposure": "25% of total portfolio",
+            "stop_loss_recommendation": "4-5% (Standard)",
+            "profit_target": "8-12% (Normal targets)",
+            "leverage_advice": "Use moderate leverage",
+            "overnight_holdings": "Allowed with stops"
+          },
+          "sector_strategy": {
+            "element_focus": "Air",
+            "primary_sectors": [
+              "IT",
+              "TELECOM",
+              "AVIATION",
+              "MEDIA"
+            ],
+            "secondary_sectors": [
+              "Technology",
+              "Innovation",
+              "Social",
+              "Humanitarian",
+              "Future"
+            ],
+            "sectors_to_avoid": [
+              "HEAVY_INDUSTRY",
+              "MINING"
+            ],
+            "rotation_strategy": "Technology and communication focus",
+            "sector_allocation": {
+              "IT": "25.0%",
+              "TELECOM": "25.0%",
+              "AVIATION": "25.0%",
+              "MEDIA": "25.0%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [],
+            "accumulation_candidates": [],
+            "momentum_plays": [],
+            "avoid_list": []
+          },
+          "trading_tactics": {
+            "primary_strategy": "Innovation Focus",
+            "entry_method": "Follow technical patterns",
+            "exit_strategy": "Target-based exits with standard trailing stops",
+            "scaling_approach": "Normal position building",
+            "ideal_holding_period": "1-2 weeks (Swing trading)",
+            "technical_indicators": [
+              "Bollinger Bands",
+              "Volatility indicators",
+              "Trend lines"
+            ],
+            "market_timing": "Normal trading hours, any time suitable"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Any time with good setups",
+            "best_exit_time": "Target-based exits",
+            "avoid_periods": "None specifically",
+            "overnight_strategy": "Allowed with stops"
+          },
+          "alerts_and_warnings": [
+            "\ud83c\udfaf SECTOR FOCUS: Technology expected to outperform"
+          ]
+        },
+        {
+          "date": "2025-11-28",
+          "day_name": "Friday",
+          "moon_position": {
+            "sign": "Pisces",
+            "degree": 9.0,
+            "element": "Water",
+            "quality": "Mutable"
+          },
+          "market_outlook": {
+            "overall_outlook": "Elevated Volatility - Increased attention needed",
+            "volatility_expectation": "1.2x normal",
+            "price_expectation": "Above-normal price movements, active trading",
+            "market_tendency": "Intuitive Flows",
+            "dominant_element": "Water",
+            "recommended_approach": "Intuitive contrarian trading, emotional sectors"
+          },
+          "risk_management": {
+            "risk_level": "Medium-High",
+            "max_position_size": "5% of portfolio per stock",
+            "max_total_exposure": "25% of total portfolio",
+            "stop_loss_recommendation": "3-4% (Tight)",
+            "profit_target": "6-8% (Moderate targets)",
+            "leverage_advice": "Use moderate leverage",
+            "overnight_holdings": "Allowed with stops"
+          },
+          "sector_strategy": {
+            "element_focus": "Water",
+            "primary_sectors": [
+              "HEALTHCARE",
+              "CHEMICALS",
+              "HOSPITALITY"
+            ],
+            "secondary_sectors": [
+              "Chemicals",
+              "Liquids",
+              "Spirituality",
+              "Arts",
+              "Intuition"
+            ],
+            "sectors_to_avoid": [
+              "MECHANICAL",
+              "CONSTRUCTION"
+            ],
+            "rotation_strategy": "Emotional and intuitive sectors",
+            "sector_allocation": {
+              "HEALTHCARE": "33.3%",
+              "CHEMICALS": "33.3%",
+              "HOSPITALITY": "33.3%"
+            }
+          },
+          "stock_recommendations": {
+            "top_picks": [
+              "PIDILITIND",
+              "UPL"
+            ],
+            "accumulation_candidates": [],
+            "momentum_plays": [
+              "PIDILITIND",
+              "UPL"
+            ],
+            "avoid_list": []
+          },
+          "trading_tactics": {
+            "primary_strategy": "Intuitive Trading",
+            "entry_method": "Follow technical patterns",
+            "exit_strategy": "Contrarian exits, sell strength, buy weakness",
+            "scaling_approach": "Normal position building",
+            "ideal_holding_period": "1-2 weeks (Swing trading)",
+            "technical_indicators": [
+              "Stochastic",
+              "Williams %R",
+              "Sentiment indicators"
+            ],
+            "market_timing": "Focus on first hour and last hour of trading"
+          },
+          "timing_strategy": {
+            "best_entry_time": "Any time with good setups",
+            "best_exit_time": "Target-based exits",
+            "avoid_periods": "None specifically",
+            "overnight_strategy": "Allowed with stops"
+          },
+          "alerts_and_warnings": [
+            "\ud83d\udcc8 HIGH VOLATILITY: Use tight stops and take quick profits",
+            "\ud83d\udca7 WATER ELEMENT: Market may be driven by emotions and sentiment",
+            "\ud83c\udfaf SECTOR FOCUS: Chemicals expected to outperform"
+          ]
+        }
+      ]
+    }
+  ]
+}

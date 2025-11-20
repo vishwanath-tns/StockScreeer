@@ -1,0 +1,65 @@
+VEDIC ASTROLOGY TRADING QUICK REFERENCE GUIDE
+============================================================
+
+MOON SIGN VOLATILITY REFERENCE:
+----------------------------------------
+🔴 VERY HIGH RISK (1.4x+ volatility):
+   • Scorpio Moon: 1.5x - Intense transformations
+   • Action: Minimize exposure, 25% normal position size
+
+🟡 HIGH RISK (1.2x+ volatility):
+   • Aries Moon: 1.4x - Aggressive movements
+   • Cancer Moon: 1.3x - Emotional extremes
+   • Gemini Moon: 1.2x - Quick reversals
+   • Action: Reduced positions (50-70% normal)
+
+🟢 LOW RISK (0.8x- volatility):
+   • Capricorn Moon: 0.6x - Disciplined climb
+   • Taurus Moon: 0.7x - Steady accumulation
+   • Libra Moon: 0.8x - Balanced trading
+   • Action: Good for accumulation (120-150% normal)
+
+SECTOR ROTATION BY ELEMENT:
+----------------------------------------
+🔥 FIRE (Aries, Leo, Sagittarius):
+   Primary: RELIANCE, TATAMOTORS, TATASTEEL, HAL
+   Strategy: Momentum trading, quick profits
+
+🌍 EARTH (Taurus, Virgo, Capricorn):
+   Primary: HDFCBANK, ICICIBANK, ITC, ULTRACEMCO
+   Strategy: Value accumulation, patient holding
+
+💨 AIR (Gemini, Libra, Aquarius):
+   Primary: TCS, INFY, BHARTIARTL, LT
+   Strategy: Swing trading, tech focus
+
+💧 WATER (Cancer, Scorpio, Pisces):
+   Primary: DRREDDY, CIPLA, UPL, COALINDIA
+   Strategy: Contrarian plays, emotional sectors
+
+DAILY TRADING CHECKLIST:
+----------------------------------------
+☐ Check today's Moon sign and element
+☐ Review volatility factor for position sizing
+☐ Identify favored sectors for the day
+☐ Set appropriate stop losses based on risk level
+☐ Check weekly outlook for context
+☐ Monitor alerts throughout the day
+☐ Adjust positions before market close if needed
+
+POSITION SIZING RULES:
+----------------------------------------
+Very High Risk: 1-2% per stock, 10% total exposure
+High Risk: 2-3% per stock, 15% total exposure
+Medium Risk: 3-5% per stock, 25% total exposure
+Low Risk: 5-8% per stock, 40% total exposure
+Very Low Risk: 8-10% per stock, 50% total exposure
+
+STOP LOSS GUIDELINES:
+----------------------------------------
+Extreme Volatility (1.4x+): 2-3% stops
+High Volatility (1.2x+): 3-4% stops
+Normal Volatility (0.8-1.2x): 4-5% stops
+Low Volatility (0.8x-): 5-7% stops
+
+Generated: 2025-11-19 23:29:06

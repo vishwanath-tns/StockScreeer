@@ -1,0 +1,94 @@
+{
+  "date": "2025-11-19",
+  "day_name": "Wednesday",
+  "moon_position": {
+    "sign": "Scorpio",
+    "degree": 12.3,
+    "element": "Water",
+    "quality": "Fixed"
+  },
+  "market_outlook": {
+    "overall_outlook": "Highly Volatile - Extreme caution required",
+    "volatility_expectation": "1.5x normal",
+    "price_expectation": "Large price swings, gaps, emotional trading",
+    "market_tendency": "Deep Transformations",
+    "dominant_element": "Water",
+    "recommended_approach": "Intuitive contrarian trading, emotional sectors"
+  },
+  "risk_management": {
+    "risk_level": "Very High",
+    "max_position_size": "2% of portfolio per stock",
+    "max_total_exposure": "10% of total portfolio",
+    "stop_loss_recommendation": "2-3% (Very tight)",
+    "profit_target": "4-6% (Quick profits)",
+    "leverage_advice": "Avoid leverage",
+    "overnight_holdings": "Avoid"
+  },
+  "sector_strategy": {
+    "element_focus": "Water",
+    "primary_sectors": [
+      "HEALTHCARE",
+      "CHEMICALS",
+      "HOSPITALITY"
+    ],
+    "secondary_sectors": [
+      "Mining",
+      "Oil",
+      "Investigation",
+      "Transformation",
+      "Hidden"
+    ],
+    "sectors_to_avoid": [
+      "MECHANICAL",
+      "CONSTRUCTION"
+    ],
+    "rotation_strategy": "Emotional and intuitive sectors",
+    "sector_allocation": {
+      "HEALTHCARE": "33.3%",
+      "CHEMICALS": "33.3%",
+      "HOSPITALITY": "33.3%"
+    }
+  },
+  "stock_recommendations": {
+    "top_picks": [
+      "HINDZINC",
+      "COALINDIA"
+    ],
+    "accumulation_candidates": [],
+    "momentum_plays": [
+      "HINDZINC",
+      "COALINDIA"
+    ],
+    "avoid_list": [
+      "Small-cap stocks",
+      "Penny stocks",
+      "Highly leveraged companies"
+    ]
+  },
+  "trading_tactics": {
+    "primary_strategy": "Deep Value",
+    "entry_method": "Wait for clear breakouts with volume confirmation",
+    "exit_strategy": "Contrarian exits, sell strength, buy weakness",
+    "scaling_approach": "Scale in with small positions",
+    "ideal_holding_period": "Intraday to 1-2 days (Very short)",
+    "technical_indicators": [
+      "Stochastic",
+      "Williams %R",
+      "Sentiment indicators"
+    ],
+    "market_timing": "Trade only during market hours, avoid pre/post market"
+  },
+  "timing_strategy": {
+    "best_entry_time": "Wait for clear patterns",
+    "best_exit_time": "Quick profit taking",
+    "avoid_periods": "High volatility spikes",
+    "overnight_strategy": "Strictly avoid"
+  },
+  "alerts_and_warnings": [
+    "\ud83d\udea8 SCORPIO MOON: Expect intense, transformative movements. Trade very carefully!",
+    "\u26a0\ufe0f EXTREME VOLATILITY: Consider staying in cash or very small positions",
+    "\ud83d\uded1 VERY HIGH RISK: Maximum position size 2% per stock",
+    "\ud83d\udca7 WATER ELEMENT: Market may be driven by emotions and sentiment",
+    "\ud83c\udfaf SECTOR FOCUS: Mining expected to outperform"
+  ]
+}
