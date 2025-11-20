@@ -20,7 +20,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 import os
 
-from core_calculator import VedicAstrologyCalculator, LunarPhase
+from .core_calculator import VedicAstrologyCalculator, LunarPhase
 
 
 @dataclass

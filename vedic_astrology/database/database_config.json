@@ -1,0 +1,22 @@
+{
+  "database": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "",
+    "database": "vedic_astrology",
+    "charset": "utf8mb4"
+  },
+  "collection": {
+    "interval_minutes": 1,
+    "location": "Delhi, India",
+    "timezone": "Asia/Kolkata",
+    "auto_start": true,
+    "batch_size": 60
+  },
+  "validation": {
+    "enabled": true,
+    "drikpanchang_comparison": true,
+    "accuracy_threshold": 0.05
+  }
+}
