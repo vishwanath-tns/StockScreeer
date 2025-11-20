@@ -1,0 +1,26 @@
+NIFTY 50 VCP BACKTEST REPORT
+========================================
+
+Analysis Date: 2025-11-16T15:43:18.911817
+Execution Time: 1.0 seconds
+
+SUMMARY
+---------------
+Total Stocks: 20
+Successfully Analyzed: 0
+Failed: 20
+
+PORTFOLIO PERFORMANCE
+-------------------------
+Total Patterns: 0
+Total Trades: 0
+Win Rate: 0.0%
+Average Return: 0.0%
+Average Sharpe: 0.00
+Max Drawdown: 0.0%
+
+TOP 5 PERFORMERS
+--------------------
+
+SECTOR ANALYSIS
+--------------------

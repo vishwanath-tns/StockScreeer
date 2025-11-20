@@ -1,0 +1,185 @@
+NIFTY 50 FINAL COMPREHENSIVE SECTOR ANALYSIS
+=======================================================
+Generated: 2025-11-17 16:37:45
+Total Stocks: 46
+Total Sectors: 16
+
+MARKET OVERVIEW (Available Data)
+-----------------------------------
+1-Week Analysis (3 stocks):
+  Average momentum: +1.32%
+  Positive stocks: 2/3 (66.7%)
+  Market sentiment: Strong Bullish
+
+1-Month Analysis (3 stocks):
+  Average momentum: +3.14%
+  Positive stocks: 3/3 (100.0%)
+  Market sentiment: Strong Bullish
+
+Top performers (1M):
+  1. RELIANCE     +3.55% (Oil & Gas)
+  2. TCS          +3.01% (IT Services)
+  3. INFY         +2.87% (IT Services)
+
+COMPLETE SECTOR BREAKDOWN
+==============================
+
+AUTOMOTIVE
+----------
+Total stocks: 5
+No momentum data available
+Sector constituents:
+    BAJAJ-AUTO   | 1W:      N/A | 1M:      N/A
+    EICHERMOT    | 1W:      N/A | 1M:      N/A
+    HEROMOTOCO   | 1W:      N/A | 1M:      N/A
+    M&M          | 1W:      N/A | 1M:      N/A
+    MARUTI       | 1W:      N/A | 1M:      N/A
+
+BANKING
+-------
+Total stocks: 6
+No momentum data available
+Sector constituents:
+    AXISBANK     | 1W:      N/A | 1M:      N/A
+    HDFCBANK     | 1W:      N/A | 1M:      N/A
+    ICICIBANK    | 1W:      N/A | 1M:      N/A
+    INDUSINDBK   | 1W:      N/A | 1M:      N/A
+    KOTAKBANK    | 1W:      N/A | 1M:      N/A
+    SBIN         | 1W:      N/A | 1M:      N/A
+
+CEMENT
+------
+Total stocks: 2
+No momentum data available
+Sector constituents:
+    GRASIM       | 1W:      N/A | 1M:      N/A
+    ULTRACEMCO   | 1W:      N/A | 1M:      N/A
+
+CHEMICALS
+---------
+Total stocks: 1
+No momentum data available
+Sector constituents:
+    UPL          | 1W:      N/A | 1M:      N/A
+
+CONSUMER GOODS
+--------------
+Total stocks: 1
+No momentum data available
+Sector constituents:
+    TITAN        | 1W:      N/A | 1M:      N/A
+
+FMCG
+----
+Total stocks: 5
+No momentum data available
+Sector constituents:
+    BRITANNIA    | 1W:      N/A | 1M:      N/A
+    HINDUNILVR   | 1W:      N/A | 1M:      N/A
+    ITC          | 1W:      N/A | 1M:      N/A
+    NESTLEIND    | 1W:      N/A | 1M:      N/A
+    TATACONSUM   | 1W:      N/A | 1M:      N/A
+
+FINANCIAL SERVICES
+------------------
+Total stocks: 4
+No momentum data available
+Sector constituents:
+    BAJAJFINSV   | 1W:      N/A | 1M:      N/A
+    BAJFINANCE   | 1W:      N/A | 1M:      N/A
+    HDFCLIFE     | 1W:      N/A | 1M:      N/A
+    SBILIFE      | 1W:      N/A | 1M:      N/A
+
+IT SERVICES
+-----------
+Total stocks: 5
+Stocks with momentum data: 2
+1M sector average: +2.94%
+1M positive ratio: 2/2
+Sector leader: TCS (+3.01%)
+Sector constituents:
+    HCLTECH      | 1W:      N/A | 1M:      N/A
+  * INFY         | 1W:   -0.71% | 1M:   +2.87%
+  * TCS          | 1W:   +2.67% | 1M:   +3.01%
+    TECHM        | 1W:      N/A | 1M:      N/A
+    WIPRO        | 1W:      N/A | 1M:      N/A
+
+INFRASTRUCTURE
+--------------
+Total stocks: 1
+No momentum data available
+Sector constituents:
+    LT           | 1W:      N/A | 1M:      N/A
+
+LOGISTICS
+---------
+Total stocks: 1
+No momentum data available
+Sector constituents:
+    ADANIPORTS   | 1W:      N/A | 1M:      N/A
+
+METALS & MINING
+---------------
+Total stocks: 4
+No momentum data available
+Sector constituents:
+    COALINDIA    | 1W:      N/A | 1M:      N/A
+    HINDALCO     | 1W:      N/A | 1M:      N/A
+    JSWSTEEL     | 1W:      N/A | 1M:      N/A
+    TATASTEEL    | 1W:      N/A | 1M:      N/A
+
+OIL & GAS
+---------
+Total stocks: 3
+Stocks with momentum data: 1
+1M sector average: +3.55%
+1M positive ratio: 1/1
+Sector leader: RELIANCE (+3.55%)
+Sector constituents:
+    BPCL         | 1W:      N/A | 1M:      N/A
+    ONGC         | 1W:      N/A | 1M:      N/A
+  * RELIANCE     | 1W:   +1.99% | 1M:   +3.55%
+
+PAINTS
+------
+Total stocks: 1
+No momentum data available
+Sector constituents:
+    ASIANPAINT   | 1W:      N/A | 1M:      N/A
+
+PHARMACEUTICALS
+---------------
+Total stocks: 4
+No momentum data available
+Sector constituents:
+    CIPLA        | 1W:      N/A | 1M:      N/A
+    DIVISLAB     | 1W:      N/A | 1M:      N/A
+    DRREDDY      | 1W:      N/A | 1M:      N/A
+    SUNPHARMA    | 1W:      N/A | 1M:      N/A
+
+POWER
+-----
+Total stocks: 2
+No momentum data available
+Sector constituents:
+    NTPC         | 1W:      N/A | 1M:      N/A
+    POWERGRID    | 1W:      N/A | 1M:      N/A
+
+TELECOM
+-------
+Total stocks: 1
+No momentum data available
+Sector constituents:
+    BHARTIARTL   | 1W:      N/A | 1M:      N/A
+
+
+SECTOR PERFORMANCE RANKING (1M)
+===================================
+ 1. Oil & Gas            +3.55% (1 stocks) - Strong
+ 2. IT Services          +2.94% (2 stocks) - Positive
+
+
+NOTES:
+* = Stock has momentum data available
+N/A = No momentum data calculated
+Total data coverage: 3/46 stocks

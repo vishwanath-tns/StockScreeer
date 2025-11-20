@@ -1,0 +1,172 @@
+{
+  "summary": {
+    "total_stocks_analyzed": 20,
+    "successful_backtests": 0,
+    "failed_backtests": 20,
+    "total_execution_time": 0.9668972492218018,
+    "config": {
+      "stop_loss_pct": 8.0,
+      "profit_target_pct": 25.0,
+      "position_size_pct": 10.0,
+      "min_quality_score": 50.0
+    }
+  },
+  "portfolio_metrics": {
+    "total_patterns_found": 0,
+    "total_trades_executed": 0,
+    "total_winning_trades": 0,
+    "overall_win_rate": 0,
+    "average_portfolio_return": 0,
+    "average_sharpe_ratio": 0,
+    "maximum_drawdown": 0,
+    "patterns_per_stock": 0,
+    "trades_per_stock": 0
+  },
+  "sector_analysis": {},
+  "performance_ranking": [],
+  "worst_performers": [],
+  "detailed_results": [],
+  "failed_results": [
+    {
+      "symbol": "RELIANCE",
+      "sector": "Oil & Gas",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.014003992080688477
+    },
+    {
+      "symbol": "TCS",
+      "sector": "IT",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.004004001617431641
+    },
+    {
+      "symbol": "INFY",
+      "sector": "IT",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.02732086181640625
+    },
+    {
+      "symbol": "HDFCBANK",
+      "sector": "Banking",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.04408740997314453
+    },
+    {
+      "symbol": "ICICIBANK",
+      "sector": "Banking",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.017092466354370117
+    },
+    {
+      "symbol": "SBIN",
+      "sector": "Banking",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.0386502742767334
+    },
+    {
+      "symbol": "LT",
+      "sector": "Infrastructure",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.09101200103759766
+    },
+    {
+      "symbol": "ITC",
+      "sector": "Consumer Goods",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.01600027084350586
+    },
+    {
+      "symbol": "HINDUNILVR",
+      "sector": "Consumer Goods",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.005002498626708984
+    },
+    {
+      "symbol": "MARUTI",
+      "sector": "Automobiles",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.056113481521606445
+    },
+    {
+      "symbol": "ASIANPAINT",
+      "sector": "Consumer Goods",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.09139156341552734
+    },
+    {
+      "symbol": "SUNPHARMA",
+      "sector": "Pharma",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.05902218818664551
+    },
+    {
+      "symbol": "BHARTIARTL",
+      "sector": "Telecom",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.08188772201538086
+    },
+    {
+      "symbol": "KOTAKBANK",
+      "sector": "Banking",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.06778073310852051
+    },
+    {
+      "symbol": "AXISBANK",
+      "sector": "Banking",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.014037847518920898
+    },
+    {
+      "symbol": "WIPRO",
+      "sector": "IT",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.09889435768127441
+    },
+    {
+      "symbol": "ULTRACEMCO",
+      "sector": "Infrastructure",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.06529355049133301
+    },
+    {
+      "symbol": "NESTLEIND",
+      "sector": "Consumer Goods",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.08561253547668457
+    },
+    {
+      "symbol": "POWERGRID",
+      "sector": "Infrastructure",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.07910728454589844
+    },
+    {
+      "symbol": "TITAN",
+      "sector": "Consumer Goods",
+      "status": "failed",
+      "error": "'VCPBacktester' object has no attribute 'backtest_symbol'",
+      "execution_time": 0.006000995635986328
+    }
+  ],
+  "timestamp": "2025-11-16T15:43:18.911817"
+}

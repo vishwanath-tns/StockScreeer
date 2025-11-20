@@ -1,0 +1,29 @@
+NIFTY 50 STOCK SELECTION STRATEGY REPORT
+==================================================
+Generated: 2025-11-18 10:34:47
+
+SHORT-TERM TRADING CANDIDATES:
+------------------------------
+ASIANPAINT   | Paints               | 1W:  +9.38%
+INDUSINDBK   | Banking              | 1W:  +2.68%
+
+SWING TRADING CANDIDATES:
+-------------------------
+ASIANPAINT   | Paints               | Score:  13.1
+SBIN         | Banking              | Score:  10.7
+INDUSINDBK   | Banking              | Score:   8.5
+HINDALCO     | Metals & Mining      | Score:   8.2
+LT           | Infrastructure       | Score:   7.0
+UPL          | Chemicals            | Score:   6.8
+ADANIPORTS   | Logistics            | Score:   6.6
+SBILIFE      | Financial Services   | Score:   6.5
+BHARTIARTL   | Telecom              | Score:   5.8
+RELIANCE     | Oil & Gas            | Score:   5.2
+
+LONG-TERM INVESTMENT CANDIDATES:
+--------------------------------
+SBIN         | Banking              | Score:  20.2
+SBILIFE      | Financial Services   | Score:  18.2
+BAJAJFINSV   | Financial Services   | Score:  13.5
+BRITANNIA    | FMCG                 | Score:  10.3
+AXISBANK     | Banking              | Score:   8.9

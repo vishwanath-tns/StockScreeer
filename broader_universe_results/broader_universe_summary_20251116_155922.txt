@@ -1,0 +1,25 @@
+BROADER UNIVERSE VCP ANALYSIS REPORT
+==================================================
+
+PATTERN DISCOVERY SUMMARY
+------------------------------
+Symbols Available: 153
+Total Patterns Found: 96
+Discovery Rate: 53.3%
+Thresholds Tested: [25.0, 35.0, 45.0]
+
+TOP 10 PATTERNS BY QUALITY
+------------------------------
+ 1. HDFCBANK     Quality:  94.2 Stage: 2 (Banking)
+ 2. HDFCBANK     Quality:  94.2 Stage: 2 (Banking)
+ 3. HDFCBANK     Quality:  94.2 Stage: 2 (Banking)
+ 4. CIPLA        Quality:  94.1 Stage: 2 (Pharma)
+ 5. CIPLA        Quality:  94.1 Stage: 2 (Pharma)
+ 6. CIPLA        Quality:  94.1 Stage: 2 (Pharma)
+ 7. BAJAJFINSV   Quality:  93.4 Stage: 2 (Financial Services)
+ 8. BAJAJFINSV   Quality:  93.4 Stage: 2 (Financial Services)
+ 9. BAJAJFINSV   Quality:  93.4 Stage: 2 (Financial Services)
+10. BIOCON       Quality:  93.4 Stage: 2 (Pharma)
+
+BACKTEST PERFORMANCE
+-------------------------

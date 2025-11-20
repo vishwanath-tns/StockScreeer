@@ -1,0 +1,113 @@
+🏢 NIFTY 50 SECTOR ANALYSIS
+==================================================
+📅 Generated: 2025-11-17 16:33:09
+
+## 📈 BANKING
+📊 Stocks: 6
+   Individual stocks:
+     AXISBANK     | 1W:      N/A | 1M:      N/A
+     HDFCBANK     | 1W:      N/A | 1M:      N/A
+     ICICIBANK    | 1W:      N/A | 1M:      N/A
+     INDUSINDBK   | 1W:      N/A | 1M:      N/A
+     KOTAKBANK    | 1W:      N/A | 1M:      N/A
+     SBIN         | 1W:      N/A | 1M:      N/A
+
+## 📈 FINANCIAL SERVICES
+📊 Stocks: 4
+   Individual stocks:
+     BAJFINANCE   | 1W:      N/A | 1M:      N/A
+     BAJAJFINSV   | 1W:      N/A | 1M:      N/A
+     HDFCLIFE     | 1W:      N/A | 1M:      N/A
+     SBILIFE      | 1W:      N/A | 1M:      N/A
+
+## 📈 IT SERVICES
+📊 Stocks: 5
+   Individual stocks:
+     INFY         | 1W:      N/A | 1M:      N/A
+     TCS          | 1W:      N/A | 1M:      N/A
+     TECHM        | 1W:      N/A | 1M:      N/A
+     HCLTECH      | 1W:      N/A | 1M:      N/A
+     WIPRO        | 1W:      N/A | 1M:      N/A
+
+## 📈 OIL & GAS
+📊 Stocks: 3
+   Individual stocks:
+     RELIANCE     | 1W:      N/A | 1M:      N/A
+     ONGC         | 1W:      N/A | 1M:      N/A
+     BPCL         | 1W:      N/A | 1M:      N/A
+
+## 📈 METALS & MINING
+📊 Stocks: 4
+   Individual stocks:
+     TATASTEEL    | 1W:      N/A | 1M:      N/A
+     JSWSTEEL     | 1W:      N/A | 1M:      N/A
+     HINDALCO     | 1W:      N/A | 1M:      N/A
+     COALINDIA    | 1W:      N/A | 1M:      N/A
+
+## 📈 AUTOMOTIVE
+📊 Stocks: 5
+   Individual stocks:
+     MARUTI       | 1W:      N/A | 1M:      N/A
+     BAJAJ-AUTO   | 1W:      N/A | 1M:      N/A
+     M&M          | 1W:      N/A | 1M:      N/A
+     HEROMOTOCO   | 1W:      N/A | 1M:      N/A
+     EICHERMOT    | 1W:      N/A | 1M:      N/A
+
+## 📈 PHARMACEUTICALS
+📊 Stocks: 4
+   Individual stocks:
+     SUNPHARMA    | 1W:      N/A | 1M:      N/A
+     DRREDDY      | 1W:      N/A | 1M:      N/A
+     CIPLA        | 1W:      N/A | 1M:      N/A
+     DIVISLAB     | 1W:      N/A | 1M:      N/A
+
+## 📈 FMCG
+📊 Stocks: 5
+   Individual stocks:
+     HINDUNILVR   | 1W:      N/A | 1M:      N/A
+     BRITANNIA    | 1W:      N/A | 1M:      N/A
+     NESTLEIND    | 1W:      N/A | 1M:      N/A
+     ITC          | 1W:      N/A | 1M:      N/A
+     TATACONSUM   | 1W:      N/A | 1M:      N/A
+
+## 📈 TELECOM
+📊 Stocks: 1
+   Individual stocks:
+     BHARTIARTL   | 1W:      N/A | 1M:      N/A
+
+## 📈 POWER
+📊 Stocks: 2
+   Individual stocks:
+     NTPC         | 1W:      N/A | 1M:      N/A
+     POWERGRID    | 1W:      N/A | 1M:      N/A
+
+## 📈 CEMENT
+📊 Stocks: 2
+   Individual stocks:
+     ULTRACEMCO   | 1W:      N/A | 1M:      N/A
+     GRASIM       | 1W:      N/A | 1M:      N/A
+
+## 📈 INFRASTRUCTURE
+📊 Stocks: 1
+   Individual stocks:
+     LT           | 1W:      N/A | 1M:      N/A
+
+## 📈 PAINTS
+📊 Stocks: 1
+   Individual stocks:
+     ASIANPAINT   | 1W:      N/A | 1M:      N/A
+
+## 📈 CHEMICALS
+📊 Stocks: 1
+   Individual stocks:
+     UPL          | 1W:      N/A | 1M:      N/A
+
+## 📈 CONSUMER GOODS
+📊 Stocks: 1
+   Individual stocks:
+     TITAN        | 1W:      N/A | 1M:      N/A
+
+## 📈 LOGISTICS
+📊 Stocks: 1
+   Individual stocks:
+     ADANIPORTS   | 1W:      N/A | 1M:      N/A

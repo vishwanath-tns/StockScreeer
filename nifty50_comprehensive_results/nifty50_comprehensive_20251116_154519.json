@@ -1,0 +1,318 @@
+{
+  "summary": {
+    "execution_time": 14.110008001327515,
+    "data_range": "2024-01-02 to 2025-11-14",
+    "total_records": 1279635,
+    "successful_sectors": 0,
+    "failed_sectors": 11,
+    "total_stocks_tested": 44,
+    "config": {
+      "stop_loss_pct": 8.0,
+      "profit_target_pct": 25.0,
+      "min_quality_score": 50.0
+    }
+  },
+  "portfolio_metrics": {
+    "total_patterns": 0,
+    "total_trades": 0,
+    "total_winners": 0,
+    "overall_win_rate": 0,
+    "portfolio_return": 0,
+    "portfolio_sharpe": 0,
+    "portfolio_max_drawdown": 0,
+    "patterns_per_sector": 0,
+    "trades_per_sector": 0
+  },
+  "sector_performance": [],
+  "sector_results": {
+    "Banking": {
+      "sector": "Banking",
+      "symbols": [
+        "HDFCBANK",
+        "ICICIBANK",
+        "SBIN",
+        "KOTAKBANK",
+        "AXISBANK",
+        "INDUSINDBK"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.9446654319763184,
+      "symbol_count": 6
+    },
+    "IT": {
+      "sector": "IT",
+      "symbols": [
+        "TCS",
+        "INFY",
+        "HCLTECH",
+        "WIPRO",
+        "TECHM"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.5157785415649414,
+      "symbol_count": 5
+    },
+    "Oil & Gas": {
+      "sector": "Oil & Gas",
+      "symbols": [
+        "RELIANCE",
+        "ONGC",
+        "BPCL",
+        "IOC"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.3218350410461426,
+      "symbol_count": 4
+    },
+    "Consumer Goods": {
+      "sector": "Consumer Goods",
+      "symbols": [
+        "HINDUNILVR",
+        "ITC",
+        "NESTLEIND",
+        "BRITANNIA",
+        "ASIANPAINT",
+        "TITAN"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.9279406070709229,
+      "symbol_count": 6
+    },
+    "Infrastructure": {
+      "sector": "Infrastructure",
+      "symbols": [
+        "LT",
+        "ULTRACEMCO",
+        "GRASIM",
+        "ADANIPORTS",
+        "POWERGRID"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.693180799484253,
+      "symbol_count": 5
+    },
+    "Automobiles": {
+      "sector": "Automobiles",
+      "symbols": [
+        "MARUTI",
+        "M&M",
+        "TATAMOTORS",
+        "BAJAJ-AUTO",
+        "EICHERMOT"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.5793335437774658,
+      "symbol_count": 5
+    },
+    "Pharma": {
+      "sector": "Pharma",
+      "symbols": [
+        "SUNPHARMA",
+        "DRREDDY",
+        "CIPLA",
+        "DIVISLAB"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.321484088897705,
+      "symbol_count": 4
+    },
+    "Financial Services": {
+      "sector": "Financial Services",
+      "symbols": [
+        "BAJFINANCE",
+        "BAJAJFINSV",
+        "HDFCLIFE",
+        "SBILIFE"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.180063247680664,
+      "symbol_count": 4
+    },
+    "Telecom": {
+      "sector": "Telecom",
+      "symbols": [
+        "BHARTIARTL"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 0.29979586601257324,
+      "symbol_count": 1
+    },
+    "Metals": {
+      "sector": "Metals",
+      "symbols": [
+        "JSWSTEEL",
+        "TATASTEEL",
+        "HINDALCO"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 0.9350123405456543,
+      "symbol_count": 3
+    },
+    "Healthcare": {
+      "sector": "Healthcare",
+      "symbols": [
+        "APOLLOHOSP"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 0.38797616958618164,
+      "symbol_count": 1
+    }
+  },
+  "failed_sectors": {
+    "Banking": {
+      "sector": "Banking",
+      "symbols": [
+        "HDFCBANK",
+        "ICICIBANK",
+        "SBIN",
+        "KOTAKBANK",
+        "AXISBANK",
+        "INDUSINDBK"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.9446654319763184,
+      "symbol_count": 6
+    },
+    "IT": {
+      "sector": "IT",
+      "symbols": [
+        "TCS",
+        "INFY",
+        "HCLTECH",
+        "WIPRO",
+        "TECHM"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.5157785415649414,
+      "symbol_count": 5
+    },
+    "Oil & Gas": {
+      "sector": "Oil & Gas",
+      "symbols": [
+        "RELIANCE",
+        "ONGC",
+        "BPCL",
+        "IOC"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.3218350410461426,
+      "symbol_count": 4
+    },
+    "Consumer Goods": {
+      "sector": "Consumer Goods",
+      "symbols": [
+        "HINDUNILVR",
+        "ITC",
+        "NESTLEIND",
+        "BRITANNIA",
+        "ASIANPAINT",
+        "TITAN"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.9279406070709229,
+      "symbol_count": 6
+    },
+    "Infrastructure": {
+      "sector": "Infrastructure",
+      "symbols": [
+        "LT",
+        "ULTRACEMCO",
+        "GRASIM",
+        "ADANIPORTS",
+        "POWERGRID"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.693180799484253,
+      "symbol_count": 5
+    },
+    "Automobiles": {
+      "sector": "Automobiles",
+      "symbols": [
+        "MARUTI",
+        "M&M",
+        "TATAMOTORS",
+        "BAJAJ-AUTO",
+        "EICHERMOT"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.5793335437774658,
+      "symbol_count": 5
+    },
+    "Pharma": {
+      "sector": "Pharma",
+      "symbols": [
+        "SUNPHARMA",
+        "DRREDDY",
+        "CIPLA",
+        "DIVISLAB"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.321484088897705,
+      "symbol_count": 4
+    },
+    "Financial Services": {
+      "sector": "Financial Services",
+      "symbols": [
+        "BAJFINANCE",
+        "BAJAJFINSV",
+        "HDFCLIFE",
+        "SBILIFE"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 1.180063247680664,
+      "symbol_count": 4
+    },
+    "Telecom": {
+      "sector": "Telecom",
+      "symbols": [
+        "BHARTIARTL"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 0.29979586601257324,
+      "symbol_count": 1
+    },
+    "Metals": {
+      "sector": "Metals",
+      "symbols": [
+        "JSWSTEEL",
+        "TATASTEEL",
+        "HINDALCO"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 0.9350123405456543,
+      "symbol_count": 3
+    },
+    "Healthcare": {
+      "sector": "Healthcare",
+      "symbols": [
+        "APOLLOHOSP"
+      ],
+      "status": "failed",
+      "error": "No trades to analyze",
+      "execution_time": 0.38797616958618164,
+      "symbol_count": 1
+    }
+  },
+  "timestamp": "2025-11-16T15:45:19.554574"
+}

@@ -1,0 +1,47 @@
+Symbol,Sector,Momentum_1W,Momentum_1M,Momentum_3M,Momentum_6M,Avg_Volume,Market_Cap
+AXISBANK,Banking,,,,,,Large Cap
+HDFCBANK,Banking,,,,,,Large Cap
+ICICIBANK,Banking,,,,,,Large Cap
+INDUSINDBK,Banking,,,,,,Large Cap
+KOTAKBANK,Banking,,,,,,Large Cap
+SBIN,Banking,,,,,,Large Cap
+BAJFINANCE,Financial Services,,,,,,Large Cap
+BAJAJFINSV,Financial Services,,,,,,Large Cap
+HDFCLIFE,Financial Services,,,,,,Large Cap
+SBILIFE,Financial Services,,,,,,Large Cap
+INFY,Information Technology,,,,,,Large Cap
+TCS,Information Technology,,,,,,Large Cap
+TECHM,Information Technology,,,,,,Large Cap
+HCLTECH,Information Technology,,,,,,Large Cap
+WIPRO,Information Technology,,,,,,Large Cap
+RELIANCE,Oil & Gas,,,,,,Large Cap
+ONGC,Oil & Gas,,,,,,Large Cap
+BPCL,Oil & Gas,,,,,,Large Cap
+TATASTEEL,Metals & Mining,,,,,,Large Cap
+JSWSTEEL,Metals & Mining,,,,,,Large Cap
+HINDALCO,Metals & Mining,,,,,,Large Cap
+COALINDIA,Metals & Mining,,,,,,Large Cap
+MARUTI,Automotive,,,,,,Large Cap
+BAJAJ-AUTO,Automotive,,,,,,Large Cap
+M&M,Automotive,,,,,,Large Cap
+HEROMOTOCO,Automotive,,,,,,Large Cap
+EICHERMOT,Automotive,,,,,,Large Cap
+SUNPHARMA,Pharmaceuticals,,,,,,Large Cap
+DRREDDY,Pharmaceuticals,,,,,,Large Cap
+CIPLA,Pharmaceuticals,,,,,,Large Cap
+DIVISLAB,Pharmaceuticals,,,,,,Large Cap
+HINDUNILVR,FMCG,,,,,,Large Cap
+BRITANNIA,FMCG,,,,,,Large Cap
+NESTLEIND,FMCG,,,,,,Large Cap
+ITC,FMCG,,,,,,Large Cap
+TATACONSUM,FMCG,,,,,,Large Cap
+BHARTIARTL,Telecom,,,,,,Large Cap
+NTPC,Power & Utilities,,,,,,Large Cap
+POWERGRID,Power & Utilities,,,,,,Large Cap
+ULTRACEMCO,Cement & Construction,,,,,,Large Cap
+GRASIM,Cement & Construction,,,,,,Large Cap
+LT,Cement & Construction,,,,,,Large Cap
+ASIANPAINT,Chemicals & Materials,,,,,,Large Cap
+UPL,Chemicals & Materials,,,,,,Large Cap
+TITAN,Consumer Goods,,,,,,Large Cap
+ADANIPORTS,Logistics,,,,,,Large Cap

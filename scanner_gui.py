@@ -32,6 +32,14 @@ except ImportError:
     print("Pattern Scanner GUI not available")
     PATTERN_SCANNER_AVAILABLE = False
 
+# Import sector pattern scanner GUI
+try:
+    from gui.sector_pattern_gui import SectorPatternGUI
+    SECTOR_PATTERN_SCANNER_AVAILABLE = True
+except ImportError:
+    print("Sector Pattern Scanner GUI not available")
+    SECTOR_PATTERN_SCANNER_AVAILABLE = False
+
 # Import PDF report dialog
 try:
     from gui.pdf_report_dialog import PDFReportDialog
@@ -82,6 +90,7 @@ class ScannerGUI:
         self.momentum_frame = ttk.Frame(nb)  # Add Momentum tab frame
         self.reports_frame = ttk.Frame(nb)  # Add Reports tab frame
         self.pattern_scanner_frame = ttk.Frame(nb)  # Add Pattern Scanner tab frame
+        self.sector_pattern_frame = ttk.Frame(nb)  # Add Sector Pattern Scanner tab frame
 
         # Add dashboard tab first
         nb.add(self.dashboard_frame, text="Dashboard")
@@ -101,6 +110,7 @@ class ScannerGUI:
         nb.add(self.momentum_frame, text="🚀 Momentum Analysis")  # Add Momentum tab
         nb.add(self.reports_frame, text="📊 Reports")  # Add Reports tab
         nb.add(self.pattern_scanner_frame, text="🕯️ Pattern Scanner")  # Add Pattern Scanner tab
+        nb.add(self.sector_pattern_frame, text="🏭 Sector Scanner")  # Add Sector Pattern Scanner tab
 
         # Build dashboard tab first
         self._build_dashboard_tab()
@@ -126,6 +136,7 @@ class ScannerGUI:
         self._build_momentum_tab()  # Add Momentum tab build method
         self._build_reports_tab()
         self._build_pattern_scanner_tab()  # Add Pattern Scanner tab build method  # Add Reports tab build method
+        self._build_sector_pattern_scanner_tab()  # Add Sector Pattern Scanner tab build method
 
         # sort state for treeviews
         self._sma_tree_sort_state = {}
@@ -5433,6 +5444,190 @@ Click any button to begin your analysis!"""
             ttk.Label(f, text="🕯️ Pattern Scanner - Error Loading", font=("Segoe UI", 12, "bold")).pack(pady=20)
             ttk.Label(f, text=f"Error: {str(e)}", foreground="red").pack(pady=10)
             ttk.Label(f, text="Please check that pattern scanner dependencies are installed.").pack(pady=5)
+
+    def _build_sector_pattern_scanner_tab(self):
+        """Build the Sector Pattern Scanner tab with sector-wise pattern analysis and PDF reports."""
+        try:
+            if SECTOR_PATTERN_SCANNER_AVAILABLE:
+                # Create a notebook for sector pattern scanner features
+                sector_nb = ttk.Notebook(self.sector_pattern_frame)
+                sector_nb.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+                
+                # Scanner tab
+                scanner_frame = ttk.Frame(sector_nb)
+                sector_nb.add(scanner_frame, text="Pattern Scanner")
+                
+                # Create the sector pattern scanner GUI directly in the scanner frame
+                self.sector_pattern_gui = SectorPatternGUI(scanner_frame)
+                
+                # Quick actions tab
+                quick_frame = ttk.Frame(sector_nb)
+                sector_nb.add(quick_frame, text="Quick Reports")
+                
+                # Quick actions content
+                ttk.Label(quick_frame, text="🏭 Quick Sector Analysis", font=("Segoe UI", 14, "bold")).pack(pady=20)
+                
+                quick_buttons_frame = ttk.Frame(quick_frame)
+                quick_buttons_frame.pack(pady=20)
+                
+                ttk.Button(quick_buttons_frame, text="Nifty Bank Report", 
+                          command=self._generate_nifty_bank_report,
+                          style='Accent.TButton').pack(side=tk.LEFT, padx=10)
+                
+                ttk.Button(quick_buttons_frame, text="All Major Sectors Report", 
+                          command=self._generate_all_sectors_report,
+                          style='Accent.TButton').pack(side=tk.LEFT, padx=10)
+                
+                ttk.Button(quick_buttons_frame, text="Open Reports Folder", 
+                          command=self._open_reports_folder).pack(side=tk.LEFT, padx=10)
+                
+                # Description
+                desc_text = """
+                The Sector Pattern Scanner analyzes candlestick patterns across different stock market sectors.
+                
+                Features:
+                • Multi-sector selection with checkboxes
+                • Daily, Weekly, and Monthly timeframe analysis  
+                • Narrow Range (NR4, NR7, NR13, NR21) pattern detection
+                • Breakout analysis from previous NR patterns
+                • Comprehensive PDF report generation
+                • Export to CSV functionality
+                
+                Use the Scanner tab to perform detailed analysis or use Quick Reports for instant analysis of major sectors.
+                """
+                
+                ttk.Label(quick_frame, text=desc_text, font=("Segoe UI", 10), 
+                         justify=tk.LEFT, wraplength=600).pack(pady=20, padx=20)
+                
+                self.append_log("Sector Pattern Scanner tab initialized successfully")
+            else:
+                # Fallback if import fails
+                f = self.sector_pattern_frame
+                ttk.Label(f, text="🏭 Sector Pattern Scanner", font=("Segoe UI", 14, "bold")).pack(pady=20)
+                ttk.Label(f, text="Sector Pattern Scanner not available", foreground="red").pack(pady=10)
+                ttk.Label(f, text="Please check dependencies and database connection.").pack(pady=5)
+                
+                # Install button
+                install_frame = ttk.Frame(f)
+                install_frame.pack(pady=20)
+                
+                ttk.Button(install_frame, text="Install Dependencies", 
+                          command=self._install_sector_scanner_deps).pack()
+                
+        except Exception as e:
+            # Fallback to a simple placeholder if there's an error
+            self.append_log(f"Error building sector pattern scanner tab: {e}")
+            f = self.sector_pattern_frame
+            ttk.Label(f, text="🏭 Sector Scanner - Error Loading", font=("Segoe UI", 12, "bold")).pack(pady=20)
+            ttk.Label(f, text=f"Error: {str(e)}", foreground="red").pack(pady=10)
+            ttk.Label(f, text="Please check that sector scanner dependencies are installed.").pack(pady=5)
+    
+    def _generate_nifty_bank_report(self):
+        """Generate quick Nifty Bank sector report"""
+        try:
+            from services.sector_report_generator import generate_nifty_bank_report
+            
+            self.append_log("Generating Nifty Bank sector report...")
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            report_path = f"reports/nifty_bank_report_{timestamp}.pdf"
+            
+            # Ensure reports directory exists
+            os.makedirs("reports", exist_ok=True)
+            
+            # Generate report in background thread
+            def generate_report():
+                try:
+                    result_path = generate_nifty_bank_report(report_path)
+                    self.append_log(f"Nifty Bank report generated: {result_path}")
+                    
+                    # Ask if user wants to open the report
+                    def ask_open():
+                        if messagebox.askyesno("Report Generated", 
+                                             f"Nifty Bank report generated successfully!\\n\\nSaved to: {result_path}\\n\\nWould you like to open it now?"):
+                            os.startfile(result_path)
+                    
+                    self.root.after(0, ask_open)
+                    
+                except Exception as e:
+                    self.append_log(f"Error generating Nifty Bank report: {e}")
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to generate report: {e}"))
+            
+            threading.Thread(target=generate_report, daemon=True).start()
+            
+        except Exception as e:
+            self.append_log(f"Error starting Nifty Bank report generation: {e}")
+            messagebox.showerror("Error", f"Failed to start report generation: {e}")
+    
+    def _generate_all_sectors_report(self):
+        """Generate quick report for all major sectors"""
+        try:
+            from services.sector_report_generator import generate_all_major_sectors_report
+            
+            self.append_log("Generating all major sectors report...")
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            report_path = f"reports/all_major_sectors_report_{timestamp}.pdf"
+            
+            # Ensure reports directory exists
+            os.makedirs("reports", exist_ok=True)
+            
+            # Generate report in background thread
+            def generate_report():
+                try:
+                    result_path = generate_all_major_sectors_report(report_path)
+                    self.append_log(f"All sectors report generated: {result_path}")
+                    
+                    # Ask if user wants to open the report
+                    def ask_open():
+                        if messagebox.askyesno("Report Generated", 
+                                             f"Major sectors report generated successfully!\\n\\nSaved to: {result_path}\\n\\nWould you like to open it now?"):
+                            os.startfile(result_path)
+                    
+                    self.root.after(0, ask_open)
+                    
+                except Exception as e:
+                    self.append_log(f"Error generating all sectors report: {e}")
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to generate report: {e}"))
+            
+            threading.Thread(target=generate_report, daemon=True).start()
+            
+        except Exception as e:
+            self.append_log(f"Error starting all sectors report generation: {e}")
+            messagebox.showerror("Error", f"Failed to start report generation: {e}")
+    
+    def _open_reports_folder(self):
+        """Open the reports folder in file explorer"""
+        try:
+            reports_path = os.path.abspath("reports")
+            os.makedirs(reports_path, exist_ok=True)
+            os.startfile(reports_path)
+            self.append_log(f"Opened reports folder: {reports_path}")
+        except Exception as e:
+            self.append_log(f"Error opening reports folder: {e}")
+            messagebox.showerror("Error", f"Failed to open reports folder: {e}")
+    
+    def _install_sector_scanner_deps(self):
+        """Install sector scanner dependencies"""
+        try:
+            self.append_log("Installing sector scanner dependencies...")
+            
+            # Install reportlab and seaborn
+            def install_deps():
+                try:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "reportlab", "seaborn"])
+                    self.append_log("Dependencies installed successfully. Please restart the application.")
+                    self.root.after(0, lambda: messagebox.showinfo("Success", 
+                                   "Dependencies installed successfully!\\n\\nPlease restart the application to use the Sector Pattern Scanner."))
+                except Exception as e:
+                    self.append_log(f"Error installing dependencies: {e}")
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to install dependencies: {e}"))
+            
+            threading.Thread(target=install_deps, daemon=True).start()
+            
+        except Exception as e:
+            self.append_log(f"Error starting dependency installation: {e}")
+            messagebox.showerror("Error", f"Failed to start installation: {e}")
 
     def _browse(self, var: tk.StringVar, folder: bool = False):
         """Set `var` to a selected path. If folder=True opens a folder dialog, otherwise a save-as CSV dialog."""

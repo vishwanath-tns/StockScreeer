@@ -1,0 +1,202 @@
+🌍 NIFTY 50 MARKET SUMMARY
+========================================
+📊 1W Market Momentum:
+   Average: +1.32%
+   Bullish: 2/3 (66.7%)
+   Sentiment: 🟢 Bullish
+
+📊 1M Market Momentum:
+   Average: +3.14%
+   Bullish: 3/3 (100.0%)
+   Sentiment: 🟢 Bullish
+
+🏆 TOP PERFORMING SECTORS (1M):
+   1. Oil & Gas            +3.55%
+   2. Information Technology +2.94%
+
+
+🏗️  NIFTY 50 SECTOR-WISE MOMENTUM ANALYSIS
+============================================================
+📅 Generated: 2025-11-17 16:15:58
+📊 Total Stocks Analyzed: 46
+🏢 Total Sectors: 14
+
+## 🏢 BANKING
+📝 Private and public sector banks
+📈 Stocks: 6
+
+📋 Individual Stock Performance:
+   AXISBANK     | 1W:      N/A | 1M:      N/A
+   HDFCBANK     | 1W:      N/A | 1M:      N/A
+   ICICIBANK    | 1W:      N/A | 1M:      N/A
+   INDUSINDBK   | 1W:      N/A | 1M:      N/A
+   KOTAKBANK    | 1W:      N/A | 1M:      N/A
+   SBIN         | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 FINANCIAL SERVICES
+📝 NBFCs, insurance and financial services
+📈 Stocks: 4
+
+📋 Individual Stock Performance:
+   BAJAJFINSV   | 1W:      N/A | 1M:      N/A
+   BAJFINANCE   | 1W:      N/A | 1M:      N/A
+   HDFCLIFE     | 1W:      N/A | 1M:      N/A
+   SBILIFE      | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 INFORMATION TECHNOLOGY
+📝 Software services and IT consulting
+📈 Stocks: 5
+
+⏱️  1W Momentum:
+   📊 Average: +0.98%
+   📈 Positive: 1/2 (50.0%)
+   🏆 Top: TCS (+2.67%)
+   📉 Bottom: INFY (-0.71%)
+
+⏱️  1M Momentum:
+   📊 Average: +2.94%
+   📈 Positive: 2/2 (100.0%)
+   🏆 Top: TCS (+3.01%)
+   📉 Bottom: INFY (+2.87%)
+
+📋 Individual Stock Performance:
+   HCLTECH      | 1W:      N/A | 1M:      N/A
+   INFY         | 1W:   -0.71% | 1M:   +2.87%
+   TCS          | 1W:   +2.67% | 1M:   +3.01%
+   TECHM        | 1W:      N/A | 1M:      N/A
+   WIPRO        | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 OIL & GAS
+📝 Oil exploration, refining and marketing
+📈 Stocks: 3
+
+⏱️  1W Momentum:
+   📊 Average: +1.99%
+   📈 Positive: 1/1 (100.0%)
+   🏆 Top: RELIANCE (+1.99%)
+
+⏱️  1M Momentum:
+   📊 Average: +3.55%
+   📈 Positive: 1/1 (100.0%)
+   🏆 Top: RELIANCE (+3.55%)
+
+📋 Individual Stock Performance:
+   BPCL         | 1W:      N/A | 1M:      N/A
+   ONGC         | 1W:      N/A | 1M:      N/A
+   RELIANCE     | 1W:   +1.99% | 1M:   +3.55%
+
+--------------------------------------------------
+
+## 🏢 METALS & MINING
+📝 Steel, aluminum, and mining companies
+📈 Stocks: 4
+
+📋 Individual Stock Performance:
+   COALINDIA    | 1W:      N/A | 1M:      N/A
+   HINDALCO     | 1W:      N/A | 1M:      N/A
+   JSWSTEEL     | 1W:      N/A | 1M:      N/A
+   TATASTEEL    | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 AUTOMOTIVE
+📝 Auto manufacturers and components
+📈 Stocks: 5
+
+📋 Individual Stock Performance:
+   BAJAJ-AUTO   | 1W:      N/A | 1M:      N/A
+   EICHERMOT    | 1W:      N/A | 1M:      N/A
+   HEROMOTOCO   | 1W:      N/A | 1M:      N/A
+   M&M          | 1W:      N/A | 1M:      N/A
+   MARUTI       | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 PHARMACEUTICALS
+📝 Pharmaceutical and healthcare companies
+📈 Stocks: 4
+
+📋 Individual Stock Performance:
+   CIPLA        | 1W:      N/A | 1M:      N/A
+   DIVISLAB     | 1W:      N/A | 1M:      N/A
+   DRREDDY      | 1W:      N/A | 1M:      N/A
+   SUNPHARMA    | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 FMCG
+📝 Fast moving consumer goods
+📈 Stocks: 5
+
+📋 Individual Stock Performance:
+   BRITANNIA    | 1W:      N/A | 1M:      N/A
+   HINDUNILVR   | 1W:      N/A | 1M:      N/A
+   ITC          | 1W:      N/A | 1M:      N/A
+   NESTLEIND    | 1W:      N/A | 1M:      N/A
+   TATACONSUM   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 TELECOM
+📝 Telecommunications services
+📈 Stocks: 1
+
+📋 Individual Stock Performance:
+   BHARTIARTL   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 POWER & UTILITIES
+📝 Power generation and transmission
+📈 Stocks: 2
+
+📋 Individual Stock Performance:
+   NTPC         | 1W:      N/A | 1M:      N/A
+   POWERGRID    | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 CEMENT & CONSTRUCTION
+📝 Cement manufacturing and infrastructure
+📈 Stocks: 3
+
+📋 Individual Stock Performance:
+   GRASIM       | 1W:      N/A | 1M:      N/A
+   LT           | 1W:      N/A | 1M:      N/A
+   ULTRACEMCO   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 CHEMICALS & MATERIALS
+📝 Paints, chemicals and materials
+📈 Stocks: 2
+
+📋 Individual Stock Performance:
+   ASIANPAINT   | 1W:      N/A | 1M:      N/A
+   UPL          | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 CONSUMER GOODS
+📝 Jewelry and consumer discretionary
+📈 Stocks: 1
+
+📋 Individual Stock Performance:
+   TITAN        | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 🏢 LOGISTICS
+📝 Ports and logistics services
+📈 Stocks: 1
+
+📋 Individual Stock Performance:
+   ADANIPORTS   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------

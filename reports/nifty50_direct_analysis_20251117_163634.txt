@@ -1,0 +1,133 @@
+NIFTY 50 COMPREHENSIVE SECTOR ANALYSIS
+==================================================
+Generated: 2025-11-17 16:36:34
+Total Stocks: 46
+
+DETAILED SECTOR ANALYSIS
+==============================
+
+AUTOMOTIVE
+----------
+Total Stocks: 5
+Individual Performance:
+  MARUTI       | 1W:      N/A | 1M:      N/A
+  BAJAJ-AUTO   | 1W:      N/A | 1M:      N/A
+  M&M          | 1W:      N/A | 1M:      N/A
+  HEROMOTOCO   | 1W:      N/A | 1M:      N/A
+  EICHERMOT    | 1W:      N/A | 1M:      N/A
+
+BANKING
+-------
+Total Stocks: 6
+Individual Performance:
+  AXISBANK     | 1W:      N/A | 1M:      N/A
+  HDFCBANK     | 1W:      N/A | 1M:      N/A
+  ICICIBANK    | 1W:      N/A | 1M:      N/A
+  INDUSINDBK   | 1W:      N/A | 1M:      N/A
+  KOTAKBANK    | 1W:      N/A | 1M:      N/A
+  SBIN         | 1W:      N/A | 1M:      N/A
+
+CEMENT
+------
+Total Stocks: 2
+Individual Performance:
+  ULTRACEMCO   | 1W:      N/A | 1M:      N/A
+  GRASIM       | 1W:      N/A | 1M:      N/A
+
+CHEMICALS
+---------
+Total Stocks: 1
+Individual Performance:
+  UPL          | 1W:      N/A | 1M:      N/A
+
+CONSUMER GOODS
+--------------
+Total Stocks: 1
+Individual Performance:
+  TITAN        | 1W:      N/A | 1M:      N/A
+
+FMCG
+----
+Total Stocks: 5
+Individual Performance:
+  HINDUNILVR   | 1W:      N/A | 1M:      N/A
+  BRITANNIA    | 1W:      N/A | 1M:      N/A
+  NESTLEIND    | 1W:      N/A | 1M:      N/A
+  ITC          | 1W:      N/A | 1M:      N/A
+  TATACONSUM   | 1W:      N/A | 1M:      N/A
+
+FINANCIAL SERVICES
+------------------
+Total Stocks: 4
+Individual Performance:
+  BAJFINANCE   | 1W:      N/A | 1M:      N/A
+  BAJAJFINSV   | 1W:      N/A | 1M:      N/A
+  HDFCLIFE     | 1W:      N/A | 1M:      N/A
+  SBILIFE      | 1W:      N/A | 1M:      N/A
+
+IT SERVICES
+-----------
+Total Stocks: 5
+Individual Performance:
+  INFY         | 1W:      N/A | 1M:      N/A
+  TCS          | 1W:      N/A | 1M:      N/A
+  TECHM        | 1W:      N/A | 1M:      N/A
+  HCLTECH      | 1W:      N/A | 1M:      N/A
+  WIPRO        | 1W:      N/A | 1M:      N/A
+
+INFRASTRUCTURE
+--------------
+Total Stocks: 1
+Individual Performance:
+  LT           | 1W:      N/A | 1M:      N/A
+
+LOGISTICS
+---------
+Total Stocks: 1
+Individual Performance:
+  ADANIPORTS   | 1W:      N/A | 1M:      N/A
+
+METALS & MINING
+---------------
+Total Stocks: 4
+Individual Performance:
+  TATASTEEL    | 1W:      N/A | 1M:      N/A
+  JSWSTEEL     | 1W:      N/A | 1M:      N/A
+  HINDALCO     | 1W:      N/A | 1M:      N/A
+  COALINDIA    | 1W:      N/A | 1M:      N/A
+
+OIL & GAS
+---------
+Total Stocks: 3
+Individual Performance:
+  RELIANCE     | 1W:      N/A | 1M:      N/A
+  ONGC         | 1W:      N/A | 1M:      N/A
+  BPCL         | 1W:      N/A | 1M:      N/A
+
+PAINTS
+------
+Total Stocks: 1
+Individual Performance:
+  ASIANPAINT   | 1W:      N/A | 1M:      N/A
+
+PHARMACEUTICALS
+---------------
+Total Stocks: 4
+Individual Performance:
+  SUNPHARMA    | 1W:      N/A | 1M:      N/A
+  DRREDDY      | 1W:      N/A | 1M:      N/A
+  CIPLA        | 1W:      N/A | 1M:      N/A
+  DIVISLAB     | 1W:      N/A | 1M:      N/A
+
+POWER
+-----
+Total Stocks: 2
+Individual Performance:
+  NTPC         | 1W:      N/A | 1M:      N/A
+  POWERGRID    | 1W:      N/A | 1M:      N/A
+
+TELECOM
+-------
+Total Stocks: 1
+Individual Performance:
+  BHARTIARTL   | 1W:      N/A | 1M:      N/A

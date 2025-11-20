@@ -1,0 +1,108 @@
+🌍 NIFTY 50 MARKET OVERVIEW
+========================================
+📅 Analysis Date: 2025-11-17
+📊 Total Stocks: 46
+
+
+🏢 SECTOR-WISE MOMENTUM ANALYSIS
+==================================================
+
+### BANKING
+📊 Stocks: 6
+1W: No data
+1M: No data
+3M: No data
+
+### FINANCIAL SERVICES
+📊 Stocks: 4
+1W: No data
+1M: No data
+3M: No data
+
+### INFORMATION TECHNOLOGY
+📊 Stocks: 5
+1W: No data
+1M: No data
+3M: No data
+
+### OIL & GAS
+📊 Stocks: 3
+1W: No data
+1M: No data
+3M: No data
+
+### METALS & MINING
+📊 Stocks: 4
+1W: No data
+1M: No data
+3M: No data
+
+### AUTOMOTIVE
+📊 Stocks: 5
+1W: No data
+1M: No data
+3M: No data
+
+### PHARMACEUTICALS
+📊 Stocks: 4
+1W: No data
+1M: No data
+3M: No data
+
+### FMCG
+📊 Stocks: 5
+1W: No data
+1M: No data
+3M: No data
+
+### TELECOM
+📊 Stocks: 1
+1W: No data
+1M: No data
+3M: No data
+
+### POWER & UTILITIES
+📊 Stocks: 2
+1W: No data
+1M: No data
+3M: No data
+
+### CEMENT & CONSTRUCTION
+📊 Stocks: 3
+1W: No data
+1M: No data
+3M: No data
+
+### CHEMICALS & MATERIALS
+📊 Stocks: 2
+1W: No data
+1M: No data
+3M: No data
+
+### CONSUMER GOODS
+📊 Stocks: 1
+1W: No data
+1M: No data
+3M: No data
+
+### LOGISTICS
+📊 Stocks: 1
+1W: No data
+1M: No data
+3M: No data
+
+🏆 SECTOR RANKINGS (1M Momentum):
+ 1. 🟡 Banking              +0.00%
+ 2. 🟡 Financial Services   +0.00%
+ 3. 🟡 Information Technology +0.00%
+ 4. 🟡 Oil & Gas            +0.00%
+ 5. 🟡 Metals & Mining      +0.00%
+ 6. 🟡 Automotive           +0.00%
+ 7. 🟡 Pharmaceuticals      +0.00%
+ 8. 🟡 FMCG                 +0.00%
+ 9. 🟡 Telecom              +0.00%
+10. 🟡 Power & Utilities    +0.00%
+11. 🟡 Cement & Construction +0.00%
+12. 🟡 Chemicals & Materials +0.00%
+13. 🟡 Consumer Goods       +0.00%
+14. 🟡 Logistics            +0.00%

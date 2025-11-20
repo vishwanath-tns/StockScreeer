@@ -77,7 +77,12 @@ class VedicTradingGUI:
         
         # Create GUI
         self.create_widgets()
+        
+        # Load all data sections
         self.load_current_data()
+        self.refresh_trading_calendar()
+        self.refresh_stock_recommendations()
+        self.refresh_market_summary()
         
         # Auto-refresh every 5 minutes
         self.auto_refresh()
@@ -1064,6 +1069,12 @@ Created for educational purposes. Not financial advice.
                     self.accumulation_listbox.insert(tk.END, "PIDILITIND (Chemicals)")
                     self.accumulation_listbox.insert(tk.END, "NESTLEIND (Beverages)")
                     
+                    self.momentum_listbox.insert(tk.END, f"💧 Liquid Assets (9:15AM {moon_sign})")
+                    self.momentum_listbox.insert(tk.END, "UBL (United Breweries)")
+                    self.momentum_listbox.insert(tk.END, "BRITANNIA (Food Process)")
+                    self.momentum_listbox.insert(tk.END, "DABUR (Ayurveda)")
+                    self.momentum_listbox.insert(tk.END, "MARICO (Consumer Care)")
+                    
                 else:  # Air
                     # Air signs favor communication, media, aviation
                     self.momentum_listbox.insert(tk.END, f"💨 Communication Focus (9:15AM {moon_sign})")
@@ -1074,6 +1085,21 @@ Created for educational purposes. Not financial advice.
                     self.high_conviction_listbox.insert(tk.END, "📡 Digital & Platforms")
                     self.high_conviction_listbox.insert(tk.END, "WIPRO (IT Services)")
                     self.high_conviction_listbox.insert(tk.END, "TECHM (Technology)")
+                
+                # Populate Sector Focus based on element
+                self.sector_text.delete(1.0, tk.END)
+                if element == 'Fire':
+                    sector_focus = f"🔥 FIRE ELEMENT SECTORS (9:15AM {moon_sign})\n\n• Energy & Power: Oil, Gas, Coal\n• Technology: Software, Hardware\n• Defense: Equipment, Services\n• Metals: Steel, Copper, Aluminum\n• Infrastructure: Construction, Engineering"
+                elif element == 'Earth':
+                    sector_focus = f"🌱 EARTH ELEMENT SECTORS (9:15AM {moon_sign})\n\n• Banking: Public & Private Banks\n• FMCG: Consumer Goods\n• Agriculture: Fertilizers, Seeds\n• Real Estate: Housing, Commercial\n• Utilities: Power, Water"
+                elif element == 'Water':
+                    sector_focus = f"💧 WATER ELEMENT SECTORS (9:15AM {moon_sign})\n\n• Healthcare: Pharmaceuticals, Hospitals\n• Chemicals: Specialty, Commodity\n• Beverages: Alcoholic, Non-alcoholic\n• Marine: Shipping, Ports\n• Textiles: Cotton, Synthetic"
+                elif element == 'Air':
+                    sector_focus = f"💨 AIR ELEMENT SECTORS (9:15AM {moon_sign})\n\n• Communication: Telecom, Media\n• Aviation: Airlines, Airports\n• Technology: Digital, Platforms\n• Logistics: Transport, Delivery\n• Services: Consulting, Financial"
+                else:
+                    sector_focus = "Install PyJHora for detailed sector analysis"
+                
+                self.sector_text.insert(tk.END, sector_focus)
                     
             else:
                 # Fallback recommendations
@@ -1153,7 +1179,8 @@ Created for educational purposes. Not financial advice.
                 from pyjhora_calculator import ProfessionalAstrologyCalculator
                 
                 calc = ProfessionalAstrologyCalculator()
-                astro_data = calc.get_complete_analysis(datetime.datetime.now())
+                live_time = datetime.datetime.now()
+                astro_data = calc.get_complete_analysis(live_time)
                 
                 # Extract current data
                 moon_data = astro_data['planetary_positions'].get('Moon', {})

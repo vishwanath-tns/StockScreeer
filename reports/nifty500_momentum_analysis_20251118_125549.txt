@@ -1,0 +1,200 @@
+NIFTY 500 MOMENTUM ANALYSIS REPORT
+==================================================
+Generated: 2025-11-18 12:55:49
+Total Stocks Analyzed: 500
+
+[*] SUMMARY STATISTICS
+------------------------------
+1W Momentum:
+  Average: +0.91%
+  Median:  +0.43%
+  Positive: 296 stocks (59.2%)
+  Negative: 200 stocks (40.0%)
+
+1M Momentum:
+  Average: +1.33%
+  Median:  +0.65%
+  Positive: 266 stocks (53.2%)
+  Negative: 233 stocks (46.6%)
+
+3M Momentum:
+  Average: +3.79%
+  Median:  +2.66%
+  Positive: 289 stocks (57.8%)
+  Negative: 210 stocks (42.0%)
+
+6M Momentum:
+  Average: +7.21%
+  Median:  +4.36%
+  Positive: 288 stocks (57.6%)
+  Negative: 211 stocks (42.2%)
+
+9M Momentum:
+  Average: +16.54%
+  Median:  +12.95%
+  Positive: 332 stocks (66.4%)
+  Negative: 167 stocks (33.4%)
+
+12M Momentum:
+  Average: +4.81%
+  Median:  +0.22%
+  Positive: 251 stocks (50.2%)
+  Negative: 248 stocks (49.6%)
+
+[TOP] TOP 10 PERFORMERS - 1W
+------------------------------
+ 1. CUPID        +23.54%
+ 2. ARSSBL       +18.94%
+ 3. VCL          +18.28%
+ 4. PRECWIRE     +16.83%
+ 5. KIRLOSENG    +15.51%
+ 6. RUBICON      +14.96%
+ 7. RICOAUTO     +14.76%
+ 8. KRBL         +13.92%
+ 9. RHETAN       +13.86%
+10. YATRA        +13.52%
+
+[BOT] BOTTOM 10 PERFORMERS - 1W
+------------------------------
+ 1. FISCHER      -24.54%
+ 2. GALLANTT     -10.97%
+ 3. COHANCE      -10.93%
+ 4. INDORAMA      -9.40%
+ 5. CRAMC         -7.20%
+ 6. HINDCOPPER    -6.80%
+ 7. PCJEWELLER    -6.47%
+ 8. TPHQ          -6.45%
+ 9. DREDGECORP    -6.31%
+10. RTNINDIA      -5.99%
+
+[TOP] TOP 10 PERFORMERS - 1M
+------------------------------
+ 1. EPACKPEB     +63.59%
+ 2. ARSSBL       +45.67%
+ 3. CHENNPETRO   +32.63%
+ 4. HARDWYN      +32.44%
+ 5. PRECWIRE     +29.99%
+ 6. SHREEJISPG   +27.74%
+ 7. PSPPROJECT   +26.62%
+ 8. JAINREC      +25.57%
+ 9. CCL          +24.80%
+10. DREDGECORP   +24.63%
+
+[BOT] BOTTOM 10 PERFORMERS - 1M
+------------------------------
+ 1. FCL          -89.42%
+ 2. FISCHER      -40.43%
+ 3. TARIL        -33.99%
+ 4. COHANCE      -29.93%
+ 5. KHAICHEM     -24.99%
+ 6. INDORAMA     -19.99%
+ 7. QUADFUTURE   -18.74%
+ 8. SHAREINDIA   -17.81%
+ 9. DEVYANI      -16.61%
+10. IXIGO        -15.63%
+
+[TOP] TOP 10 PERFORMERS - 3M
+------------------------------
+ 1. CUPID        +87.53%
+ 2. GMBREW       +74.25%
+ 3. EPACKPEB     +71.80%
+ 4. NETWEB       +67.82%
+ 5. ARSSBL       +64.61%
+ 6. IDEA         +61.12%
+ 7. INOXGREEN    +58.13%
+ 8. CHENNPETRO   +56.04%
+ 9. ATHERENERG   +55.91%
+10. TDPOWERSYS   +53.49%
+
+[BOT] BOTTOM 10 PERFORMERS - 3M
+------------------------------
+ 1. FISCHER      -94.33%
+ 2. FCL          -89.86%
+ 3. TATAINVEST   -88.77%
+ 4. TFCILTD      -78.43%
+ 5. NAZARA       -77.56%
+ 6. ADANIPOWER   -74.35%
+ 7. PATANJALI    -67.59%
+ 8. TIMETECHNO   -57.45%
+ 9. SANDUMA      -52.23%
+10. HDFCBANK     -50.23%
+
+[TOP] TOP 10 PERFORMERS - 6M
+------------------------------
+ 1. CUPID        +215.49%
+ 2. GARUDA       +121.97%
+ 3. ATHERENERG   +107.44%
+ 4. NETWEB       +89.87%
+ 5. APOLLO       +88.18%
+ 6. YATRA        +87.79%
+ 7. JAYNECOIND   +85.37%
+ 8. HBLENGINE    +82.92%
+ 9. PFOCUS       +74.17%
+10. STLTECH      +73.95%
+
+[BOT] BOTTOM 10 PERFORMERS - 6M
+------------------------------
+ 1. FISCHER      -92.43%
+ 2. FCL          -89.02%
+ 3. BAJFINANCE   -88.86%
+ 4. TATAINVEST   -87.40%
+ 5. KELLTONTEC   -82.03%
+ 6. NAZARA       -78.97%
+ 7. COFORGE      -78.22%
+ 8. ADANIPOWER   -72.20%
+ 9. TFCILTD      -67.39%
+10. PATANJALI    -65.65%
+
+[MULTI] MULTI-TIMEFRAME MOMENTUM LEADERS
+----------------------------------------
+Stocks positive in 1W, 1M, and 3M (145 stocks):
+ 1. EPACKPEB     1W: +3.0% 1M:+63.6% 3M:+71.8%
+ 2. CUPID        1W:+23.5% 1M:+24.1% 3M:+87.5%
+ 3. ARSSBL       1W:+18.9% 1M:+45.7% 3M:+64.6%
+ 4. PRECWIRE     1W:+16.8% 1M:+30.0% 3M:+52.8%
+ 5. IDEA         1W: +6.8% 1M:+22.4% 3M:+61.1%
+ 6. PSPPROJECT   1W: +2.7% 1M:+26.6% 3M:+52.9%
+ 7. GMBREW       1W: +2.7% 1M: +2.9% 3M:+74.3%
+ 8. TDPOWERSYS   1W: +1.0% 1M:+21.6% 3M:+53.5%
+ 9. PARAGMILK    1W:+12.5% 1M:+17.2% 3M:+44.9%
+10. DCBBANK      1W: +4.2% 1M:+21.2% 3M:+43.2%
+11. JAINREC      1W: +1.0% 1M:+25.6% 3M:+38.2%
+12. SHREEJISPG   1W: +9.8% 1M:+27.7% 3M:+16.8%
+13. GRMOVER      1W: +8.0% 1M:+16.3% 3M:+29.0%
+14. KIRLOSENG    1W:+15.5% 1M:+23.7% 3M:+13.6%
+15. HARDWYN      1W: +5.3% 1M:+32.4% 3M:+14.5%
+
+[DIST] MONTHLY MOMENTUM DISTRIBUTION
+-----------------------------------
+Strong Up (>10%):      75 stocks (15.0%)
+Moderate Up (5-10%):   53 stocks (10.6%)
+Weak Up (0-5%):       138 stocks (27.6%)
+Weak Down (0 to -5%): 133 stocks (26.6%)
+Moderate Down (-5 to -10%):  63 stocks (12.6%)
+Strong Down (<-10%):   37 stocks (7.4%)
+
+[TIPS] TRADING INSIGHTS
+--------------------
+[FAST] Short-term Momentum (1W >3%, 1M >5%):
+   ABDL: 1W +5.3%, 1M +11.9%
+   ADANIENSOL: 1W +3.5%, 1M +9.3%
+   ARSSBL: 1W +18.9%, 1M +45.7%
+   ASIANPAINT: 1W +9.4%, 1M +15.5%
+   AUROPHARMA: 1W +4.6%, 1M +11.2%
+   BDL: 1W +5.2%, 1M +5.2%
+   BELRISE: 1W +8.8%, 1M +9.4%
+   BIOCON: 1W +6.8%, 1M +12.9%
+   BLSE: 1W +6.2%, 1M +19.4%
+   BSE: 1W +6.9%, 1M +13.4%
+
+[LONG] Long-term Trends (3M >8%, 6M >12%):
+   ABCAPITAL: 3M +16.9%, 6M +49.6%
+   ABDL: 3M +24.4%, 6M +62.6%
+   ADANIENSOL: 3M +24.2%, 6M +16.5%
+   ANANTRAJ: 3M +14.4%, 6M +18.5%
+   APOLLO: 3M +39.8%, 6M +88.2%
+   ARSSBL: 3M +64.6%, 6M +64.6%
+   ASIANPAINT: 3M +13.1%, 6M +26.4%
+   ATALREAL: 3M +19.8%, 6M +66.3%
+   ATHERENERG: 3M +55.9%, 6M +107.4%
+   AUBANK: 3M +17.3%, 6M +29.2%

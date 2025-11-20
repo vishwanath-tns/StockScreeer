@@ -1,0 +1,47 @@
+Symbol,Sector,Momentum_1W_Percent,Momentum_1M_Percent,Momentum_3M_Percent,Momentum_6M_Percent,Volume_Surge_Factor,Data_Available
+ASIANPAINT,Paints,9.6589,15.5167,,,1.3484,Yes
+INDUSINDBK,Banking,6.1175,11.6486,,,0.8451,Yes
+UPL,Chemicals,1.0591,11.4277,,,1.4425,Yes
+BPCL,Oil & Gas,1.6432,9.9052,,,1.3069,Yes
+SBILIFE,Financial Services,0.5831,8.7623,,,1.0569,Yes
+SBIN,Banking,1.7558,6.6501,,,1.1337,Yes
+HCLTECH,IT Services,3.5118,6.6337,,,0.7798,Yes
+HDFCLIFE,Financial Services,3.0638,4.2371,,,0.706,Yes
+SUNPHARMA,Pharmaceuticals,3.4928,4.0566,,,0.6571,Yes
+RELIANCE,Oil & Gas,1.9875,3.5519,,,1.0095,Yes
+LT,Infrastructure,2.1922,3.4007,,,0.9995,Yes
+ADANIPORTS,Logistics,4.6924,3.1152,,,0.8506,Yes
+TCS,IT Services,2.6709,3.0114,,,0.7194,Yes
+INFY,IT Services,-0.707,2.8681,,,1.1381,Yes
+M&M,Automotive,0.9471,2.7646,,,1.0945,Yes
+TITAN,Consumer Goods,0.6889,2.4617,,,0.5665,Yes
+BHARTIARTL,Telecom,4.0053,2.3982,,,2.0492,Yes
+HINDALCO,Metals & Mining,2.3497,2.2,,,1.8345,Yes
+JSWSTEEL,Metals & Mining,-0.9752,1.9735,,,0.9154,Yes
+TATASTEEL,Metals & Mining,-3.9784,1.3434,,,1.1751,Yes
+WIPRO,IT Services,1.8888,1.2975,,,0.753,Yes
+AXISBANK,Banking,2.0214,1.2724,,,0.5838,Yes
+TECHM,IT Services,2.9618,-0.36,,,0.8509,Yes
+ONGC,Oil & Gas,-1.5115,-0.4583,,,0.9226,Yes
+COALINDIA,Metals & Mining,1.4685,-0.9345,,,1.4607,Yes
+NESTLEIND,FMCG,0.6889,-1.0736,,,0.5514,Yes
+ITC,FMCG,0.6411,-1.1863,,,0.9525,Yes
+ICICIBANK,Banking,1.8546,-1.2443,,,1.0491,Yes
+HDFCBANK,Banking,0.518,-1.3311,,,0.8835,Yes
+DIVISLAB,Pharmaceuticals,-2.69,-1.4007,,,0.7815,Yes
+TATACONSUM,FMCG,1.3214,-1.5811,,,1.1609,Yes
+HEROMOTOCO,Automotive,3.3399,-1.8171,,,0.5269,Yes
+GRASIM,Cement,0.742,-2.4737,,,1.286,Yes
+DRREDDY,Pharmaceuticals,3.9459,-2.8081,,,1.0987,Yes
+BAJAJ-AUTO,Automotive,0.8094,-3.0851,,,0.9098,Yes
+BAJAJFINSV,Financial Services,-2.4784,-3.4583,,,1.2965,Yes
+ULTRACEMCO,Cement,1.2449,-3.8231,,,1.046,Yes
+NTPC,Power,0.9218,-3.9479,,,0.9472,Yes
+BRITANNIA,FMCG,-5.3803,-4.3904,,,1.6345,Yes
+MARUTI,Automotive,0.6481,-4.5056,,,0.8103,Yes
+EICHERMOT,Automotive,-2.4976,-4.5412,,,1.0659,Yes
+BAJFINANCE,Financial Services,-6.129,-5.7817,,,0.9752,Yes
+POWERGRID,Power,1.1559,-5.864,,,1.0866,Yes
+KOTAKBANK,Banking,-0.6212,-6.0575,,,0.6792,Yes
+HINDUNILVR,FMCG,0.7846,-6.4254,,,1.0469,Yes
+CIPLA,Pharmaceuticals,1.3629,-6.528,,,1.3601,Yes

@@ -1,0 +1,241 @@
+NIFTY 50 FINAL COMPREHENSIVE SECTOR ANALYSIS
+=======================================================
+Generated: 2025-11-17 16:53:33
+Total Stocks: 46
+Total Sectors: 16
+
+MARKET OVERVIEW (Available Data)
+-----------------------------------
+1-Week Analysis (46 stocks):
+  Average momentum: +1.13%
+  Positive stocks: 36/46 (78.3%)
+  Market sentiment: Strong Bullish
+
+1-Month Analysis (46 stocks):
+  Average momentum: +0.77%
+  Positive stocks: 22/46 (47.8%)
+  Market sentiment: Neutral
+
+Top performers (1M):
+  1. ASIANPAINT   +15.52% (Paints)
+  2. INDUSINDBK   +11.65% (Banking)
+  3. UPL          +11.43% (Chemicals)
+
+COMPLETE SECTOR BREAKDOWN
+==============================
+
+AUTOMOTIVE
+----------
+Total stocks: 5
+Stocks with momentum data: 5
+1M sector average: -2.24%
+1M positive ratio: 1/5
+Sector leader: M&M (+2.76%)
+Sector constituents:
+  * BAJAJ-AUTO   | 1W:   +0.81% | 1M:   -3.09%
+  * EICHERMOT    | 1W:   -2.50% | 1M:   -4.54%
+  * HEROMOTOCO   | 1W:   +3.34% | 1M:   -1.82%
+  * M&M          | 1W:   +0.95% | 1M:   +2.76%
+  * MARUTI       | 1W:   +0.65% | 1M:   -4.51%
+
+BANKING
+-------
+Total stocks: 6
+Stocks with momentum data: 6
+1M sector average: +1.82%
+1M positive ratio: 3/6
+Sector leader: INDUSINDBK (+11.65%)
+Sector constituents:
+  * AXISBANK     | 1W:   +2.02% | 1M:   +1.27%
+  * HDFCBANK     | 1W:   +0.52% | 1M:   -1.33%
+  * ICICIBANK    | 1W:   +1.85% | 1M:   -1.24%
+  * INDUSINDBK   | 1W:   +6.12% | 1M:  +11.65%
+  * KOTAKBANK    | 1W:   -0.62% | 1M:   -6.06%
+  * SBIN         | 1W:   +1.76% | 1M:   +6.65%
+
+CEMENT
+------
+Total stocks: 2
+Stocks with momentum data: 2
+1M sector average: -3.15%
+1M positive ratio: 0/2
+Sector leader: GRASIM (-2.47%)
+Sector constituents:
+  * GRASIM       | 1W:   +0.74% | 1M:   -2.47%
+  * ULTRACEMCO   | 1W:   +1.24% | 1M:   -3.82%
+
+CHEMICALS
+---------
+Total stocks: 1
+Stocks with momentum data: 1
+1M sector average: +11.43%
+1M positive ratio: 1/1
+Sector leader: UPL (+11.43%)
+Sector constituents:
+  * UPL          | 1W:   +1.06% | 1M:  +11.43%
+
+CONSUMER GOODS
+--------------
+Total stocks: 1
+Stocks with momentum data: 1
+1M sector average: +2.46%
+1M positive ratio: 1/1
+Sector leader: TITAN (+2.46%)
+Sector constituents:
+  * TITAN        | 1W:   +0.69% | 1M:   +2.46%
+
+FMCG
+----
+Total stocks: 5
+Stocks with momentum data: 5
+1M sector average: -2.93%
+1M positive ratio: 0/5
+Sector leader: NESTLEIND (-1.07%)
+Sector constituents:
+  * BRITANNIA    | 1W:   -5.38% | 1M:   -4.39%
+  * HINDUNILVR   | 1W:   +0.78% | 1M:   -6.43%
+  * ITC          | 1W:   +0.64% | 1M:   -1.19%
+  * NESTLEIND    | 1W:   +0.69% | 1M:   -1.07%
+  * TATACONSUM   | 1W:   +1.32% | 1M:   -1.58%
+
+FINANCIAL SERVICES
+------------------
+Total stocks: 4
+Stocks with momentum data: 4
+1M sector average: +0.94%
+1M positive ratio: 2/4
+Sector leader: SBILIFE (+8.76%)
+Sector constituents:
+  * BAJAJFINSV   | 1W:   -2.48% | 1M:   -3.46%
+  * BAJFINANCE   | 1W:   -6.13% | 1M:   -5.78%
+  * HDFCLIFE     | 1W:   +3.06% | 1M:   +4.24%
+  * SBILIFE      | 1W:   +0.58% | 1M:   +8.76%
+
+IT SERVICES
+-----------
+Total stocks: 5
+Stocks with momentum data: 5
+1M sector average: +2.69%
+1M positive ratio: 4/5
+Sector leader: HCLTECH (+6.63%)
+Sector constituents:
+  * HCLTECH      | 1W:   +3.51% | 1M:   +6.63%
+  * INFY         | 1W:   -0.71% | 1M:   +2.87%
+  * TCS          | 1W:   +2.67% | 1M:   +3.01%
+  * TECHM        | 1W:   +2.96% | 1M:   -0.36%
+  * WIPRO        | 1W:   +1.89% | 1M:   +1.30%
+
+INFRASTRUCTURE
+--------------
+Total stocks: 1
+Stocks with momentum data: 1
+1M sector average: +3.40%
+1M positive ratio: 1/1
+Sector leader: LT (+3.40%)
+Sector constituents:
+  * LT           | 1W:   +2.19% | 1M:   +3.40%
+
+LOGISTICS
+---------
+Total stocks: 1
+Stocks with momentum data: 1
+1M sector average: +3.12%
+1M positive ratio: 1/1
+Sector leader: ADANIPORTS (+3.12%)
+Sector constituents:
+  * ADANIPORTS   | 1W:   +4.69% | 1M:   +3.12%
+
+METALS & MINING
+---------------
+Total stocks: 4
+Stocks with momentum data: 4
+1M sector average: +1.15%
+1M positive ratio: 3/4
+Sector leader: HINDALCO (+2.20%)
+Sector constituents:
+  * COALINDIA    | 1W:   +1.47% | 1M:   -0.93%
+  * HINDALCO     | 1W:   +2.35% | 1M:   +2.20%
+  * JSWSTEEL     | 1W:   -0.98% | 1M:   +1.97%
+  * TATASTEEL    | 1W:   -3.98% | 1M:   +1.34%
+
+OIL & GAS
+---------
+Total stocks: 3
+Stocks with momentum data: 3
+1M sector average: +4.33%
+1M positive ratio: 2/3
+Sector leader: BPCL (+9.91%)
+Sector constituents:
+  * BPCL         | 1W:   +1.64% | 1M:   +9.91%
+  * ONGC         | 1W:   -1.51% | 1M:   -0.46%
+  * RELIANCE     | 1W:   +1.99% | 1M:   +3.55%
+
+PAINTS
+------
+Total stocks: 1
+Stocks with momentum data: 1
+1M sector average: +15.52%
+1M positive ratio: 1/1
+Sector leader: ASIANPAINT (+15.52%)
+Sector constituents:
+  * ASIANPAINT   | 1W:   +9.66% | 1M:  +15.52%
+
+PHARMACEUTICALS
+---------------
+Total stocks: 4
+Stocks with momentum data: 4
+1M sector average: -1.67%
+1M positive ratio: 1/4
+Sector leader: SUNPHARMA (+4.06%)
+Sector constituents:
+  * CIPLA        | 1W:   +1.36% | 1M:   -6.53%
+  * DIVISLAB     | 1W:   -2.69% | 1M:   -1.40%
+  * DRREDDY      | 1W:   +3.95% | 1M:   -2.81%
+  * SUNPHARMA    | 1W:   +3.49% | 1M:   +4.06%
+
+POWER
+-----
+Total stocks: 2
+Stocks with momentum data: 2
+1M sector average: -4.91%
+1M positive ratio: 0/2
+Sector leader: NTPC (-3.95%)
+Sector constituents:
+  * NTPC         | 1W:   +0.92% | 1M:   -3.95%
+  * POWERGRID    | 1W:   +1.16% | 1M:   -5.86%
+
+TELECOM
+-------
+Total stocks: 1
+Stocks with momentum data: 1
+1M sector average: +2.40%
+1M positive ratio: 1/1
+Sector leader: BHARTIARTL (+2.40%)
+Sector constituents:
+  * BHARTIARTL   | 1W:   +4.01% | 1M:   +2.40%
+
+
+SECTOR PERFORMANCE RANKING (1M)
+===================================
+ 1. Paints               +15.52% (1 stocks) - Strong
+ 2. Chemicals            +11.43% (1 stocks) - Strong
+ 3. Oil & Gas            +4.33% (3 stocks) - Strong
+ 4. Infrastructure       +3.40% (1 stocks) - Strong
+ 5. Logistics            +3.12% (1 stocks) - Strong
+ 6. IT Services          +2.69% (5 stocks) - Positive
+ 7. Consumer Goods       +2.46% (1 stocks) - Positive
+ 8. Telecom              +2.40% (1 stocks) - Positive
+ 9. Banking              +1.82% (6 stocks) - Positive
+10. Metals & Mining      +1.15% (4 stocks) - Positive
+11. Financial Services   +0.94% (4 stocks) - Positive
+12. Pharmaceuticals      -1.67% (4 stocks) - Weak
+13. Automotive           -2.24% (5 stocks) - Weak
+14. FMCG                 -2.93% (5 stocks) - Weak
+15. Cement               -3.15% (2 stocks) - Weak
+16. Power                -4.91% (2 stocks) - Weak
+
+
+NOTES:
+* = Stock has momentum data available
+N/A = No momentum data calculated
+Total data coverage: 46/46 stocks

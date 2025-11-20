@@ -1,0 +1,47 @@
+Symbol,Sector,Momentum_1W_Percent,Momentum_1M_Percent,Momentum_3M_Percent,Momentum_6M_Percent,Volume_Surge_Factor,Data_Available
+AXISBANK,Banking,,,,,,No
+HDFCBANK,Banking,,,,,,No
+ICICIBANK,Banking,,,,,,No
+INDUSINDBK,Banking,,,,,,No
+KOTAKBANK,Banking,,,,,,No
+SBIN,Banking,,,,,,No
+BAJFINANCE,Financial Services,,,,,,No
+BAJAJFINSV,Financial Services,,,,,,No
+HDFCLIFE,Financial Services,,,,,,No
+SBILIFE,Financial Services,,,,,,No
+INFY,IT Services,-0.707,2.8681,,,1.1381,Yes
+TCS,IT Services,2.6709,3.0114,,,0.7194,Yes
+TECHM,IT Services,,,,,,No
+HCLTECH,IT Services,,,,,,No
+WIPRO,IT Services,,,,,,No
+RELIANCE,Oil & Gas,1.9875,3.5519,,,1.0095,Yes
+ONGC,Oil & Gas,,,,,,No
+BPCL,Oil & Gas,,,,,,No
+TATASTEEL,Metals & Mining,,,,,,No
+JSWSTEEL,Metals & Mining,,,,,,No
+HINDALCO,Metals & Mining,,,,,,No
+COALINDIA,Metals & Mining,,,,,,No
+MARUTI,Automotive,,,,,,No
+BAJAJ-AUTO,Automotive,,,,,,No
+M&M,Automotive,,,,,,No
+HEROMOTOCO,Automotive,,,,,,No
+EICHERMOT,Automotive,,,,,,No
+SUNPHARMA,Pharmaceuticals,,,,,,No
+DRREDDY,Pharmaceuticals,,,,,,No
+CIPLA,Pharmaceuticals,,,,,,No
+DIVISLAB,Pharmaceuticals,,,,,,No
+HINDUNILVR,FMCG,,,,,,No
+BRITANNIA,FMCG,,,,,,No
+NESTLEIND,FMCG,,,,,,No
+ITC,FMCG,,,,,,No
+TATACONSUM,FMCG,,,,,,No
+BHARTIARTL,Telecom,,,,,,No
+NTPC,Power,,,,,,No
+POWERGRID,Power,,,,,,No
+ULTRACEMCO,Cement,,,,,,No
+GRASIM,Cement,,,,,,No
+LT,Infrastructure,,,,,,No
+ASIANPAINT,Paints,,,,,,No
+UPL,Chemicals,,,,,,No
+TITAN,Consumer Goods,,,,,,No
+ADANIPORTS,Logistics,,,,,,No

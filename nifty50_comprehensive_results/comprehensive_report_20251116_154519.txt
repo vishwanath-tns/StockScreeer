@@ -1,0 +1,29 @@
+NIFTY 50 COMPREHENSIVE VCP BACKTEST REPORT
+==================================================
+
+Analysis Date: 2025-11-16T15:45:19.554574
+Execution Time: 14.1 seconds
+Data Range: 2024-01-02 to 2025-11-14
+Total Database Records: 1,279,635
+
+BACKTEST CONFIGURATION
+-------------------------
+Stop Loss: 8.0%
+Profit Target: 25.0%
+Min Quality Score: 50.0
+
+PORTFOLIO PERFORMANCE
+-------------------------
+Sectors Tested: 0/11
+Stocks Tested: 44
+Total Patterns: 0
+Total Trades: 0
+Win Rate: 0.0%
+Portfolio Return: 0.0%
+Portfolio Sharpe: 0.00
+Max Drawdown: 0.0%
+
+SECTOR PERFORMANCE RANKING
+------------------------------
+
+Detailed sector results included in JSON file.

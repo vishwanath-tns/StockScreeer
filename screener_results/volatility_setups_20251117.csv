@@ -1,0 +1,43 @@
+Symbol,Price,Volatility_30d,Volatility_60d,Vol_Trend,Resistance,Support,Breakout_Entry,Distance_to_BO,Above_Support,Volume_Trend,Above_SMA20,Above_SMA50,SMA20_Trend,Setup_Score,Recommendation
+M&M,₹3698.60,11.3%,18.6%,Contracting,₹3781.00,₹3673.10,₹3856.62,4.3%,0.7%,Normal,✅,✅,Rising,95.0,Buy Setup
+VEDL,₹525.35,16.8%,27.5%,Contracting,₹535.50,₹518.25,₹546.21,4.0%,1.4%,Normal,✅,✅,Rising,95.0,Buy Setup
+IOC,₹171.25,17.4%,27.9%,Contracting,₹174.50,₹170.40,₹177.99,3.9%,0.5%,Normal,✅,✅,Rising,95.0,Buy Setup
+BPCL,₹371.15,16.1%,23.9%,Contracting,₹380.00,₹369.45,₹387.60,4.4%,0.5%,Normal,✅,✅,Rising,95.0,Buy Setup
+SBIN,₹967.85,13.3%,21.7%,Contracting,₹971.40,₹952.00,₹990.83,2.4%,1.7%,Low,✅,✅,Rising,90.0,Strong Buy Setup
+AXISBANK,₹1241.60,12.8%,22.4%,Contracting,₹1276.10,₹1240.10,₹1301.62,4.8%,0.1%,Normal,✅,✅,Flat,88.0,Buy Setup
+HCLTECH,₹1594.60,16.3%,16.3%,Stable,₹1605.00,₹1573.50,₹1637.10,2.7%,1.3%,Normal,✅,✅,Rising,85.0,Strong Buy Setup
+SBILIFE,₹2000.90,14.8%,14.8%,Stable,₹2017.90,₹1982.30,₹2058.26,2.9%,0.9%,Normal,✅,✅,Rising,85.0,Strong Buy Setup
+BHARTIARTL,₹2100.70,15.6%,15.6%,Stable,₹2135.60,₹2081.60,₹2178.31,3.7%,0.9%,Normal,✅,✅,Rising,85.0,Buy Setup
+LTIM,₹5809.00,17.7%,18.0%,Stable,₹5910.00,₹5729.50,₹6028.20,3.8%,1.4%,Normal,✅,✅,Rising,85.0,Buy Setup
+RELIANCE,₹1518.90,12.4%,13.7%,Stable,₹1524.70,₹1500.00,₹1555.19,2.4%,1.3%,Low,✅,✅,Rising,80.0,Strong Buy Setup
+SUNPHARMA,₹1757.10,10.0%,13.7%,Stable,₹1760.10,₹1710.20,₹1795.30,2.2%,2.7%,Normal,✅,✅,Flat,78.0,Strong Buy Setup
+BIOCON,₹411.15,24.1%,25.5%,Stable,₹423.10,₹381.25,₹431.56,5.0%,7.8%,High,✅,✅,Rising,75.0,Buy Setup
+DABUR,₹525.00,10.3%,20.4%,Contracting,₹577.00,₹543.00,₹588.54,12.1%,-3.3%,Low,✅,✅,Rising,75.0,Watch
+ASIANPAINT,₹2906.40,26.1%,26.1%,Stable,₹2909.90,₹2642.10,₹2968.10,2.1%,10.0%,High,✅,✅,Rising,75.0,Strong Buy Setup
+TCS,₹3106.00,9.4%,11.7%,Stable,₹3203.00,₹3142.40,₹3267.06,5.2%,-1.2%,Normal,✅,✅,Flat,73.0,Watch
+HDFCLIFE,₹773.70,8.3%,11.2%,Stable,₹807.00,₹786.60,₹823.14,6.4%,-1.6%,Normal,✅,✅,Flat,73.0,Watch
+LUPIN,₹2055.30,8.9%,10.4%,Stable,₹2069.20,₹2035.80,₹2110.58,2.7%,1.0%,High,✅,✅,Flat,68.0,Buy Setup
+JSWSTEEL,₹1167.80,8.2%,19.7%,Contracting,₹1223.90,₹1190.00,₹1248.38,6.9%,-1.9%,Normal,❌,✅,Flat,68.0,Watch
+INFY,₹1502.80,9.2%,9.2%,Stable,₹1559.20,₹1530.30,₹1590.38,5.8%,-1.8%,High,✅,✅,Flat,63.0,Watch
+WIPRO,₹244.37,7.7%,10.5%,Stable,₹259.80,₹252.85,₹265.00,8.4%,-3.4%,Normal,✅,❌,Flat,63.0,Watch
+HINDALCO,₹803.65,14.5%,24.0%,Contracting,₹864.00,₹845.70,₹881.28,9.7%,-5.0%,Low,❌,✅,Flat,63.0,Watch
+ADANIENT,₹2516.80,14.2%,20.3%,Stable,₹2695.00,₹2567.00,₹2748.90,9.2%,-2.0%,High,✅,✅,Flat,63.0,Watch
+NESTLEIND,₹1271.60,14.6%,16.1%,Stable,₹1311.60,₹1275.80,₹1337.83,5.2%,-0.3%,Low,❌,✅,Rising,60.0,Watch
+ICICIBANK,₹1373.00,9.7%,9.9%,Stable,₹1447.80,₹1426.30,₹1476.76,7.6%,-3.7%,Low,✅,❌,Flat,58.0,Watch
+DRREDDY,₹1246.00,10.4%,12.4%,Stable,₹1326.80,₹1305.20,₹1353.34,8.6%,-4.5%,Low,✅,❌,Flat,58.0,Watch
+DIVISLAB,₹6511.50,21.7%,22.5%,Stable,₹6904.50,₹6732.00,₹7042.59,8.2%,-3.3%,Normal,❌,✅,Flat,58.0,Watch
+HYUNDAI,₹2356.10,16.0%,28.6%,Contracting,₹2890.00,₹2701.00,₹2947.80,25.1%,-12.8%,Low,✅,❌,Flat,58.0,Watch
+TATASTEEL,₹174.26,12.5%,22.1%,Contracting,₹186.94,₹182.05,₹190.68,9.4%,-4.3%,High,❌,✅,Flat,58.0,Watch
+ONGC,₹247.60,8.4%,12.0%,Contracting,₹258.50,₹253.32,₹263.67,6.5%,-2.3%,High,❌,✅,Flat,58.0,Watch
+HDFCBANK,₹989.60,7.9%,113.6%,Contracting,₹2006.10,₹1979.00,₹2046.22,106.8%,-50.0%,Low,❌,✅,Flat,53.0,Watch
+TECHM,₹1439.20,7.5%,13.2%,Contracting,₹1566.90,₹1525.60,₹1598.24,11.1%,-5.7%,High,✅,❌,Flat,53.0,Watch
+BAJAJFINSV,₹2065.80,12.4%,14.9%,Stable,₹2195.00,₹2144.60,₹2238.90,8.4%,-3.7%,High,❌,✅,Flat,48.0,Watch
+KOTAKBANK,₹2079.70,14.1%,17.3%,Stable,₹2266.00,₹2190.40,₹2311.32,11.1%,-5.1%,Low,❌,✅,Flat,43.0,Avoid
+NTPC,₹328.45,9.1%,9.3%,Stable,₹350.80,₹341.05,₹357.82,8.9%,-3.7%,Low,❌,❌,Flat,43.0,Avoid
+HINDUNILVR,₹2427.70,11.5%,15.0%,Stable,₹2750.00,₹2646.80,₹2805.00,15.5%,-8.3%,Normal,❌,❌,Flat,38.0,Avoid
+ITC,₹408.15,7.6%,7.8%,Stable,₹427.00,₹416.15,₹435.54,6.7%,-1.9%,High,❌,❌,Flat,38.0,Avoid
+BRITANNIA,₹5803.50,9.4%,17.4%,Contracting,₹6336.00,₹6180.00,₹6462.72,11.4%,-6.1%,High,❌,❌,Flat,38.0,Avoid
+BAJAJ-AUTO,₹8843.00,8.8%,11.8%,Stable,₹9490.00,₹9100.50,₹9679.80,9.5%,-2.8%,High,❌,❌,Flat,38.0,Avoid
+BAJFINANCE,₹1018.50,13.4%,26.8%,Contracting,₹1102.50,₹1081.00,₹1124.55,10.4%,-5.8%,High,❌,❌,Flat,38.0,Avoid
+CIPLA,₹1532.10,12.3%,13.4%,Stable,₹1673.00,₹1592.00,₹1706.46,11.4%,-3.8%,Low,❌,❌,Flat,33.0,Avoid
+TATAMOTORS,₹405.85,96.6%,96.6%,Stable,₹739.70,₹713.50,₹754.49,85.9%,-43.1%,Low,❌,❌,Falling,25.0,Avoid

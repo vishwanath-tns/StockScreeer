@@ -1,0 +1,185 @@
+🌍 NIFTY 50 MARKET SUMMARY
+========================================
+
+🏢 NIFTY 50 COMPREHENSIVE SECTOR ANALYSIS
+============================================================
+📅 Generated: 2025-11-17 16:23:25
+📊 Total Stocks: 46
+🏢 Total Sectors: 16
+
+## 📈 AUTOMOTIVE
+📊 Stocks in sector: 5
+
+📋 Individual Stock Performance:
+   BAJAJ-AUTO   | 1W:      N/A | 1M:      N/A
+   EICHERMOT    | 1W:      N/A | 1M:      N/A
+   HEROMOTOCO   | 1W:      N/A | 1M:      N/A
+   M&M          | 1W:      N/A | 1M:      N/A
+   MARUTI       | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 BANKING
+📊 Stocks in sector: 6
+
+📋 Individual Stock Performance:
+   AXISBANK     | 1W:      N/A | 1M:      N/A
+   HDFCBANK     | 1W:      N/A | 1M:      N/A
+   ICICIBANK    | 1W:      N/A | 1M:      N/A
+   INDUSINDBK   | 1W:      N/A | 1M:      N/A
+   KOTAKBANK    | 1W:      N/A | 1M:      N/A
+   SBIN         | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 CEMENT
+📊 Stocks in sector: 2
+
+📋 Individual Stock Performance:
+   GRASIM       | 1W:      N/A | 1M:      N/A
+   ULTRACEMCO   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 CHEMICALS
+📊 Stocks in sector: 1
+
+📋 Individual Stock Performance:
+   UPL          | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 CONSUMER GOODS
+📊 Stocks in sector: 1
+
+📋 Individual Stock Performance:
+   TITAN        | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 FMCG
+📊 Stocks in sector: 5
+
+📋 Individual Stock Performance:
+   BRITANNIA    | 1W:      N/A | 1M:      N/A
+   HINDUNILVR   | 1W:      N/A | 1M:      N/A
+   ITC          | 1W:      N/A | 1M:      N/A
+   NESTLEIND    | 1W:      N/A | 1M:      N/A
+   TATACONSUM   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 FINANCIAL SERVICES
+📊 Stocks in sector: 4
+
+📋 Individual Stock Performance:
+   BAJAJFINSV   | 1W:      N/A | 1M:      N/A
+   BAJFINANCE   | 1W:      N/A | 1M:      N/A
+   HDFCLIFE     | 1W:      N/A | 1M:      N/A
+   SBILIFE      | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 IT SERVICES
+📊 Stocks in sector: 5
+
+📋 Individual Stock Performance:
+   HCLTECH      | 1W:      N/A | 1M:      N/A
+   INFY         | 1W:      N/A | 1M:      N/A
+   TCS          | 1W:      N/A | 1M:      N/A
+   TECHM        | 1W:      N/A | 1M:      N/A
+   WIPRO        | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 INFRASTRUCTURE
+📊 Stocks in sector: 1
+
+📋 Individual Stock Performance:
+   LT           | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 LOGISTICS
+📊 Stocks in sector: 1
+
+📋 Individual Stock Performance:
+   ADANIPORTS   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 METALS & MINING
+📊 Stocks in sector: 4
+
+📋 Individual Stock Performance:
+   COALINDIA    | 1W:      N/A | 1M:      N/A
+   HINDALCO     | 1W:      N/A | 1M:      N/A
+   JSWSTEEL     | 1W:      N/A | 1M:      N/A
+   TATASTEEL    | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 OIL & GAS
+📊 Stocks in sector: 3
+
+📋 Individual Stock Performance:
+   BPCL         | 1W:      N/A | 1M:      N/A
+   ONGC         | 1W:      N/A | 1M:      N/A
+   RELIANCE     | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 PAINTS
+📊 Stocks in sector: 1
+
+📋 Individual Stock Performance:
+   ASIANPAINT   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 PHARMACEUTICALS
+📊 Stocks in sector: 4
+
+📋 Individual Stock Performance:
+   CIPLA        | 1W:      N/A | 1M:      N/A
+   DIVISLAB     | 1W:      N/A | 1M:      N/A
+   DRREDDY      | 1W:      N/A | 1M:      N/A
+   SUNPHARMA    | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 POWER
+📊 Stocks in sector: 2
+
+📋 Individual Stock Performance:
+   NTPC         | 1W:      N/A | 1M:      N/A
+   POWERGRID    | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+## 📈 TELECOM
+📊 Stocks in sector: 1
+
+📋 Individual Stock Performance:
+   BHARTIARTL   | 1W:      N/A | 1M:      N/A
+
+--------------------------------------------------
+
+🏆 SECTOR PERFORMANCE RANKING (1M Momentum)
+==================================================
+ 1. ⚪ Automotive            No data
+ 2. ⚪ Banking               No data
+ 3. ⚪ Cement                No data
+ 4. ⚪ Chemicals             No data
+ 5. ⚪ Consumer Goods        No data
+ 6. ⚪ FMCG                  No data
+ 7. ⚪ Financial Services    No data
+ 8. ⚪ IT Services           No data
+ 9. ⚪ Infrastructure        No data
+10. ⚪ Logistics             No data
+11. ⚪ Metals & Mining       No data
+12. ⚪ Oil & Gas             No data
+13. ⚪ Paints                No data
+14. ⚪ Pharmaceuticals       No data
+15. ⚪ Power                 No data
+16. ⚪ Telecom               No data

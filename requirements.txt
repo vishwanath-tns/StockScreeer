@@ -8,6 +8,13 @@ matplotlib
 mplfinance
 mplcursors  # optional: used for interactive hover when available
 tkcalendar  # for date picker widgets in Market Breadth analysis
+reportlab   # for PDF report generation
+seaborn     # for advanced charting in reports
+
+# Vedic astrology dependencies
+ephem       # astronomical calculations for planetary positions and lunar phases
+pytz        # timezone handling for accurate astronomical calculations
+convertdate # date conversions for lunar calendar calculations
 
 # Test / client dependencies
 httpx
