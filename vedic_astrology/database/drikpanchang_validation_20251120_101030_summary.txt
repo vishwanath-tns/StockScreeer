@@ -1,0 +1,9 @@
+DRIKPANCHANG VALIDATION SUMMARY
+========================================
+Date: 2025-11-20 10:10:30
+Overall Grade: C
+Overall Accuracy: 33.3%
+Average Difference: 109486.46 arcseconds
+Max Difference: 490669.01 arcseconds
+Planetary Positions: 0/9 passed
+Nakshatra Assignments: 0/9 correct

@@ -1,0 +1,37 @@
+{
+    "database": {
+        "host": "localhost",
+        "port": 3306,
+        "database": "vedic_astrology",
+        "user": "root",
+        "password": "",
+        "charset": "utf8mb4"
+    },
+    "location": {
+        "name": "Delhi",
+        "latitude": 28.6139,
+        "longitude": 77.2090,
+        "timezone": "+05:30"
+    },
+    "calculation_settings": {
+        "ayanamsa": "Lahiri",
+        "ephemeris": "Swiss",
+        "house_system": "Whole_Sign",
+        "coordinate_system": "Geocentric",
+        "precision_decimal_places": 4
+    },
+    "generation_settings": {
+        "interval_minutes": 5,
+        "auto_start": false,
+        "enable_validation": true,
+        "store_special_lagnas": true,
+        "store_panchanga": true,
+        "store_muhurta_data": true
+    },
+    "validation_settings": {
+        "tolerance_arcseconds": 3.6,
+        "enable_jagannath_hora_comparison": true,
+        "enable_drik_panchang_comparison": true,
+        "validation_frequency_hours": 24
+    }
+}

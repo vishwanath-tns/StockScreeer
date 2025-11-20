@@ -44,7 +44,7 @@ class ProfessionalAstrologyCalculator:
         """
         self.place = drik.Place(location_name, latitude, longitude, timezone_hours)
         self.planet_names = [
-            'Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Rahu', 'Ketu'
+            'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'
         ]
         self.zodiac_signs = [
             'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
