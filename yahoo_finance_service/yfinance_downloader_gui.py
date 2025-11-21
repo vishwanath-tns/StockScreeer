@@ -42,6 +42,17 @@ class YFinanceDownloaderGUI:
         self.is_downloading = False
         self.download_thread = None
         
+        # Bulk download tracking
+        self.is_bulk_downloading = False
+        self.bulk_symbols_list = []
+        self.current_bulk_index = 0
+        self.bulk_success_count = 0
+        self.bulk_failure_count = 0
+        
+        # Cache for loaded symbols
+        self.index_symbols = []
+        self.stock_symbols = []
+        
         # Color scheme
         self.colors = {
             'bg': '#1a1a2e',
@@ -148,23 +159,103 @@ class YFinanceDownloaderGUI:
             anchor='w'
         ).pack(side=tk.LEFT)
         
+        # Category selection
+        self.symbol_category_var = tk.StringVar(value="Indices")
+        category_combo = ttk.Combobox(
+            symbol_frame,
+            textvariable=self.symbol_category_var,
+            values=["Indices", "Stocks"],
+            width=10,
+            state="readonly"
+        )
+        category_combo.pack(side=tk.LEFT, padx=(5, 10))
+        category_combo.bind('<<ComboboxSelected>>', self.on_category_changed)
+        
+        # Symbol selection dropdown
         self.symbol_var = tk.StringVar(value=YFinanceConfig.DEFAULT_SYMBOL)
-        symbol_entry = tk.Entry(
+        self.symbol_combo = ttk.Combobox(
             symbol_frame,
             textvariable=self.symbol_var,
-            font=self.fonts['body'],
-            width=15,
-            state='readonly'  # Fixed for now
+            values=["NIFTY", "BANKNIFTY", "SENSEX"],  # Default indices
+            width=20,
+            state="readonly"
         )
-        symbol_entry.pack(side=tk.LEFT, padx=(5, 10))
+        self.symbol_combo.pack(side=tk.LEFT, padx=(5, 10))
         
-        tk.Label(
+        # Load symbols button for stocks
+        self.load_symbols_button = tk.Button(
             symbol_frame,
-            text="(Future: Dropdown selection)",
+            text="🔄 Load Stocks",
+            command=self.load_stock_symbols,
+            font=self.fonts['small'],
+            bg=self.colors['accent'],
+            fg=self.colors['text'],
+            relief=tk.FLAT,
+            padx=10,
+            pady=2
+        )
+        
+        # Symbol info
+        self.symbol_info_label = tk.Label(
+            symbol_frame,
+            text="Select category to view symbols",
             font=self.fonts['small'],
             bg=self.colors['card'],
             fg=self.colors['secondary']
+        )
+        self.symbol_info_label.pack(side=tk.RIGHT)
+        
+        # Bulk download options
+        bulk_frame = tk.Frame(content_frame, bg=self.colors['card'])
+        bulk_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        # Bulk download checkbox
+        self.bulk_download_var = tk.BooleanVar()
+        self.bulk_download_checkbox = tk.Checkbutton(
+            bulk_frame,
+            text="Download All Symbols",
+            variable=self.bulk_download_var,
+            command=self.on_bulk_download_changed,
+            font=self.fonts['body'],
+            bg=self.colors['card'],
+            fg=self.colors['text'],
+            selectcolor=self.colors['accent'],
+            activebackground=self.colors['card']
+        )
+        self.bulk_download_checkbox.pack(side=tk.LEFT, padx=(0, 20))
+        
+        # Duration selection for bulk downloads
+        tk.Label(
+            bulk_frame,
+            text="Duration:",
+            font=self.fonts['body'],
+            bg=self.colors['card'],
+            fg=self.colors['text']
         ).pack(side=tk.LEFT)
+        
+        self.duration_var = tk.StringVar(value="1 Year")
+        self.duration_combo = ttk.Combobox(
+            bulk_frame,
+            textvariable=self.duration_var,
+            values=["1 Month", "3 Months", "6 Months", "1 Year", "2 Years", "5 Years", "Max"],
+            width=12,
+            state="readonly"
+        )
+        self.duration_combo.pack(side=tk.LEFT, padx=(5, 10))
+        
+        # Quick action button for 5-year historical data
+        self.quick_5year_button = tk.Button(
+            bulk_frame,
+            text="📥 5Y All Stocks",
+            command=self.quick_download_5year_all_stocks,
+            font=self.fonts['small'],
+            bg=self.colors['primary'],
+            fg=self.colors['text'],
+            relief=tk.FLAT,
+            padx=15,
+            pady=5
+        )
+        self.quick_5year_button.pack(side=tk.LEFT)
         
         # Timeframe selection
         timeframe_frame = tk.Frame(content_frame, bg=self.colors['card'])
@@ -233,33 +324,36 @@ class YFinanceDownloaderGUI:
         self.start_month_var = tk.StringVar(value="1")
         self.start_day_var = tk.StringVar(value="1")
         
-        ttk.Combobox(
+        self.start_year_combo = ttk.Combobox(
             start_frame,
             textvariable=self.start_year_var,
             values=[str(year) for year in range(2020, 2026)],
             width=6,
             state="readonly"
-        ).pack(side=tk.LEFT, padx=(5, 2))
+        )
+        self.start_year_combo.pack(side=tk.LEFT, padx=(5, 2))
         
         tk.Label(start_frame, text="/", bg=self.colors['card'], fg=self.colors['text']).pack(side=tk.LEFT)
         
-        ttk.Combobox(
+        self.start_month_combo = ttk.Combobox(
             start_frame,
             textvariable=self.start_month_var,
             values=[f"{i:02d}" for i in range(1, 13)],
             width=4,
             state="readonly"
-        ).pack(side=tk.LEFT, padx=2)
+        )
+        self.start_month_combo.pack(side=tk.LEFT, padx=2)
         
         tk.Label(start_frame, text="/", bg=self.colors['card'], fg=self.colors['text']).pack(side=tk.LEFT)
         
-        ttk.Combobox(
+        self.start_day_combo = ttk.Combobox(
             start_frame,
             textvariable=self.start_day_var,
             values=[f"{i:02d}" for i in range(1, 32)],
             width=4,
             state="readonly"
-        ).pack(side=tk.LEFT, padx=(2, 10))
+        )
+        self.start_day_combo.pack(side=tk.LEFT, padx=(2, 10))
         
         # Quick start date buttons
         today = date.today()
@@ -307,33 +401,36 @@ class YFinanceDownloaderGUI:
         self.end_month_var = tk.StringVar(value=f"{today.month:02d}")
         self.end_day_var = tk.StringVar(value=f"{today.day:02d}")
         
-        ttk.Combobox(
+        self.end_year_combo = ttk.Combobox(
             end_frame,
             textvariable=self.end_year_var,
             values=[str(year) for year in range(2020, 2026)],
             width=6,
             state="readonly"
-        ).pack(side=tk.LEFT, padx=(5, 2))
+        )
+        self.end_year_combo.pack(side=tk.LEFT, padx=(5, 2))
         
         tk.Label(end_frame, text="/", bg=self.colors['card'], fg=self.colors['text']).pack(side=tk.LEFT)
         
-        ttk.Combobox(
+        self.end_month_combo = ttk.Combobox(
             end_frame,
             textvariable=self.end_month_var,
             values=[f"{i:02d}" for i in range(1, 13)],
             width=4,
             state="readonly"
-        ).pack(side=tk.LEFT, padx=2)
+        )
+        self.end_month_combo.pack(side=tk.LEFT, padx=2)
         
         tk.Label(end_frame, text="/", bg=self.colors['card'], fg=self.colors['text']).pack(side=tk.LEFT)
         
-        ttk.Combobox(
+        self.end_day_combo = ttk.Combobox(
             end_frame,
             textvariable=self.end_day_var,
             values=[f"{i:02d}" for i in range(1, 32)],
             width=4,
             state="readonly"
-        ).pack(side=tk.LEFT, padx=(2, 10))
+        )
+        self.end_day_combo.pack(side=tk.LEFT, padx=(2, 10))
         
         # Quick end date buttons
         tk.Button(
@@ -565,13 +662,164 @@ class YFinanceDownloaderGUI:
             )
             self.status_var.set(f"Database error: {str(e)[:50]}...")
     
+    def on_category_changed(self, event=None):
+        """Handle symbol category selection change"""
+        category = self.symbol_category_var.get()
+        
+        if category == "Indices":
+            # Show indices symbols
+            indices = ["NIFTY", "BANKNIFTY", "SENSEX"]
+            self.symbol_combo.configure(values=indices)
+            self.symbol_var.set("NIFTY")
+            self.load_symbols_button.pack_forget()
+            self.symbol_info_label.config(text="Market Indices Available")
+        
+        elif category == "Stocks":
+            # Show stock loading option
+            self.symbol_combo.configure(values=["Click 'Load Stocks' to view available stocks"])
+            self.symbol_var.set("")
+            self.load_symbols_button.pack(side=tk.LEFT, padx=(5, 10))
+            self.symbol_info_label.config(text="Click Load Stocks to see mapped symbols")
+    
+    def get_date_range_from_duration(self, duration):
+        """Get start and end dates from duration string"""
+        end_date = datetime.now()
+        
+        if duration == "1 Week":
+            start_date = end_date - timedelta(weeks=1)
+        elif duration == "1 Month":
+            start_date = end_date - timedelta(days=30)
+        elif duration == "3 Months":
+            start_date = end_date - timedelta(days=90)
+        elif duration == "6 Months":
+            start_date = end_date - timedelta(days=180)
+        elif duration == "1 Year":
+            start_date = end_date - timedelta(days=365)
+        elif duration == "2 Years":
+            start_date = end_date - timedelta(days=730)
+        elif duration == "5 Years":
+            start_date = end_date - timedelta(days=1825)  # 5 * 365
+        else:  # "Max"
+            start_date = end_date - timedelta(days=3650)  # 10 years
+            
+        return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
+
+    def load_stock_symbols(self):
+        """Load stock symbols from the database mapping"""
+        try:
+            self.status_var.set("Loading stock symbols...")
+            self.load_symbols_button.config(text="Loading...", state=tk.DISABLED)
+            
+            # Get mapped stock symbols from database
+            import mysql.connector
+            from config import YFinanceConfig
+            
+            conn = mysql.connector.connect(**YFinanceConfig.get_db_config())
+            cursor = conn.cursor()
+            
+            # Get active mapped symbols with their sector information
+            cursor.execute("""
+                SELECT nse_symbol, yahoo_symbol, sector 
+                FROM nse_yahoo_symbol_map 
+                WHERE is_active = 1 AND is_verified = 1
+                ORDER BY sector, nse_symbol
+            """)
+            
+            stocks = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            if stocks:
+                # Format symbols for dropdown (NSE Symbol - Sector)
+                stock_options = []
+                for nse_symbol, yahoo_symbol, sector in stocks:
+                    display_name = f"{nse_symbol} - {sector}" if sector else nse_symbol
+                    stock_options.append(display_name)
+                
+                self.symbol_combo.configure(values=stock_options)
+                self.symbol_var.set(stock_options[0] if stock_options else "")
+                
+                self.symbol_info_label.config(
+                    text=f"{len(stocks)} verified stocks loaded",
+                    fg=self.colors['success']
+                )
+                self.status_var.set(f"Loaded {len(stocks)} stock symbols")
+            else:
+                messagebox.showwarning(
+                    "No Stocks", 
+                    "No verified stock symbols found. Please run symbol validation first."
+                )
+                self.symbol_info_label.config(
+                    text="No verified symbols found",
+                    fg=self.colors['warning']
+                )
+            
+            self.load_symbols_button.config(text="🔄 Reload", state=tk.NORMAL)
+            
+        except Exception as e:
+            logger.error(f"Error loading stock symbols: {e}")
+            messagebox.showerror("Error", f"Failed to load stock symbols: {str(e)}")
+            self.load_symbols_button.config(text="🔄 Load Stocks", state=tk.NORMAL)
+            self.status_var.set("Failed to load stock symbols")
+    
+    def get_yahoo_symbol(self, display_symbol: str) -> str:
+        """Get Yahoo Finance symbol for the selected symbol"""
+        try:
+            category = self.symbol_category_var.get()
+            
+            if category == "Indices":
+                # Use existing mapping for indices
+                symbol_mapping = {
+                    'NIFTY': '^NSEI',
+                    'BANKNIFTY': '^NSEBANK',
+                    'SENSEX': '^BSESN'
+                }
+                return symbol_mapping.get(display_symbol, display_symbol)
+            
+            elif category == "Stocks":
+                # Extract NSE symbol from display format (NSE Symbol - Sector)
+                nse_symbol = display_symbol.split(' - ')[0] if ' - ' in display_symbol else display_symbol
+                
+                # Look up Yahoo symbol in mapping table
+                import mysql.connector
+                from config import YFinanceConfig
+                
+                conn = mysql.connector.connect(**YFinanceConfig.get_db_config())
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    SELECT yahoo_symbol FROM nse_yahoo_symbol_map 
+                    WHERE nse_symbol = %s AND is_active = 1 AND is_verified = 1
+                """, (nse_symbol,))
+                
+                result = cursor.fetchone()
+                cursor.close()
+                conn.close()
+                
+                if result:
+                    return result[0]
+                else:
+                    # Fallback: assume NSE format (symbol.NS)
+                    return f"{nse_symbol}.NS"
+            
+            return display_symbol
+            
+        except Exception as e:
+            logger.error(f"Error getting Yahoo symbol: {e}")
+            return display_symbol
+    
     def start_download(self):
         """Start the download process"""
-        if self.is_downloading:
+        if self.is_downloading or self.is_bulk_downloading:
             return
         
         try:
-            # Validate dates
+            # Check if bulk download is selected
+            if self.bulk_download_var.get():
+                self.start_bulk_download()
+                return
+            
+            # Validate dates for single download
             start_date, end_date = self.get_selected_dates()
             
             if start_date > end_date:
@@ -610,17 +858,30 @@ class YFinanceDownloaderGUI:
     def stop_download(self):
         """Stop the download process"""
         self.is_downloading = False
-        self.progress_text_var.set("Stopping download...")
-        self.status_var.set("Download stopped by user")
+        self.is_bulk_downloading = False
+        
+        if self.bulk_download_var.get():
+            self.progress_text_var.set(f"Bulk download stopped by user ({self.current_bulk_index}/{len(self.bulk_symbols_list) if self.bulk_symbols_list else 0})")
+            self.status_var.set(f"Bulk download cancelled • Processed: {self.current_bulk_index} • Success: {self.bulk_success_count} • Failed: {self.bulk_failure_count}")
+        else:
+            self.progress_text_var.set("Stopping download...")
+            self.status_var.set("Download stopped by user")
+        
+        self.download_button.config(state=tk.NORMAL)
+        self.stop_button.config(state=tk.DISABLED)
     
     def download_data(self, start_date: date, end_date: date):
         """Download data in background thread"""
-        symbol = self.symbol_var.get()
+        display_symbol = self.symbol_var.get()
         start_time = time.time()
+        
+        # Get the actual symbols to use
+        nse_symbol = display_symbol.split(' - ')[0] if ' - ' in display_symbol else display_symbol
+        yahoo_symbol = self.get_yahoo_symbol(display_symbol)
         
         # Create download log
         download_log = DownloadLog(
-            symbol=symbol,
+            symbol=nse_symbol,
             start_date=start_date,
             end_date=end_date,
             timeframe=self.timeframe_var.get()
@@ -628,11 +889,11 @@ class YFinanceDownloaderGUI:
         
         try:
             # Update progress
-            self.progress_text_var.set(f"Downloading {symbol} data from {start_date} to {end_date}...")
-            self.status_var.set("Downloading data from Yahoo Finance...")
+            self.progress_text_var.set(f"Downloading {nse_symbol} ({yahoo_symbol}) data from {start_date} to {end_date}...")
+            self.status_var.set(f"Downloading data from Yahoo Finance for {nse_symbol}...")
             
-            # Download quotes
-            quotes = self.yahoo_client.download_daily_data(symbol, start_date, end_date)
+            # Download quotes using Yahoo symbol but save with NSE symbol
+            quotes = self.yahoo_client.download_daily_data_with_symbol(nse_symbol, yahoo_symbol, start_date, end_date)
             
             if not self.is_downloading:
                 return
@@ -658,7 +919,7 @@ class YFinanceDownloaderGUI:
             # Update UI
             self.progress_var.set(100)
             self.progress_text_var.set(f"Completed: {inserted} new, {updated} updated in {duration_ms}ms")
-            self.status_var.set(f"Download completed • {inserted} new records, {updated} updated")
+            self.status_var.set(f"Download completed • {inserted} new records, {updated} updated for {nse_symbol}")
             
             # Update preview
             self.update_preview(quotes[-10:] if quotes else [])  # Show last 10 records
@@ -678,9 +939,9 @@ class YFinanceDownloaderGUI:
             
             # Update UI
             self.progress_text_var.set(f"Download failed: {str(e)[:50]}...")
-            self.status_var.set("Download failed - check logs for details")
+            self.status_var.set(f"Download failed for {nse_symbol} - check logs for details")
             
-            messagebox.showerror("Download Error", f"Failed to download data:\n{str(e)}")
+            messagebox.showerror("Download Error", f"Failed to download data for {nse_symbol}:\n{str(e)}")
             
         finally:
             # Reset UI state
@@ -714,6 +975,277 @@ class YFinanceDownloaderGUI:
         except Exception as e:
             logger.error(f"Error opening data viewer: {e}")
             messagebox.showerror("Error", f"Failed to open data viewer: {str(e)}")
+    
+    def on_bulk_download_changed(self):
+        """Handle bulk download checkbox change"""
+        if self.bulk_download_var.get():
+            # Disable individual date selection
+            self.start_year_combo.config(state="disabled")
+            self.start_month_combo.config(state="disabled")  
+            self.start_day_combo.config(state="disabled")
+            self.end_year_combo.config(state="disabled")
+            self.end_month_combo.config(state="disabled")
+            self.end_day_combo.config(state="disabled")
+            self.duration_combo.config(state="readonly")
+        else:
+            # Enable individual date selection
+            self.start_year_combo.config(state="readonly")
+            self.start_month_combo.config(state="readonly")
+            self.start_day_combo.config(state="readonly") 
+            self.end_year_combo.config(state="readonly")
+            self.end_month_combo.config(state="readonly")
+            self.end_day_combo.config(state="readonly")
+            self.duration_combo.config(state="disabled")
+    
+    def get_date_range_from_duration(self, duration):
+        """Get start and end dates from duration selection"""
+        from datetime import timedelta
+        end_date = date.today()
+        
+        if duration == "1 Month":
+            start_date = end_date - timedelta(days=30)
+        elif duration == "3 Months":
+            start_date = end_date - timedelta(days=90)
+        elif duration == "6 Months":
+            start_date = end_date - timedelta(days=180)
+        elif duration == "1 Year":
+            start_date = end_date - timedelta(days=365)
+        elif duration == "2 Years":
+            start_date = end_date - timedelta(days=730)
+        elif duration == "5 Years":
+            start_date = end_date - timedelta(days=1825)
+        elif duration == "Max":
+            start_date = date(2000, 1, 1)  # Far back date
+        else:
+            start_date = end_date - timedelta(days=365)  # Default 1 year
+        
+        return start_date, end_date
+    
+    def start_bulk_download(self):
+        """Start bulk download process"""
+        try:
+            # Get symbols to download based on category
+            if self.symbol_category_var.get() == "Stocks":
+                # Auto-load stocks if not already loaded
+                if not hasattr(self, 'stock_symbols') or not self.stock_symbols or len(self.symbol_combo['values']) == 0:
+                    self.status_var.set("Loading stock symbols for bulk download...")
+                    self.load_stock_symbols()
+                    
+                symbols_to_download = [opt for opt in self.symbol_combo['values']]
+                if not symbols_to_download:
+                    messagebox.showerror("Error", "No verified stock symbols found in database. Please run symbol verification first.")
+                    return
+            else:
+                # Use default indices
+                symbols_to_download = ["^NSEI", "^NSEBANK", "^CNXIT", "^CNXAUTO", "^CNXPHARMA", "^CNXFMCG"]
+            
+            if not symbols_to_download:
+                messagebox.showerror("Error", "No symbols available for bulk download")
+                return
+            
+            # Confirm bulk download
+            result = messagebox.askyesno(
+                "Bulk Download Confirmation", 
+                f"Download data for {len(symbols_to_download)} symbols?\\n\\n"
+                f"Category: {self.symbol_category_var.get()}\\n"
+                f"Duration: {self.duration_var.get()}\\n"
+                f"This may take several minutes."
+            )
+            
+            if not result:
+                return
+            
+            # Reset counters
+            self.bulk_symbols_list = symbols_to_download
+            self.current_bulk_index = 0
+            self.bulk_success_count = 0
+            self.bulk_failure_count = 0
+            
+            # Start bulk download
+            self.is_bulk_downloading = True
+            self.download_button.config(state=tk.DISABLED)
+            self.stop_button.config(state=tk.NORMAL)
+            
+            self.download_thread = threading.Thread(
+                target=self.bulk_download_worker,
+                daemon=True
+            )
+            self.download_thread.start()
+            
+        except Exception as e:
+            logger.error(f"Error starting bulk download: {e}")
+            messagebox.showerror("Error", f"Failed to start bulk download: {e}")
+    
+    def bulk_download_worker(self):
+        """Worker thread for bulk download"""
+        start_date, end_date = self.get_date_range_from_duration(self.duration_var.get())
+        
+        for i, symbol_display in enumerate(self.bulk_symbols_list):
+            if not self.is_bulk_downloading:
+                break
+            
+            self.current_bulk_index = i
+            
+            try:
+                # Update progress
+                progress = int((i / len(self.bulk_symbols_list)) * 100)
+                self.progress_var.set(progress)
+                self.progress_text_var.set(
+                    f"Downloading {i+1}/{len(self.bulk_symbols_list)}: {symbol_display.split(' - ')[0]}"
+                )
+                self.status_var.set(
+                    f"Bulk Download Progress: {i+1}/{len(self.bulk_symbols_list)} • "
+                    f"Success: {self.bulk_success_count} • Failed: {self.bulk_failure_count}"
+                )
+                
+                # Download symbol data
+                nse_symbol = symbol_display.split(' - ')[0] if ' - ' in symbol_display else symbol_display
+                yahoo_symbol = self.get_yahoo_symbol(symbol_display)
+                
+                quotes = self.yahoo_client.download_daily_data_with_symbol(nse_symbol, yahoo_symbol, start_date, end_date)
+                
+                if quotes:
+                    inserted, updated = self.db_service.insert_quotes(quotes)
+                    self.bulk_success_count += 1
+                    
+                    # Log successful download
+                    download_log = DownloadLog(
+                        symbol=nse_symbol,
+                        start_date=start_date,
+                        end_date=end_date,
+                        timeframe=self.timeframe_var.get(),
+                        records_downloaded=inserted,
+                        records_updated=updated,
+                        status='COMPLETED'
+                    )
+                    self.db_service.log_download(download_log)
+                else:
+                    self.bulk_failure_count += 1
+                    
+            except Exception as e:
+                logger.error(f"Error downloading {symbol_display}: {e}")
+                self.bulk_failure_count += 1
+                
+                # Log failed download
+                nse_symbol = symbol_display.split(' - ')[0] if ' - ' in symbol_display else symbol_display
+                download_log = DownloadLog(
+                    symbol=nse_symbol,
+                    start_date=start_date,
+                    end_date=end_date,
+                    timeframe=self.timeframe_var.get(),
+                    status='FAILED',
+                    error_message=str(e)
+                )
+                self.db_service.log_download(download_log)
+        
+        # Bulk download complete
+        if self.is_bulk_downloading:
+            self.progress_var.set(100)
+            self.progress_text_var.set(
+                f"Bulk download completed: {self.bulk_success_count} successful, {self.bulk_failure_count} failed"
+            )
+            self.status_var.set(
+                f"Bulk download completed • Success: {self.bulk_success_count} • Failed: {self.bulk_failure_count}"
+            )
+            
+            messagebox.showinfo(
+                "Bulk Download Complete",
+                f"Download completed!\\n\\n"
+                f"Successfully downloaded: {self.bulk_success_count}\\n"
+                f"Failed downloads: {self.bulk_failure_count}\\n"
+                f"Total processed: {len(self.bulk_symbols_list)}"
+            )
+        
+        # Reset UI state
+        self.is_bulk_downloading = False
+        self.download_button.config(state=tk.NORMAL)
+        self.stop_button.config(state=tk.DISABLED)
+        
+        # Update database info
+        self.root.after(1000, self.check_database_connection)
+    
+    def quick_download_5year_all_stocks(self):
+        """Quick method to download 5 years of data for all verified stocks"""
+        try:
+            # First, ensure we're in the right mode
+            if self.symbol_category_var.get() != "Stocks":
+                self.symbol_category_var.set("Stocks")
+                self.on_category_changed()
+            
+            # Check if symbols are already loaded
+            try:
+                current_values = self.symbol_combo.cget('values')
+                symbols_count = len(current_values) if current_values else 0
+            except:
+                symbols_count = 0
+            
+            # If no symbols loaded, try to load them
+            if symbols_count == 0:
+                self.status_var.set("Loading all verified stock symbols...")
+                self.load_stock_symbols()
+                self.root.update()
+                
+                # Check again after loading
+                try:
+                    current_values = self.symbol_combo.cget('values')
+                    symbols_count = len(current_values) if current_values else 0
+                except:
+                    symbols_count = 0
+            
+            # Final check
+            if symbols_count == 0:
+                messagebox.showerror("Error", 
+                    "Could not load stock symbols from the GUI.\\n\\n"
+                    "Please try this sequence:\\n"
+                    "1. Select 'Stocks' category\\n"
+                    "2. Click 'Load Stocks' button\\n" 
+                    "3. Wait for symbols to load\\n"
+                    "4. Then click '5Y All Stocks' again")
+                return
+            
+            # Set up for bulk download
+            self.duration_var.set("5 Years")
+            self.bulk_download_var.set(True)
+            self.on_bulk_download_changed()
+            
+            # Confirm the download
+            result = messagebox.askyesno(
+                "Download 5 Years Historical Data",
+                f"This will download 5 years of daily data for {symbols_count} stocks.\\n\\n"
+                f"Estimated time: {symbols_count * 2} minutes\\n"
+                f"Continue with the download?"
+            )
+            
+            if result:
+                # Create list of symbols for bulk download
+                self.bulk_symbols_list = []
+                for display_symbol in current_values:
+                    # Extract NSE symbol from display format 
+                    nse_symbol = display_symbol.split(' - ')[0] if ' - ' in display_symbol else display_symbol
+                    yahoo_symbol = f"{nse_symbol}.NS"
+                    self.bulk_symbols_list.append({
+                        'display': display_symbol,
+                        'nse': nse_symbol,
+                        'yahoo': yahoo_symbol
+                    })
+                
+                # Start the bulk download
+                self.start_bulk_download()
+            else:
+                # Reset settings if user cancels
+                self.bulk_download_var.set(False)
+                self.on_bulk_download_changed()
+                
+        except Exception as e:
+            logger.error(f"Error in quick 5-year download: {e}")
+            messagebox.showerror("Error", f"Failed to start 5-year download: {e}")
+            
+            # Reset settings on error
+            try:
+                self.bulk_download_var.set(False)
+                self.on_bulk_download_changed()
+            except:
+                pass
     
     def run(self):
         """Start the application"""

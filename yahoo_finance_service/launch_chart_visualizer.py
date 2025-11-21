@@ -16,20 +16,20 @@ sys.path.insert(0, parent_dir)
 
 if __name__ == "__main__":
     try:
-        from chart_visualizer import YFinanceChartVisualizer
+        from chart_visualizer import ChartVisualizerGUI
         
         print("🚀 Starting Yahoo Finance Chart Visualizer...")
         print("📊 Interactive Market Data Visualization")
         print("📈 Candlestick, Line, OHLC & Area Charts")
         print("-" * 50)
         
-        app = YFinanceChartVisualizer()
+        app = ChartVisualizerGUI()
         app.run()
         
     except ImportError as e:
         print(f"❌ Import Error: {e}")
         print("Make sure all required packages are installed:")
-        print("pip install matplotlib pandas numpy")
+        print("pip install matplotlib pandas numpy mplfinance")
         sys.exit(1)
     except Exception as e:
         print(f"❌ Error starting chart visualizer: {e}")

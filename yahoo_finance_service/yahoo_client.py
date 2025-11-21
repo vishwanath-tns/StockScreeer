@@ -46,6 +46,21 @@ class YahooFinanceClient:
             List of DailyQuote objects
         """
         yahoo_symbol = self.get_yahoo_symbol(symbol)
+        return self.download_daily_data_with_symbol(symbol, yahoo_symbol, start_date, end_date)
+    
+    def download_daily_data_with_symbol(self, symbol: str, yahoo_symbol: str, start_date: date, end_date: date) -> List[DailyQuote]:
+        """
+        Download daily data using explicit yahoo symbol
+        
+        Args:
+            symbol: Our internal symbol for database storage
+            yahoo_symbol: Yahoo Finance symbol for API calls
+            start_date: Start date for data
+            end_date: End date for data
+            
+        Returns:
+            List of DailyQuote objects
+        """
         quotes = []
         
         try:

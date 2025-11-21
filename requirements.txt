@@ -19,6 +19,9 @@ convertdate # date conversions for lunar calendar calculations
 # Yahoo Finance service dependencies
 yfinance    # Yahoo Finance API for stock market data
 mysql-connector-python  # MySQL database connector
+mplfinance  # Advanced financial charting with candlesticks
+matplotlib  # Core plotting library
+numpy       # Numerical computing for data processing
 
 # Test / client dependencies
 httpx

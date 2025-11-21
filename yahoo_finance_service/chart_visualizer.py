@@ -119,15 +119,31 @@ class ChartVisualizerGUI:
             anchor='w'
         ).pack(side=tk.LEFT)
         
-        self.symbol_var = tk.StringVar(value="NIFTY")
-        symbol_combo = ttk.Combobox(
+        # Load available symbols from database
+        available_symbols = self.get_available_symbols()
+        default_symbol = available_symbols[0] if available_symbols else "NIFTY"
+        
+        self.symbol_var = tk.StringVar(value=default_symbol)
+        self.symbol_combo = ttk.Combobox(
             row1_frame,
             textvariable=self.symbol_var,
-            values=["NIFTY", "BANKNIFTY", "SENSEX"],
-            width=15,
+            values=available_symbols,
+            width=20,
             state="readonly"
         )
-        symbol_combo.pack(side=tk.LEFT, padx=(5, 20))
+        self.symbol_combo.pack(side=tk.LEFT, padx=(5, 20))
+        
+        # Add refresh button to reload symbols
+        tk.Button(
+            row1_frame,
+            text="🔄",
+            command=self.refresh_symbols,
+            font=("Arial", 8),
+            width=3,
+            bg=self.colors['primary'],
+            fg='white',
+            relief=tk.FLAT
+        ).pack(side=tk.LEFT, padx=(2, 20))
         
         # Chart type selection
         tk.Label(
@@ -431,6 +447,53 @@ class ChartVisualizerGUI:
             symbol = self.symbol_var.get()
             self.update_chart_display(self.current_data, symbol)
     
+    def get_available_symbols(self) -> List[str]:
+        """Get list of available symbols from database"""
+        try:
+            # Get symbols from yfinance_daily_quotes table
+            conn = self.db_service.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT DISTINCT symbol 
+                FROM yfinance_daily_quotes 
+                ORDER BY symbol
+            """)
+            
+            symbols = [row[0] for row in cursor.fetchall()]
+            cursor.close()
+            
+            # Add default index symbols if not present
+            default_symbols = ["^NSEI", "^NSEBANK", "^BSESN"]
+            for symbol in default_symbols:
+                if symbol not in symbols:
+                    symbols.insert(0, symbol)
+            
+            return symbols if symbols else ["NIFTY", "BANKNIFTY", "SENSEX"]
+            
+        except Exception as e:
+            logger.warning(f"Failed to load symbols from database: {e}")
+            return ["NIFTY", "BANKNIFTY", "SENSEX"]
+    
+    def refresh_symbols(self):
+        """Refresh the symbol dropdown with latest data"""
+        try:
+            self.status_var.set("Refreshing symbol list...")
+            available_symbols = self.get_available_symbols()
+            
+            self.symbol_combo.configure(values=available_symbols)
+            
+            # Keep current selection if still available
+            current = self.symbol_var.get()
+            if current not in available_symbols and available_symbols:
+                self.symbol_var.set(available_symbols[0])
+            
+            self.status_var.set(f"Loaded {len(available_symbols)} symbols")
+            
+        except Exception as e:
+            logger.error(f"Failed to refresh symbols: {e}")
+            self.status_var.set("Failed to refresh symbols")
+
     def load_data(self, symbol: str, start_date: date, end_date: date) -> pd.DataFrame:
         """Load data from database or download if missing"""
         try:
@@ -790,7 +853,7 @@ class ChartVisualizerGUI:
             
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".png",
-                initialfilename=filename,
+                initialfile=filename,  # Use initialfile instead of initialfilename
                 filetypes=[("PNG files", "*.png"), ("PDF files", "*.pdf"), ("All files", "*.*")]
             )
             
