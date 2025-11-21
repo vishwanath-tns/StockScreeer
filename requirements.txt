@@ -16,6 +16,10 @@ ephem       # astronomical calculations for planetary positions and lunar phases
 pytz        # timezone handling for accurate astronomical calculations
 convertdate # date conversions for lunar calendar calculations
 
+# Yahoo Finance service dependencies
+yfinance    # Yahoo Finance API for stock market data
+mysql-connector-python  # MySQL database connector
+
 # Test / client dependencies
 httpx
 pytest
