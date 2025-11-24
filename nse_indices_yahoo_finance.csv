@@ -1,0 +1,25 @@
+Index Name,Symbol,Status,Last Price,Last Date,Records
+Nifty 50,^NSEI,✅ Available,"26,068.15",2025-11-21,5
+Nifty Next 50,^NSMIDCP,✅ Available,"68,669.15",2025-11-21,5
+Nifty LargeMidcap 250,NIFTY_LARGEMID250.NS,✅ Available,"16,777.00",2025-11-21,1
+Nifty Auto,^CNXAUTO,✅ Available,"27,537.85",2025-11-21,5
+Nifty Bank,^NSEBANK,✅ Available,"58,867.70",2025-11-21,5
+Nifty Financial Services,NIFTY_FIN_SERVICE.NS,✅ Available,"27,566.15",2025-11-21,5
+Nifty FMCG,^CNXFMCG,✅ Available,"55,504.70",2025-11-21,5
+Nifty IT,^CNXIT,✅ Available,"36,885.35",2025-11-21,5
+Nifty Metal,^CNXMETAL,✅ Available,"10,142.55",2025-11-21,5
+Nifty Pharma,^CNXPHARMA,✅ Available,"22,580.95",2025-11-21,5
+Nifty PSU Bank,^CNXPSUBANK,✅ Available,"8,378.70",2025-11-21,5
+Nifty Private Bank,NIFTY_PVT_BANK.NS,✅ Available,"28,396.60",2025-11-21,5
+Nifty Realty,^CNXREALTY,✅ Available,905.60,2025-11-21,5
+Nifty Energy,^CNXENERGY,✅ Available,"35,852.40",2025-11-21,5
+Nifty Infrastructure,^CNXINFRA,✅ Available,"9,661.45",2025-11-21,5
+Nifty CPSE,NIFTY_CPSE.NS,✅ Available,"6,443.70",2025-11-21,1
+Nifty Oil & Gas,NIFTY_OIL_AND_GAS.NS,✅ Available,"12,143.95",2025-11-21,1
+Nifty Healthcare Index,NIFTY_HEALTHCARE.NS,✅ Available,"14,824.25",2025-11-21,1
+Nifty India Consumption,NIFTY_CONSR_DURBL.NS,✅ Available,"38,093.85",2025-11-21,1
+Nifty Mobility,NIFTY_MOBILITY.NS,✅ Available,"23,068.45",2025-11-21,1
+Nifty Housing,NIFTY_HOUSING.NS,✅ Available,"11,739.45",2025-11-21,1
+Nifty100 Equal Weight,NIFTY100_EQL_WGT.NS,✅ Available,"33,758.70",2025-11-21,1
+Nifty200 Momentum 30,NIFTY200MOMENTM30.NS,✅ Available,"31,866.55",2025-11-21,1
+Nifty 100 ESG,NIFTY100_ESG.NS,✅ Available,"5,144.90",2025-11-21,1
