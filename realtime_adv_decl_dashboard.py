@@ -540,6 +540,8 @@ class RealtimeAdvDeclDashboard:
                         unchanged
                     FROM intraday_advance_decline
                     WHERE trade_date >= :yesterday
+                      AND advances > 0
+                      AND declines > 0
                     ORDER BY poll_time
                 """), {'yesterday': yesterday})
                 
