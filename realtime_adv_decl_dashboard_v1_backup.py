@@ -9,13 +9,6 @@ Auto-refreshes every 5 minutes during market hours.
 
 Version: 2.0.0
 Date: 2025-11-25
-
-Changes from v1.0.0:
-- Combined NIFTY price + A/D lines on single chart (dual y-axis)
-- 2-day continuous view (yesterday + today)
-- Smart resume: detects gaps and backfills missing data on restart
-- Gap-free continuous chart across restarts
-- Enhanced IST timezone handling
 """
 
 import tkinter as tk
@@ -31,12 +24,6 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from matplotlib.dates import DateFormatter, HourLocator
-import pandas as pd
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import URL
-from dotenv import load_dotenv
-import pytz
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,161 +33,67 @@ from realtime_market_breadth.core.realtime_data_fetcher import RealTimeDataFetch
 from realtime_market_breadth.core.realtime_adv_decl_calculator import IntradayAdvDeclCalculator
 from realtime_market_breadth.services.async_data_logger import AsyncDataLogger
 from realtime_market_breadth.services.candle_queue_processor import run_processor
-
-load_dotenv()
+from load_verified_symbols import get_verified_yahoo_symbols
 
 
 class RealtimeAdvDeclDashboard:
-    """Live dashboard for real-time advance-decline monitoring with NIFTY chart"""
+    """Live dashboard for real-time advance-decline monitoring"""
     
     def __init__(self, root):
         self.root = root
-        self.root.title("Real-Time Market Breadth v2.0.0 - NIFTY + A/D Monitor")
-        self.root.geometry("1200x900")
-        
-        # Database connection
-        self.engine = self.create_db_engine()
+        self.root.title("Real-Time Market Breadth - NSE Advance-Decline Monitor")
+        self.root.geometry("900x700")
         
         # Components
         self.monitor = MarketHoursMonitor()
         self.fetcher = RealTimeDataFetcher(batch_size=50, calls_per_minute=20)
         self.calculator = IntradayAdvDeclCalculator()
-        self.logger = AsyncDataLogger(queue_size=1000)
+        self.logger = AsyncDataLogger(queue_size=1000)  # Only for breadth snapshots
         
-        # IST timezone
-        self.ist = pytz.timezone('Asia/Kolkata')
-        
-        # Multiprocessing queue for 1-minute candles
-        self.candle_queue = mp.Queue(maxsize=100000)
+        # Multiprocessing queue for 1-minute candles (IN-MEMORY, separate process)
+        self.candle_queue = mp.Queue(maxsize=100000)  # Large in-memory queue
         self.candle_processor = mp.Process(
             target=run_processor, 
-            args=(self.candle_queue, 1000),
+            args=(self.candle_queue, 1000),  # Batch size = 1000
             daemon=False
         )
         self.candle_processor.start()
         
         # Polling settings
-        self.polling_interval = 300  # 5 minutes
+        self.polling_interval = 300  # 5 minutes in seconds
         self.auto_refresh = tk.BooleanVar(value=True)
         self.polling_thread = None
         self.stop_polling = threading.Event()
         
-        # 2-day history dataframe (yesterday + today)
-        self.history_df = pd.DataFrame(columns=[
-            'poll_time', 'nifty_ltp', 'advances', 'declines', 'unchanged'
-        ])
+        # Load verified symbols from database
+        self.symbols = get_verified_yahoo_symbols()
         
-        # Track last poll time for smart resume
-        self.last_poll_time = None
+        # History for graphing
+        self.history = {
+            'timestamps': [],
+            'advances': [],
+            'declines': [],
+            'unchanged': [],
+            'adv_pct': [],
+            'decl_pct': []
+        }
         
-        # UI setup (creates status_text widget)
+        # UI setup
         self.setup_ui()
         
-        # Now load data (after UI is ready so log_status works)
-        # Load verified symbols from nse_yahoo_symbol_map
-        self.symbols = self.load_yahoo_symbols_from_map()
-        
-        # Load 2-day historical data on startup
-        self.log_status("Loading 2-day historical data...")
-        self.load_2day_history()
-        
-        # Load previous close from yfinance_indices_daily_quotes (done once at startup)
-        self.log_status(f"Loading previous close for {len(self.symbols)} symbols from yfinance_indices_daily_quotes...")
-        prev_close_cache = self.load_previous_close_from_indices_table()
-        
-        # Set the cache in fetcher
-        self.fetcher.prev_close_cache = prev_close_cache
-        self.fetcher.cache_loaded = True
-        self.log_status("✅ Previous close cache loaded from yfinance_indices_daily_quotes")
+        # Load previous close cache after UI is ready (so we can log status)
+        self.log_status(f"Loading previous close for {len(self.symbols)} symbols...")
+        self.fetcher.load_previous_close_cache(self.symbols)
+        self.log_status("✅ Previous close cache loaded")
         
         # Start logger
         self.logger.start()
         
-        # Smart resume: check for gaps and backfill
-        self.root.after(1000, self.smart_resume_and_fetch)
+        # Initial fetch
+        self.root.after(1000, self.fetch_data)
         
         # Bind close event
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-    
-    def create_db_engine(self):
-        """Create database engine"""
-        url = URL.create(
-            drivername="mysql+pymysql",
-            username=os.getenv('MYSQL_USER', 'root'),
-            password=os.getenv('MYSQL_PASSWORD', ''),
-            host=os.getenv('MYSQL_HOST', 'localhost'),
-            port=int(os.getenv('MYSQL_PORT', 3306)),
-            database=os.getenv('MYSQL_DB', 'marketdata'),
-            query={"charset": "utf8mb4"}
-        )
-        return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
-    
-    def load_yahoo_symbols_from_map(self):
-        """Load Yahoo symbols from nse_yahoo_symbol_map table"""
-        try:
-            with self.engine.connect() as conn:
-                result = conn.execute(text("""
-                    SELECT yahoo_symbol 
-                    FROM nse_yahoo_symbol_map 
-                    WHERE is_active = 1
-                    ORDER BY nse_symbol
-                """))
-                symbols = [row[0] for row in result.fetchall()]
-                self.log_status(f"✅ Loaded {len(symbols)} symbols from nse_yahoo_symbol_map")
-                return symbols
-        except Exception as e:
-            self.log_status(f"❌ Error loading symbols: {e}")
-            return []
-    
-    def load_previous_close_from_indices_table(self):
-        """Load yesterday's closing prices from yfinance_indices_daily_quotes for NIFTY 500 + NIFTY index"""
-        try:
-            with self.engine.connect() as conn:
-                # Get symbols from nse_yahoo_symbol_map
-                result = conn.execute(text("""
-                    SELECT yahoo_symbol 
-                    FROM nse_yahoo_symbol_map 
-                    WHERE is_active = 1
-                """))
-                all_symbols = [row[0] for row in result.fetchall()]
-                
-                # Get most recent date before today
-                result = conn.execute(text("""
-                    SELECT MAX(date) 
-                    FROM yfinance_indices_daily_quotes 
-                    WHERE date < CURDATE()
-                """))
-                prev_date = result.scalar()
-                
-                if not prev_date:
-                    self.log_status("⚠️ No previous close data found")
-                    return {}
-                
-                # Get previous close for all symbols
-                placeholders = ', '.join([f':sym{i}' for i in range(len(all_symbols))])
-                sql = text(f"""
-                    SELECT symbol, close
-                    FROM yfinance_indices_daily_quotes
-                    WHERE symbol IN ({placeholders})
-                      AND date = :prev_date
-                """)
-                
-                params = {f'sym{i}': sym for i, sym in enumerate(all_symbols)}
-                params['prev_date'] = prev_date
-                
-                result = conn.execute(sql, params)
-                prev_close_cache = {row[0]: float(row[1]) for row in result}
-                
-                self.log_status(f"✅ Loaded prev close for {len(prev_close_cache)} symbols from yfinance_indices_daily_quotes")
-                self.log_status(f"   Previous date: {prev_date}")
-                
-                return prev_close_cache
-                
-        except Exception as e:
-            self.log_status(f"❌ Error loading previous close: {e}")
-            import traceback
-            traceback.print_exc()
-            return {}
     
     def setup_ui(self):
         """Setup the user interface"""
@@ -212,7 +105,7 @@ class RealtimeAdvDeclDashboard:
         
         title_label = tk.Label(
             title_frame, 
-            text="REAL-TIME MARKET BREADTH MONITOR v2.0.0",
+            text="REAL-TIME MARKET BREADTH MONITOR",
             font=('Arial', 18, 'bold'),
             bg='#2c3e50',
             fg='white'
@@ -465,33 +358,32 @@ class RealtimeAdvDeclDashboard:
             wrap=tk.WORD
         )
         self.status_text.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=(0, 10))
-        self.log_status("Dashboard initialized. Loading 2-day historical data...")
+        self.log_status("Dashboard initialized. Waiting for first data fetch...")
         
         # Add graph panel
         self.setup_graph(main_frame)
     
     def setup_graph(self, parent):
-        """Setup matplotlib graph for NIFTY + A/D lines (2-day continuous view)"""
+        """Setup matplotlib graph for A/D trends"""
         graph_frame = tk.LabelFrame(
             parent,
-            text="NIFTY + Advance-Decline (2-Day Continuous)",
+            text="Advance-Decline Trend (Last 12 Updates)",
             font=('Arial', 11, 'bold'),
             bg='white',
             fg='#2c3e50'
         )
         graph_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
         
-        # Create matplotlib figure with dual y-axis
-        self.fig = Figure(figsize=(12, 5), dpi=100, facecolor='white')
-        self.ax1 = self.fig.add_subplot(111)  # NIFTY (left y-axis)
-        self.ax2 = self.ax1.twinx()  # A/D counts (right y-axis)
+        # Create matplotlib figure
+        self.fig = Figure(figsize=(8, 3), dpi=100, facecolor='white')
+        self.ax = self.fig.add_subplot(111)
         
         # Initial empty plot
-        self.ax1.set_xlabel('Time', fontsize=10, fontweight='bold')
-        self.ax1.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
-        self.ax2.set_ylabel('A/D Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
-        self.ax1.set_title('NIFTY Price + Advance-Decline (Yesterday + Today)', fontsize=12, fontweight='bold')
-        self.ax1.grid(True, alpha=0.3, linestyle='--')
+        self.ax.set_xlabel('Time', fontsize=9)
+        self.ax.set_ylabel('Count', fontsize=9)
+        self.ax.set_title('Real-Time Advance-Decline Trend', fontsize=10, fontweight='bold')
+        self.ax.grid(True, alpha=0.3, linestyle='--')
+        self.ax.legend(fontsize=8)
         
         # Embed in tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
@@ -507,174 +399,6 @@ class RealtimeAdvDeclDashboard:
         lines = self.status_text.get("1.0", tk.END).split('\n')
         if len(lines) > 4:
             self.status_text.delete("1.0", "2.0")
-    
-    def load_2day_history(self):
-        """Load 2 days of historical data (yesterday + today) from database on startup
-        
-        Ensures continuous display from yesterday 3:30 PM to today 9:15 AM without gaps
-        """
-        try:
-            with self.engine.connect() as conn:
-                # Get yesterday's date
-                today = datetime.now(self.ist).date()
-                yesterday = today - timedelta(days=1)
-                
-                # Load breadth snapshots from last 2 days
-                result = conn.execute(text("""
-                    SELECT 
-                        poll_time,
-                        advances,
-                        declines,
-                        unchanged
-                    FROM intraday_advance_decline
-                    WHERE trade_date >= :yesterday
-                    ORDER BY poll_time
-                """), {'yesterday': yesterday})
-                
-                breadth_data = result.fetchall()
-                
-                if not breadth_data:
-                    self.log_status("No historical data found for last 2 days")
-                    return
-                
-                # Load NIFTY candles for the same period
-                result = conn.execute(text("""
-                    SELECT 
-                        candle_timestamp,
-                        close_price
-                    FROM intraday_1min_candles
-                    WHERE symbol = 'NIFTY'
-                      AND trade_date >= :yesterday
-                    ORDER BY candle_timestamp
-                """), {'yesterday': yesterday})
-                
-                nifty_data = {row[0]: float(row[1]) if row[1] else None for row in result}
-                
-                # Merge data into history_df with gap filling
-                history_list = []
-                prev_row = None
-                
-                for row in breadth_data:
-                    poll_time = row[0]
-                    if not poll_time.tzinfo:
-                        poll_time = self.ist.localize(poll_time)
-                    
-                    # Get NIFTY price for this poll time
-                    nifty_ltp = nifty_data.get(poll_time)
-                    
-                    # If we have a previous row, check for gaps between market close and open
-                    # Yesterday 3:30 PM to Today 9:15 AM should show as continuous (hold last values)
-                    if prev_row:
-                        prev_time = prev_row['poll_time']
-                        time_diff = (poll_time - prev_time).total_seconds() / 60  # minutes
-                        
-                        # If gap > 5 minutes and crosses day boundary (3:30 PM to 9:15 AM next day)
-                        # Fill with last known values to avoid visual gap
-                        if time_diff > 300:  # 5+ hours (overnight)
-                            # Check if prev_time is around 3:30 PM and poll_time is around 9:15 AM
-                            if prev_time.time() >= dt_time(15, 0) and poll_time.time() <= dt_time(10, 0):
-                                # This is market close to market open gap - fill it
-                                # Add a synthetic point at market close (3:30 PM)
-                                market_close = self.ist.localize(datetime.combine(prev_time.date(), dt_time(15, 30)))
-                                if market_close > prev_time and market_close < poll_time:
-                                    history_list.append({
-                                        'poll_time': market_close,
-                                        'nifty_ltp': prev_row['nifty_ltp'],
-                                        'advances': prev_row['advances'],
-                                        'declines': prev_row['declines'],
-                                        'unchanged': prev_row['unchanged']
-                                    })
-                                
-                                # Add a synthetic point at market open (9:15 AM)
-                                market_open = self.ist.localize(datetime.combine(poll_time.date(), dt_time(9, 15)))
-                                if market_open > prev_time and market_open < poll_time:
-                                    history_list.append({
-                                        'poll_time': market_open,
-                                        'nifty_ltp': prev_row['nifty_ltp'],  # Hold last value
-                                        'advances': prev_row['advances'],
-                                        'declines': prev_row['declines'],
-                                        'unchanged': prev_row['unchanged']
-                                    })
-                    
-                    # Add current row
-                    current_row = {
-                        'poll_time': poll_time,
-                        'nifty_ltp': nifty_ltp,
-                        'advances': row[1],
-                        'declines': row[2],
-                        'unchanged': row[3]
-                    }
-                    history_list.append(current_row)
-                    prev_row = current_row
-                
-                self.history_df = pd.DataFrame(history_list)
-                
-                # Track last poll time
-                if not self.history_df.empty:
-                    self.last_poll_time = self.history_df['poll_time'].max()
-                    self.log_status(f"✅ Loaded {len(self.history_df)} historical snapshots")
-                    self.log_status(f"Last poll: {self.last_poll_time.strftime('%Y-%m-%d %H:%M:%S')}")
-                    
-                    # Initial chart update
-                    self.root.after(100, self.update_2day_chart)
-                
-        except Exception as e:
-            self.log_status(f"Error loading history: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    def smart_resume_and_fetch(self):
-        """Smart resume: check for missing data gaps and backfill before starting real-time polling"""
-        try:
-            now = datetime.now(self.ist)
-            
-            # If we have last poll time, check for gaps
-            if self.last_poll_time:
-                time_since_last_poll = now - self.last_poll_time
-                minutes_gap = time_since_last_poll.total_seconds() / 60
-                
-                self.log_status(f"Gap since last poll: {minutes_gap:.1f} minutes")
-                
-                # If gap > 5 minutes and market was/is open, backfill
-                if minutes_gap > 5:
-                    self.log_status("Detected data gap > 5 min. Backfilling...")
-                    self.backfill_missing_data(self.last_poll_time, now)
-            
-            # Now do regular fetch
-            self.fetch_data()
-            
-        except Exception as e:
-            self.log_status(f"Error in smart resume: {e}")
-            # Fallback to regular fetch
-            self.fetch_data()
-    
-    def backfill_missing_data(self, start_time, end_time):
-        """Backfill missing data between start_time and end_time"""
-        try:
-            # Generate timestamps for missing polls (5-min intervals)
-            current = start_time + timedelta(minutes=5)
-            backfill_count = 0
-            
-            while current <= end_time:
-                # Only backfill if timestamp is more than 5 min in past
-                if (end_time - current).total_seconds() > 300:
-                    self.log_status(f"Backfilling {current.strftime('%H:%M')}...")
-                    
-                    # Note: We can't actually fetch historical 1-min data retroactively
-                    # Yahoo Finance API doesn't support specific past timestamps
-                    # So we skip backfilling and just note the gap
-                    self.log_status(f"⚠️ Cannot backfill {current.strftime('%H:%M')} (historical data unavailable)")
-                
-                current += timedelta(minutes=5)
-            
-            if backfill_count > 0:
-                self.log_status(f"✅ Backfilled {backfill_count} missing snapshots")
-                self.update_2day_chart()
-            else:
-                self.log_status("ℹ️ No backfill possible - continuing with available data")
-            
-        except Exception as e:
-            self.log_status(f"Backfill error: {e}")
     
     def update_market_status(self):
         """Update market status indicator"""
@@ -718,32 +442,8 @@ class RealtimeAdvDeclDashboard:
             self.calculator.update_batch(data)
             breadth = self.calculator.calculate_breadth()
             
-            # Get NIFTY LTP
-            nifty_ltp = data.get('NIFTY', {}).get('ltp') or data.get('^NSEI', {}).get('ltp')
-            
-            # Add to 2-day history
-            poll_time = datetime.now(self.ist)
-            if not poll_time.tzinfo:
-                poll_time = self.ist.localize(poll_time)
-            
-            new_row = pd.DataFrame([{
-                'poll_time': poll_time,
-                'nifty_ltp': nifty_ltp,
-                'advances': breadth['advances'],
-                'declines': breadth['declines'],
-                'unchanged': breadth['unchanged']
-            }])
-            
-            self.history_df = pd.concat([self.history_df, new_row], ignore_index=True)
-            
-            # Keep only 2 days of data
-            cutoff = datetime.now(self.ist) - timedelta(days=2)
-            self.history_df = self.history_df[self.history_df['poll_time'] >= cutoff]
-            
-            # Update last poll time
-            self.last_poll_time = poll_time
-            
             # Log to database (non-blocking)
+            poll_time = datetime.now()
             trade_date = poll_time.date()
             
             # Log breadth snapshot to database (fast)
@@ -788,13 +488,11 @@ class RealtimeAdvDeclDashboard:
             
             # Update UI
             self.root.after(0, self._update_ui, breadth)
-            self.root.after(0, self.update_2day_chart)
             self.root.after(0, self.log_status, "Display updated successfully")
             
         except Exception as e:
             self.root.after(0, self.log_status, f"Error: {e}")
-            import traceback
-            traceback.print_exc()
+            self.root.after(0, messagebox.showerror, "Fetch Error", str(e))
         
         finally:
             self.root.after(0, lambda: self.refresh_btn.config(state=tk.NORMAL))
@@ -847,101 +545,65 @@ class RealtimeAdvDeclDashboard:
         
         # Update top movers
         self._update_movers()
-    
-    def update_2day_chart(self):
-        """Update the 2-day continuous NIFTY + A/D chart"""
-        if self.history_df.empty:
-            return
         
-        try:
-            # Clear previous plots
-            self.ax1.clear()
-            self.ax2.clear()
+        # Update graph with history
+        self._update_graph(breadth)
+    
+    def _update_graph(self, breadth):
+        """Update the advance-decline trend graph"""
+        # Add current data to history
+        now = datetime.now()
+        self.history['timestamps'].append(now)
+        self.history['advances'].append(breadth['advances'])
+        self.history['declines'].append(breadth['declines'])
+        self.history['unchanged'].append(breadth['unchanged'])
+        self.history['adv_pct'].append(breadth['adv_pct'])
+        self.history['decl_pct'].append(breadth['decl_pct'])
+        
+        # Keep only last 12 data points
+        max_points = 12
+        if len(self.history['timestamps']) > max_points:
+            for key in self.history:
+                self.history[key] = self.history[key][-max_points:]
+        
+        # Clear and redraw
+        self.ax.clear()
+        
+        if len(self.history['timestamps']) >= 2:
+            # Format timestamps for x-axis
+            times = [t.strftime('%H:%M') for t in self.history['timestamps']]
             
-            # Filter to 2 days only
-            cutoff = datetime.now(self.ist) - timedelta(days=2)
-            df = self.history_df[self.history_df['poll_time'] >= cutoff].copy()
-            
-            if len(df) < 2:
-                self.ax1.text(0.5, 0.5, 'Waiting for more data...', 
-                            ha='center', va='center', fontsize=12, color='gray',
-                            transform=self.ax1.transAxes)
-                self.canvas.draw()
-                return
-            
-            # Sort by time
-            df = df.sort_values('poll_time')
-            
-            # Extract data
-            times = df['poll_time'].tolist()
-            nifty = df['nifty_ltp'].tolist()
-            advances = df['advances'].tolist()
-            declines = df['declines'].tolist()
-            
-            # Filter out None values from NIFTY data
-            nifty_filtered = [(t, n) for t, n in zip(times, nifty) if n is not None]
-            
-            # Plot NIFTY on left y-axis (if we have valid data)
-            if nifty_filtered:
-                nifty_times, nifty_values = zip(*nifty_filtered)
-                line1 = self.ax1.plot(nifty_times, nifty_values, 
-                                     color='#2c3e50', linewidth=2.5, 
-                                     marker='o', markersize=4,
-                                     label=f'NIFTY ({nifty_values[-1]:.0f})')
-            else:
-                line1 = []
-                self.log_status("⚠️ NIFTY data not available")
-            
-            # Plot A/D on right y-axis
-            line2 = self.ax2.plot(times, advances, 
-                                 color='#27ae60', linewidth=2, 
-                                 marker='o', markersize=3,
-                                 label=f'Advances ({advances[-1]})')
-            line3 = self.ax2.plot(times, declines, 
-                                 color='#e74c3c', linewidth=2, 
-                                 marker='s', markersize=3,
-                                 label=f'Declines ({declines[-1]})')
-            
-            # Add vertical line to separate yesterday/today
-            today = datetime.now(self.ist).date()
-            today_start = self.ist.localize(datetime.combine(today, dt_time(9, 15)))
-            if any(t.date() == today for t in times):
-                self.ax1.axvline(x=today_start, color='gray', linestyle='--', 
-                               linewidth=1.5, alpha=0.7, label='Today Start')
+            # Plot lines
+            self.ax.plot(times, self.history['advances'], 
+                        marker='o', linewidth=2, color='#27ae60', 
+                        label=f"Advances ({self.history['advances'][-1]})")
+            self.ax.plot(times, self.history['declines'], 
+                        marker='s', linewidth=2, color='#e74c3c', 
+                        label=f"Declines ({self.history['declines'][-1]})")
+            self.ax.plot(times, self.history['unchanged'], 
+                        marker='^', linewidth=1, color='#95a5a6', 
+                        alpha=0.6, label=f"Unchanged ({self.history['unchanged'][-1]})")
             
             # Styling
-            self.ax1.set_xlabel('Time (Yesterday + Today)', fontsize=10, fontweight='bold')
-            self.ax1.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
-            self.ax2.set_ylabel('A/D Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
-            
-            self.ax1.set_title('NIFTY Price + Advance-Decline (2-Day Continuous View)', 
-                             fontsize=12, fontweight='bold', pad=15)
-            
-            # Grid
-            self.ax1.grid(True, alpha=0.3, linestyle='--')
-            
-            # Legends
-            lines = line1 + line2 + line3 if line1 else line2 + line3
-            labels = [l.get_label() for l in lines]
-            self.ax1.legend(lines, labels, loc='upper left', fontsize=9, framealpha=0.9)
-            
-            # Format x-axis
-            self.ax1.xaxis.set_major_formatter(DateFormatter('%d-%b %H:%M'))
-            self.ax1.xaxis.set_major_locator(HourLocator(interval=2))  # Every 2 hours
+            self.ax.set_xlabel('Time', fontsize=9)
+            self.ax.set_ylabel('Stock Count', fontsize=9)
+            self.ax.set_title('Intraday Advance-Decline Trend', fontsize=10, fontweight='bold')
+            self.ax.grid(True, alpha=0.3, linestyle='--')
+            self.ax.legend(loc='upper left', fontsize=8)
             
             # Rotate x labels
-            plt.setp(self.ax1.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
+            plt.setp(self.ax.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
             
             # Tight layout
             self.fig.tight_layout()
-            
-            # Redraw
-            self.canvas.draw()
-            
-        except Exception as e:
-            print(f"Chart update error: {e}")
-            import traceback
-            traceback.print_exc()
+        else:
+            # Not enough data yet
+            self.ax.text(0.5, 0.5, 'Waiting for data...', 
+                        ha='center', va='center', fontsize=12, color='gray')
+            self.ax.set_xlim(0, 1)
+            self.ax.set_ylim(0, 1)
+        
+        self.canvas.draw()
     
     def _update_movers(self):
         """Update top gainers and losers"""
@@ -1031,9 +693,6 @@ class RealtimeAdvDeclDashboard:
         self.candle_processor.join(timeout=30)
         if self.candle_processor.is_alive():
             self.candle_processor.terminate()
-        
-        # Close database connection
-        self.engine.dispose()
         
         self.root.destroy()
 
