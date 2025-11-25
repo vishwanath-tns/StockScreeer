@@ -545,7 +545,7 @@ class RealtimeAdvDeclDashboard:
                 
                 nifty_data = {row[0]: float(row[1]) if row[1] else None for row in result}
                 
-                # Merge data into history_df (no gap filling - let chart show natural break)
+                # Merge data into history_df (no gap filling - clean break between days)
                 history_list = []
                 
                 for row in breadth_data:
@@ -556,7 +556,7 @@ class RealtimeAdvDeclDashboard:
                     # Get NIFTY price for this poll time
                     nifty_ltp = nifty_data.get(poll_time)
                     
-                    # Add current row
+                    # Add current row as-is (matplotlib will handle gaps naturally)
                     history_list.append({
                         'poll_time': poll_time,
                         'nifty_ltp': nifty_ltp,
