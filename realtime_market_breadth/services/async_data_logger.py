@@ -248,6 +248,11 @@ class AsyncDataLogger:
             adv_decl_diff = breadth.get('adv_decl_diff', 0)
             sentiment = breadth.get('market_sentiment', '')
             
+            # Skip invalid data with zero advances or declines
+            if advances == 0 or declines == 0:
+                logger.debug(f"Skipping breadth snapshot with zeros: A={advances}, D={declines}")
+                return
+            
             # Insert into database
             with self.engine.begin() as conn:
                 sql = text("""
