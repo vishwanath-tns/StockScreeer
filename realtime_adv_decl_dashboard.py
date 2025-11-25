@@ -215,27 +215,27 @@ class RealtimeAdvDeclDashboard:
         title_label.pack(pady=15)
         
         # Market status bar
-        status_frame = tk.Frame(self.root, bg='#34495e', height=40)
+        status_frame = tk.Frame(self.root, bg='#34495e', height=30)
         status_frame.pack(fill=tk.X)
         status_frame.pack_propagate(False)
         
         self.market_status_label = tk.Label(
             status_frame,
             text="Market: LOADING...",
-            font=('Arial', 11, 'bold'),
+            font=('Arial', 9, 'bold'),
             bg='#34495e',
             fg='white'
         )
-        self.market_status_label.pack(side=tk.LEFT, padx=20, pady=10)
+        self.market_status_label.pack(side=tk.LEFT, padx=15, pady=5)
         
         self.last_update_label = tk.Label(
             status_frame,
             text="Last Update: Never",
-            font=('Arial', 10),
+            font=('Arial', 8),
             bg='#34495e',
             fg='#ecf0f1'
         )
-        self.last_update_label.pack(side=tk.RIGHT, padx=20, pady=10)
+        self.last_update_label.pack(side=tk.RIGHT, padx=15, pady=5)
         
         # Main content frame
         main_frame = tk.Frame(self.root, bg='#ecf0f1')
@@ -245,12 +245,12 @@ class RealtimeAdvDeclDashboard:
         metrics_frame = tk.LabelFrame(
             main_frame,
             text="Market Breadth Metrics",
-            font=('Arial', 12, 'bold'),
+            font=('Arial', 9, 'bold'),
             bg='white',
-            padx=20,
-            pady=20
+            padx=10,
+            pady=5
         )
-        metrics_frame.pack(fill=tk.X, pady=(0, 10))
+        metrics_frame.pack(fill=tk.X, pady=(0, 5))
         
         # Create 3 columns for metrics
         cols_frame = tk.Frame(metrics_frame, bg='white')
@@ -260,11 +260,11 @@ class RealtimeAdvDeclDashboard:
         adv_frame = tk.Frame(cols_frame, bg='white')
         adv_frame.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=10)
         
-        tk.Label(adv_frame, text="ADVANCES", font=('Arial', 10), bg='white', fg='#2c3e50').pack()
+        tk.Label(adv_frame, text="ADVANCES", font=('Arial', 8), bg='white', fg='#2c3e50').pack()
         self.advances_label = tk.Label(
             adv_frame,
             text="0",
-            font=('Arial', 48, 'bold'),
+            font=('Arial', 32, 'bold'),
             bg='white',
             fg='#27ae60'
         )
@@ -272,7 +272,7 @@ class RealtimeAdvDeclDashboard:
         self.adv_pct_label = tk.Label(
             adv_frame,
             text="(0.00%)",
-            font=('Arial', 14),
+            font=('Arial', 10),
             bg='white',
             fg='#27ae60'
         )
@@ -282,11 +282,11 @@ class RealtimeAdvDeclDashboard:
         decl_frame = tk.Frame(cols_frame, bg='white')
         decl_frame.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=10)
         
-        tk.Label(decl_frame, text="DECLINES", font=('Arial', 10), bg='white', fg='#2c3e50').pack()
+        tk.Label(decl_frame, text="DECLINES", font=('Arial', 8), bg='white', fg='#2c3e50').pack()
         self.declines_label = tk.Label(
             decl_frame,
             text="0",
-            font=('Arial', 48, 'bold'),
+            font=('Arial', 32, 'bold'),
             bg='white',
             fg='#e74c3c'
         )
@@ -294,7 +294,7 @@ class RealtimeAdvDeclDashboard:
         self.decl_pct_label = tk.Label(
             decl_frame,
             text="(0.00%)",
-            font=('Arial', 14),
+            font=('Arial', 10),
             bg='white',
             fg='#e74c3c'
         )
@@ -304,11 +304,11 @@ class RealtimeAdvDeclDashboard:
         unch_frame = tk.Frame(cols_frame, bg='white')
         unch_frame.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=10)
         
-        tk.Label(unch_frame, text="UNCHANGED", font=('Arial', 10), bg='white', fg='#2c3e50').pack()
+        tk.Label(unch_frame, text="UNCHANGED", font=('Arial', 8), bg='white', fg='#2c3e50').pack()
         self.unchanged_label = tk.Label(
             unch_frame,
             text="0",
-            font=('Arial', 48, 'bold'),
+            font=('Arial', 32, 'bold'),
             bg='white',
             fg='#95a5a6'
         )
@@ -316,7 +316,7 @@ class RealtimeAdvDeclDashboard:
         self.unch_pct_label = tk.Label(
             unch_frame,
             text="(0.00%)",
-            font=('Arial', 14),
+            font=('Arial', 10),
             bg='white',
             fg='#95a5a6'
         )
@@ -324,7 +324,7 @@ class RealtimeAdvDeclDashboard:
         
         # Additional metrics
         info_frame = tk.Frame(metrics_frame, bg='white')
-        info_frame.pack(fill=tk.X, pady=(20, 0))
+        info_frame.pack(fill=tk.X, pady=(5, 0))
         
         info_left = tk.Frame(info_frame, bg='white')
         info_left.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
@@ -332,7 +332,7 @@ class RealtimeAdvDeclDashboard:
         self.ratio_label = tk.Label(
             info_left,
             text="A/D Ratio: N/A",
-            font=('Arial', 12),
+            font=('Arial', 9),
             bg='white',
             fg='#2c3e50'
         )
@@ -341,7 +341,7 @@ class RealtimeAdvDeclDashboard:
         self.diff_label = tk.Label(
             info_left,
             text="A/D Difference: 0",
-            font=('Arial', 12),
+            font=('Arial', 9),
             bg='white',
             fg='#2c3e50'
         )
@@ -353,7 +353,7 @@ class RealtimeAdvDeclDashboard:
         self.total_label = tk.Label(
             info_right,
             text="Total Stocks: 0",
-            font=('Arial', 12),
+            font=('Arial', 9),
             bg='white',
             fg='#2c3e50'
         )
@@ -362,7 +362,7 @@ class RealtimeAdvDeclDashboard:
         self.sentiment_label = tk.Label(
             info_right,
             text="Sentiment: NEUTRAL",
-            font=('Arial', 12, 'bold'),
+            font=('Arial', 9, 'bold'),
             bg='white',
             fg='#f39c12'
         )
@@ -466,7 +466,7 @@ class RealtimeAdvDeclDashboard:
         self.setup_graph(main_frame)
     
     def setup_graph(self, parent):
-        """Setup matplotlib graph for NIFTY + A/D lines (2-day continuous view)"""
+        """Setup matplotlib graphs: NIFTY candlestick + A/D lines (2-day continuous view)"""
         graph_frame = tk.LabelFrame(
             parent,
             text="NIFTY + Advance-Decline (2-Day Continuous)",
@@ -476,17 +476,22 @@ class RealtimeAdvDeclDashboard:
         )
         graph_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
         
-        # Create matplotlib figure with dual y-axis
-        self.fig = Figure(figsize=(12, 5), dpi=100, facecolor='white')
-        self.ax1 = self.fig.add_subplot(111)  # NIFTY (left y-axis)
-        self.ax2 = self.ax1.twinx()  # A/D counts (right y-axis)
+        # Create matplotlib figure with 2 subplots (NIFTY candlestick on top, A/D lines below)
+        self.fig = Figure(figsize=(14, 10), dpi=100, facecolor='white')
+        self.ax_nifty = self.fig.add_subplot(211)  # Top: NIFTY candlestick
+        self.ax_ad = self.fig.add_subplot(212, sharex=self.ax_nifty)  # Bottom: A/D lines
         
-        # Initial empty plot
-        self.ax1.set_xlabel('Time', fontsize=10, fontweight='bold')
-        self.ax1.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
-        self.ax2.set_ylabel('A/D Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
-        self.ax1.set_title('NIFTY Price + Advance-Decline (Yesterday + Today)', fontsize=12, fontweight='bold')
-        self.ax1.grid(True, alpha=0.3, linestyle='--')
+        # Initial empty plots
+        self.ax_nifty.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
+        self.ax_nifty.set_title('NIFTY 50 (Yesterday + Today)', fontsize=11, fontweight='bold')
+        self.ax_nifty.grid(True, alpha=0.3, linestyle='--')
+        
+        self.ax_ad.set_xlabel('Time', fontsize=10, fontweight='bold')
+        self.ax_ad.set_ylabel('Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
+        self.ax_ad.set_title('Advance-Decline Count', fontsize=11, fontweight='bold')
+        self.ax_ad.grid(True, alpha=0.3, linestyle='--')
+        
+        self.fig.tight_layout()
         
         # Embed in tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
@@ -532,10 +537,13 @@ class RealtimeAdvDeclDashboard:
                     self.log_status("No historical data found for last 2 days")
                     return
                 
-                # Load NIFTY candles for the same period
+                # Load NIFTY candles for the same period (OHLC data for candlestick)
                 result = conn.execute(text("""
                     SELECT 
                         candle_timestamp,
+                        open_price,
+                        high_price,
+                        low_price,
                         close_price
                     FROM intraday_1min_candles
                     WHERE symbol = 'NIFTY'
@@ -543,23 +551,30 @@ class RealtimeAdvDeclDashboard:
                     ORDER BY candle_timestamp
                 """), {'yesterday': yesterday})
                 
-                # Store all NIFTY candles as list of tuples (timestamp, price)
-                nifty_candles = [(row[0], float(row[1]) if row[1] else None) for row in result]
+                # Store all NIFTY candles as list of tuples (timestamp, open, high, low, close)
+                nifty_candles = [
+                    (row[0], 
+                     float(row[1]) if row[1] else None,  # open
+                     float(row[2]) if row[2] else None,  # high
+                     float(row[3]) if row[3] else None,  # low
+                     float(row[4]) if row[4] else None)  # close
+                    for row in result
+                ]
                 
-                # Function to find closest NIFTY price for a given poll_time
+                # Function to find closest NIFTY OHLC for a given poll_time
                 def find_closest_nifty(poll_time, candles):
                     if not candles:
-                        return None
+                        return (None, None, None, None)
                     # Find candle with timestamp closest to poll_time (within 5 minutes)
-                    closest = None
+                    closest = (None, None, None, None)
                     min_diff = timedelta(minutes=5)
-                    for candle_time, price in candles:
+                    for candle_time, open_p, high_p, low_p, close_p in candles:
                         if not candle_time.tzinfo:
                             candle_time = self.ist.localize(candle_time)
                         diff = abs(poll_time - candle_time)
                         if diff < min_diff:
                             min_diff = diff
-                            closest = price
+                            closest = (open_p, high_p, low_p, close_p)
                     return closest
                 
                 # Merge data into history_df with NaN insertion to break line overnight
@@ -571,8 +586,8 @@ class RealtimeAdvDeclDashboard:
                     if not poll_time.tzinfo:
                         poll_time = self.ist.localize(poll_time)
                     
-                    # Get NIFTY price for this poll time (closest match within 5 min)
-                    nifty_ltp = find_closest_nifty(poll_time, nifty_candles)
+                    # Get NIFTY OHLC for this poll time (closest match within 5 min)
+                    nifty_open, nifty_high, nifty_low, nifty_close = find_closest_nifty(poll_time, nifty_candles)
                     
                     # Check for overnight gap (yesterday close to today open)
                     if prev_row is not None:
@@ -585,7 +600,10 @@ class RealtimeAdvDeclDashboard:
                             nan_time = prev_time + timedelta(minutes=1)
                             history_list.append({
                                 'poll_time': nan_time,
-                                'nifty_ltp': float('nan'),
+                                'nifty_open': float('nan'),
+                                'nifty_high': float('nan'),
+                                'nifty_low': float('nan'),
+                                'nifty_close': float('nan'),
                                 'advances': float('nan'),
                                 'declines': float('nan'),
                                 'unchanged': float('nan')
@@ -594,7 +612,10 @@ class RealtimeAdvDeclDashboard:
                     # Add current row
                     current_row = {
                         'poll_time': poll_time,
-                        'nifty_ltp': nifty_ltp,
+                        'nifty_open': nifty_open,
+                        'nifty_high': nifty_high,
+                        'nifty_low': nifty_low,
+                        'nifty_close': nifty_close,
                         'advances': row[1],
                         'declines': row[2],
                         'unchanged': row[3]
@@ -713,8 +734,12 @@ class RealtimeAdvDeclDashboard:
             self.calculator.update_batch(data)
             breadth = self.calculator.calculate_breadth()
             
-            # Get NIFTY LTP
-            nifty_ltp = data.get('NIFTY', {}).get('ltp') or data.get('^NSEI', {}).get('ltp')
+            # Get NIFTY OHLC
+            nifty_data = data.get('NIFTY', {}) or data.get('^NSEI', {})
+            nifty_open = nifty_data.get('open')
+            nifty_high = nifty_data.get('high')
+            nifty_low = nifty_data.get('low')
+            nifty_close = nifty_data.get('ltp')
             
             # Add to 2-day history
             poll_time = datetime.now(self.ist)
@@ -723,7 +748,10 @@ class RealtimeAdvDeclDashboard:
             
             new_row = pd.DataFrame([{
                 'poll_time': poll_time,
-                'nifty_ltp': nifty_ltp,
+                'nifty_open': nifty_open,
+                'nifty_high': nifty_high,
+                'nifty_low': nifty_low,
+                'nifty_close': nifty_close,
                 'advances': breadth['advances'],
                 'declines': breadth['declines'],
                 'unchanged': breadth['unchanged']
@@ -844,23 +872,23 @@ class RealtimeAdvDeclDashboard:
         self._update_movers()
     
     def update_2day_chart(self):
-        """Update the 2-day continuous NIFTY + A/D chart"""
+        """Update the 2-day continuous NIFTY candlestick + A/D line charts"""
         if self.history_df.empty:
             return
         
         try:
             # Clear previous plots
-            self.ax1.clear()
-            self.ax2.clear()
+            self.ax_nifty.clear()
+            self.ax_ad.clear()
             
             # Filter to 2 days only
             cutoff = datetime.now(self.ist) - timedelta(days=2)
             df = self.history_df[self.history_df['poll_time'] >= cutoff].copy()
             
             if len(df) < 2:
-                self.ax1.text(0.5, 0.5, 'Waiting for more data...', 
+                self.ax_nifty.text(0.5, 0.5, 'Waiting for more data...', 
                             ha='center', va='center', fontsize=12, color='gray',
-                            transform=self.ax1.transAxes)
+                            transform=self.ax_nifty.transAxes)
                 self.canvas.draw()
                 return
             
@@ -870,62 +898,76 @@ class RealtimeAdvDeclDashboard:
             # Extract data (skip NaN rows used for line breaks)
             df_valid = df[~df['advances'].isna()].copy()
             times = df_valid['poll_time'].tolist()
-            nifty = df_valid['nifty_ltp'].tolist()
+            nifty_open = df_valid['nifty_open'].tolist()
+            nifty_high = df_valid['nifty_high'].tolist()
+            nifty_low = df_valid['nifty_low'].tolist()
+            nifty_close = df_valid['nifty_close'].tolist()
             advances = df_valid['advances'].tolist()
             declines = df_valid['declines'].tolist()
             
             # Use sequential indices instead of datetime for x-axis (removes gap)
             x_indices = list(range(len(times)))
             
-            # Filter out None/NaN values from NIFTY data
+            # ===== NIFTY CANDLESTICK CHART =====
             import math
-            nifty_filtered = [(i, n) for i, n in zip(x_indices, nifty) 
-                            if n is not None and not (isinstance(n, float) and math.isnan(n))]
+            from matplotlib.patches import Rectangle
             
-            # Plot NIFTY on left y-axis (if we have valid data)
-            if nifty_filtered:
-                nifty_indices, nifty_values = zip(*nifty_filtered)
-                line1 = self.ax1.plot(nifty_indices, nifty_values, 
-                                     color='#2c3e50', linewidth=2.5, 
-                                     marker='o', markersize=4,
-                                     label=f'NIFTY ({nifty_values[-1]:.0f})')
-            else:
-                line1 = []
-                self.log_status("⚠️ NIFTY data not available")
+            # Draw candlesticks for NIFTY
+            candle_width = 0.6
+            for i, (o, h, l, c) in enumerate(zip(nifty_open, nifty_high, nifty_low, nifty_close)):
+                if o is None or h is None or l is None or c is None:
+                    continue
+                if isinstance(o, float) and math.isnan(o):
+                    continue
+                
+                # Color: green if close > open, red if close < open
+                color = '#27ae60' if c >= o else '#e74c3c'
+                
+                # High-low line (wick)
+                self.ax_nifty.plot([i, i], [l, h], color=color, linewidth=1.5, alpha=0.8)
+                
+                # Candlestick body
+                body_height = abs(c - o) if c != o else h * 0.001  # Tiny height for doji
+                body_bottom = min(o, c)
+                rect = Rectangle((i - candle_width/2, body_bottom), candle_width, body_height,
+                                facecolor=color, edgecolor=color, alpha=0.8, linewidth=1)
+                self.ax_nifty.add_patch(rect)
             
-            # Plot A/D on right y-axis
-            line2 = self.ax2.plot(x_indices, advances, 
-                                 color='#27ae60', linewidth=2, 
-                                 marker='o', markersize=3,
-                                 label=f'Advances ({int(advances[-1])})')
-            line3 = self.ax2.plot(x_indices, declines, 
-                                 color='#e74c3c', linewidth=2, 
-                                 marker='s', markersize=3,
-                                 label=f'Declines ({int(declines[-1])})')
+            # NIFTY styling
+            self.ax_nifty.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
+            self.ax_nifty.set_title('NIFTY 50 (Yesterday + Today)', fontsize=11, fontweight='bold', pad=10)
+            self.ax_nifty.grid(True, alpha=0.3, linestyle='--')
             
-            # Add vertical line to separate yesterday/today
+            # Add latest price as legend
+            if nifty_close and not (isinstance(nifty_close[-1], float) and math.isnan(nifty_close[-1])):
+                self.ax_nifty.legend([f'Last: ₹{nifty_close[-1]:.2f}'], loc='upper left', fontsize=9)
+            
+            # ===== ADVANCE-DECLINE LINE CHART =====
+            line1 = self.ax_ad.plot(x_indices, advances, 
+                                    color='#27ae60', linewidth=2, 
+                                    marker='o', markersize=3,
+                                    label=f'Advances ({int(advances[-1])})')
+            line2 = self.ax_ad.plot(x_indices, declines, 
+                                    color='#e74c3c', linewidth=2, 
+                                    marker='s', markersize=3,
+                                    label=f'Declines ({int(declines[-1])})')
+            
+            # A/D styling
+            self.ax_ad.set_xlabel('Time (Yesterday + Today)', fontsize=10, fontweight='bold')
+            self.ax_ad.set_ylabel('Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
+            self.ax_ad.set_title('Advance-Decline Count', fontsize=11, fontweight='bold', pad=10)
+            self.ax_ad.grid(True, alpha=0.3, linestyle='--')
+            self.ax_ad.legend(loc='upper left', fontsize=9, framealpha=0.9)
+            
+            # Add vertical line to separate yesterday/today on both charts
             today = datetime.now(self.ist).date()
             today_indices = [i for i, t in enumerate(times) if t.date() == today]
             if today_indices:
                 first_today_idx = today_indices[0]
-                self.ax1.axvline(x=first_today_idx, color='gray', linestyle='--', 
-                               linewidth=1.5, alpha=0.7, label='Today Start')
-            
-            # Styling
-            self.ax1.set_xlabel('Time (Yesterday + Today)', fontsize=10, fontweight='bold')
-            self.ax1.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
-            self.ax2.set_ylabel('A/D Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
-            
-            self.ax1.set_title('NIFTY Price + Advance-Decline (2-Day Continuous View)', 
-                             fontsize=12, fontweight='bold', pad=15)
-            
-            # Grid
-            self.ax1.grid(True, alpha=0.3, linestyle='--')
-            
-            # Legends
-            lines = line1 + line2 + line3 if line1 else line2 + line3
-            labels = [l.get_label() for l in lines]
-            self.ax1.legend(lines, labels, loc='upper left', fontsize=9, framealpha=0.9)
+                self.ax_nifty.axvline(x=first_today_idx, color='gray', linestyle='--', 
+                                     linewidth=1.5, alpha=0.7)
+                self.ax_ad.axvline(x=first_today_idx, color='gray', linestyle='--', 
+                                  linewidth=1.5, alpha=0.7)
             
             # Format x-axis with datetime labels at sparse intervals
             # Show every Nth label to avoid overcrowding
@@ -933,11 +975,12 @@ class RealtimeAdvDeclDashboard:
             tick_positions = list(range(0, len(times), tick_interval))
             tick_labels = [times[i].strftime('%d-%b %H:%M') for i in tick_positions]
             
-            self.ax1.set_xticks(tick_positions)
-            self.ax1.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=8)
+            self.ax_ad.set_xticks(tick_positions)
+            self.ax_ad.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=8)
             
             # Set x-axis limits to remove padding
-            self.ax1.set_xlim(-0.5, len(times) - 0.5)
+            self.ax_nifty.set_xlim(-0.5, len(times) - 0.5)
+            self.ax_ad.set_xlim(-0.5, len(times) - 0.5)
             
             # Tight layout
             self.fig.tight_layout()
