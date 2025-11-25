@@ -122,7 +122,8 @@ class IntradayAdvDeclCalculator:
                 'adv_decl_ratio': 0.0,
                 'adv_decl_diff': 0,
                 'last_update': None,
-                'update_count': self.update_count
+                'update_count': self.update_count,
+                'market_sentiment': 'NEUTRAL'
             }
         
         # Count statuses

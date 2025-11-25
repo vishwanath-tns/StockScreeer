@@ -153,21 +153,13 @@ class RealtimeAdvDeclDashboard:
             return []
     
     def load_previous_close_from_indices_table(self):
-        """Load yesterday's closing prices from yfinance_indices_daily_quotes for NIFTY 500 + NIFTY index"""
+        """Load yesterday's closing prices from yfinance_daily_quotes (stocks) and yfinance_indices_daily_quotes (indices)"""
         try:
             with self.engine.connect() as conn:
-                # Get symbols from nse_yahoo_symbol_map
-                result = conn.execute(text("""
-                    SELECT yahoo_symbol 
-                    FROM nse_yahoo_symbol_map 
-                    WHERE is_active = 1
-                """))
-                all_symbols = [row[0] for row in result.fetchall()]
-                
                 # Get most recent date before today
                 result = conn.execute(text("""
                     SELECT MAX(date) 
-                    FROM yfinance_indices_daily_quotes 
+                    FROM yfinance_daily_quotes 
                     WHERE date < CURDATE()
                 """))
                 prev_date = result.scalar()
@@ -176,22 +168,25 @@ class RealtimeAdvDeclDashboard:
                     self.log_status("⚠️ No previous close data found")
                     return {}
                 
-                # Get previous close for all symbols
-                placeholders = ', '.join([f':sym{i}' for i in range(len(all_symbols))])
-                sql = text(f"""
+                # Load from yfinance_daily_quotes (stocks)
+                result = conn.execute(text("""
+                    SELECT symbol, close
+                    FROM yfinance_daily_quotes
+                    WHERE date = :prev_date
+                """), {'prev_date': prev_date})
+                prev_close_cache = {row[0]: float(row[1]) for row in result if row[1]}
+                
+                # Also load from yfinance_indices_daily_quotes (indices like ^NSEI, ^BSESN)
+                result = conn.execute(text("""
                     SELECT symbol, close
                     FROM yfinance_indices_daily_quotes
-                    WHERE symbol IN ({placeholders})
-                      AND date = :prev_date
-                """)
+                    WHERE date = :prev_date
+                """), {'prev_date': prev_date})
+                for row in result:
+                    if row[1]:
+                        prev_close_cache[row[0]] = float(row[1])
                 
-                params = {f'sym{i}': sym for i, sym in enumerate(all_symbols)}
-                params['prev_date'] = prev_date
-                
-                result = conn.execute(sql, params)
-                prev_close_cache = {row[0]: float(row[1]) for row in result}
-                
-                self.log_status(f"✅ Loaded prev close for {len(prev_close_cache)} symbols from yfinance_indices_daily_quotes")
+                self.log_status(f"✅ Loaded prev close for {len(prev_close_cache)} symbols")
                 self.log_status(f"   Previous date: {prev_date}")
                 
                 return prev_close_cache
@@ -550,9 +545,8 @@ class RealtimeAdvDeclDashboard:
                 
                 nifty_data = {row[0]: float(row[1]) if row[1] else None for row in result}
                 
-                # Merge data into history_df with gap filling
+                # Merge data into history_df (no gap filling - let chart show natural break)
                 history_list = []
-                prev_row = None
                 
                 for row in breadth_data:
                     poll_time = row[0]
@@ -562,50 +556,14 @@ class RealtimeAdvDeclDashboard:
                     # Get NIFTY price for this poll time
                     nifty_ltp = nifty_data.get(poll_time)
                     
-                    # If we have a previous row, check for gaps between market close and open
-                    # Yesterday 3:30 PM to Today 9:15 AM should show as continuous (hold last values)
-                    if prev_row:
-                        prev_time = prev_row['poll_time']
-                        time_diff = (poll_time - prev_time).total_seconds() / 60  # minutes
-                        
-                        # If gap > 5 minutes and crosses day boundary (3:30 PM to 9:15 AM next day)
-                        # Fill with last known values to avoid visual gap
-                        if time_diff > 300:  # 5+ hours (overnight)
-                            # Check if prev_time is around 3:30 PM and poll_time is around 9:15 AM
-                            if prev_time.time() >= dt_time(15, 0) and poll_time.time() <= dt_time(10, 0):
-                                # This is market close to market open gap - fill it
-                                # Add a synthetic point at market close (3:30 PM)
-                                market_close = self.ist.localize(datetime.combine(prev_time.date(), dt_time(15, 30)))
-                                if market_close > prev_time and market_close < poll_time:
-                                    history_list.append({
-                                        'poll_time': market_close,
-                                        'nifty_ltp': prev_row['nifty_ltp'],
-                                        'advances': prev_row['advances'],
-                                        'declines': prev_row['declines'],
-                                        'unchanged': prev_row['unchanged']
-                                    })
-                                
-                                # Add a synthetic point at market open (9:15 AM)
-                                market_open = self.ist.localize(datetime.combine(poll_time.date(), dt_time(9, 15)))
-                                if market_open > prev_time and market_open < poll_time:
-                                    history_list.append({
-                                        'poll_time': market_open,
-                                        'nifty_ltp': prev_row['nifty_ltp'],  # Hold last value
-                                        'advances': prev_row['advances'],
-                                        'declines': prev_row['declines'],
-                                        'unchanged': prev_row['unchanged']
-                                    })
-                    
                     # Add current row
-                    current_row = {
+                    history_list.append({
                         'poll_time': poll_time,
                         'nifty_ltp': nifty_ltp,
                         'advances': row[1],
                         'declines': row[2],
                         'unchanged': row[3]
-                    }
-                    history_list.append(current_row)
-                    prev_row = current_row
+                    })
                 
                 self.history_df = pd.DataFrame(history_list)
                 
@@ -830,7 +788,7 @@ class RealtimeAdvDeclDashboard:
         self.total_label.config(text=f"Total Stocks: {breadth['total_stocks']}")
         
         # Update sentiment
-        sentiment = breadth['market_sentiment']
+        sentiment = breadth.get('market_sentiment', 'NEUTRAL')
         sentiment_colors = {
             'STRONG BULLISH': '#27ae60',
             'BULLISH': '#2ecc71',
