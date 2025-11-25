@@ -940,8 +940,8 @@ class RealtimeAdvDeclDashboard:
             import math
             from matplotlib.patches import Rectangle
             
-            # Draw candlesticks for NIFTY
-            candle_width = 0.6
+            # Draw candlesticks for NIFTY (wider candles for better visibility)
+            candle_width = 0.8
             for i, (o, h, l, c) in enumerate(zip(nifty_open, nifty_high, nifty_low, nifty_close)):
                 if o is None or h is None or l is None or c is None:
                     continue
@@ -987,15 +987,17 @@ class RealtimeAdvDeclDashboard:
             self.ax_ad.grid(True, alpha=0.3, linestyle='--')
             self.ax_ad.legend(loc='upper left', fontsize=9, framealpha=0.9)
             
-            # Add vertical line to separate yesterday/today on both charts
+            # Add subtle vertical line to separate yesterday/today on both charts (optional)
             today = datetime.now(self.ist).date()
             today_indices = [i for i, t in enumerate(times) if t.date() == today]
-            if today_indices:
+            if today_indices and len(today_indices) > 0:
                 first_today_idx = today_indices[0]
-                self.ax_nifty.axvline(x=first_today_idx, color='gray', linestyle='--', 
-                                     linewidth=1.5, alpha=0.7)
-                self.ax_ad.axvline(x=first_today_idx, color='gray', linestyle='--', 
-                                  linewidth=1.5, alpha=0.7)
+                # Only draw line if there's a clear gap (more than 1 index jump)
+                if first_today_idx > 0:
+                    self.ax_nifty.axvline(x=first_today_idx - 0.5, color='gray', linestyle=':', 
+                                         linewidth=1, alpha=0.5)
+                    self.ax_ad.axvline(x=first_today_idx - 0.5, color='gray', linestyle=':', 
+                                      linewidth=1, alpha=0.5)
             
             # Format x-axis with datetime labels at sparse intervals
             # Show every Nth label to avoid overcrowding
