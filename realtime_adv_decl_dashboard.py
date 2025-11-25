@@ -802,9 +802,13 @@ class RealtimeAdvDeclDashboard:
             
             # Queue 1-min candles to separate process (IN-MEMORY, fast)
             candles_queued = 0
+            symbols_with_candles = 0
             for symbol, info in data.items():
                 all_candles = info.get('all_candles', [])
                 prev_close = info.get('prev_close')
+                
+                if all_candles:
+                    symbols_with_candles += 1
                 
                 if all_candles and prev_close:
                     for candle in all_candles:
@@ -826,8 +830,12 @@ class RealtimeAdvDeclDashboard:
                         except:
                             pass  # Queue full, skip
             
-            self.root.after(0, self.log_status, 
-                          f"Queued {candles_queued} candles (in-memory, separate process)")
+            if candles_queued > 0:
+                self.root.after(0, self.log_status, 
+                              f"✅ Queued {candles_queued} candles from {symbols_with_candles} symbols")
+            else:
+                self.root.after(0, self.log_status, 
+                              f"⚠️ No candles to queue (market closed or no intraday data available)")
             
             # Update UI
             self.root.after(0, self._update_ui, breadth)
