@@ -237,20 +237,29 @@ class RealtimeAdvDeclDashboard:
         )
         self.last_update_label.pack(side=tk.RIGHT, padx=15, pady=5)
         
-        # Main content frame
+        # Main content frame - horizontal split
         main_frame = tk.Frame(self.root, bg='#ecf0f1')
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Breadth metrics (top section)
+        # Left side: Charts (60% width)
+        left_frame = tk.Frame(main_frame, bg='#ecf0f1')
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        
+        # Right side: Metrics + Movers (40% width)
+        right_frame = tk.Frame(main_frame, bg='#ecf0f1', width=500)
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=(5, 0))
+        right_frame.pack_propagate(False)
+        
+        # Breadth metrics (right top section)
         metrics_frame = tk.LabelFrame(
-            main_frame,
+            right_frame,
             text="Market Breadth Metrics",
             font=('Arial', 9, 'bold'),
             bg='white',
             padx=10,
             pady=5
         )
-        metrics_frame.pack(fill=tk.X, pady=(0, 5))
+        metrics_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
         
         # Create 3 columns for metrics
         cols_frame = tk.Frame(metrics_frame, bg='white')
@@ -264,7 +273,7 @@ class RealtimeAdvDeclDashboard:
         self.advances_label = tk.Label(
             adv_frame,
             text="0",
-            font=('Arial', 32, 'bold'),
+            font=('Arial', 24, 'bold'),
             bg='white',
             fg='#27ae60'
         )
@@ -272,7 +281,7 @@ class RealtimeAdvDeclDashboard:
         self.adv_pct_label = tk.Label(
             adv_frame,
             text="(0.00%)",
-            font=('Arial', 10),
+            font=('Arial', 9),
             bg='white',
             fg='#27ae60'
         )
@@ -286,7 +295,7 @@ class RealtimeAdvDeclDashboard:
         self.declines_label = tk.Label(
             decl_frame,
             text="0",
-            font=('Arial', 32, 'bold'),
+            font=('Arial', 24, 'bold'),
             bg='white',
             fg='#e74c3c'
         )
@@ -294,7 +303,7 @@ class RealtimeAdvDeclDashboard:
         self.decl_pct_label = tk.Label(
             decl_frame,
             text="(0.00%)",
-            font=('Arial', 10),
+            font=('Arial', 9),
             bg='white',
             fg='#e74c3c'
         )
@@ -308,7 +317,7 @@ class RealtimeAdvDeclDashboard:
         self.unchanged_label = tk.Label(
             unch_frame,
             text="0",
-            font=('Arial', 32, 'bold'),
+            font=('Arial', 24, 'bold'),
             bg='white',
             fg='#95a5a6'
         )
@@ -316,7 +325,7 @@ class RealtimeAdvDeclDashboard:
         self.unch_pct_label = tk.Label(
             unch_frame,
             text="(0.00%)",
-            font=('Arial', 10),
+            font=('Arial', 9),
             bg='white',
             fg='#95a5a6'
         )
@@ -368,51 +377,58 @@ class RealtimeAdvDeclDashboard:
         )
         self.sentiment_label.pack()
         
-        # Top movers section
-        movers_frame = tk.Frame(main_frame, bg='white')
-        movers_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        # Top movers section (right side below metrics)
+        movers_frame = tk.LabelFrame(
+            right_frame,
+            text="Top Movers",
+            font=('Arial', 9, 'bold'),
+            bg='white',
+            padx=5,
+            pady=5
+        )
+        movers_frame.pack(fill=tk.BOTH, expand=True, pady=(5, 5))
         
         # Top gainers
         gainers_frame = tk.LabelFrame(
             movers_frame,
             text="Top 5 Gainers",
-            font=('Arial', 11, 'bold'),
+            font=('Arial', 8, 'bold'),
             bg='white',
             fg='#27ae60'
         )
-        gainers_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        gainers_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
         
         self.gainers_text = tk.Text(
             gainers_frame,
-            height=6,
-            font=('Consolas', 10),
+            height=5,
+            font=('Consolas', 8),
             bg='#f8f9fa',
             relief=tk.FLAT
         )
-        self.gainers_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.gainers_text.pack(fill=tk.BOTH, expand=True, padx=3, pady=3)
         
         # Top losers
         losers_frame = tk.LabelFrame(
             movers_frame,
             text="Top 5 Losers",
-            font=('Arial', 11, 'bold'),
+            font=('Arial', 8, 'bold'),
             bg='white',
             fg='#e74c3c'
         )
-        losers_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 0))
+        losers_frame.pack(fill=tk.BOTH, expand=True)
         
         self.losers_text = tk.Text(
             losers_frame,
-            height=6,
-            font=('Consolas', 10),
+            height=5,
+            font=('Consolas', 8),
             bg='#f8f9fa',
             relief=tk.FLAT
         )
-        self.losers_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.losers_text.pack(fill=tk.BOTH, expand=True, padx=3, pady=3)
         
-        # Control panel
-        control_frame = tk.Frame(main_frame, bg='white', height=80)
-        control_frame.pack(fill=tk.X)
+        # Control panel (bottom of right frame)
+        control_frame = tk.Frame(right_frame, bg='white', height=100)
+        control_frame.pack(fill=tk.X, pady=(5, 0))
         control_frame.pack_propagate(False)
         
         # Auto-refresh checkbox
@@ -420,64 +436,55 @@ class RealtimeAdvDeclDashboard:
             control_frame,
             text="Auto-Refresh (5 min)",
             variable=self.auto_refresh,
-            font=('Arial', 10),
+            font=('Arial', 8),
             bg='white',
             command=self.toggle_auto_refresh
         )
-        self.auto_refresh_check.pack(side=tk.LEFT, padx=20, pady=20)
+        self.auto_refresh_check.pack(side=tk.TOP, padx=10, pady=5)
         
         # Refresh button
         self.refresh_btn = tk.Button(
             control_frame,
             text="Refresh Now",
-            font=('Arial', 10, 'bold'),
+            font=('Arial', 8, 'bold'),
             bg='#3498db',
             fg='white',
-            padx=20,
-            pady=10,
+            padx=10,
+            pady=5,
             command=self.manual_refresh,
             cursor='hand2'
         )
-        self.refresh_btn.pack(side=tk.LEFT, padx=10, pady=20)
+        self.refresh_btn.pack(side=tk.TOP, padx=10, pady=5)
         
         # Countdown label
         self.countdown_label = tk.Label(
             control_frame,
             text="Next refresh in: --:--",
-            font=('Arial', 10),
+            font=('Arial', 8),
             bg='white',
             fg='#7f8c8d'
         )
-        self.countdown_label.pack(side=tk.LEFT, padx=20, pady=20)
+        self.countdown_label.pack(side=tk.TOP, padx=10, pady=5)
         
         # Status bar at bottom
         self.status_text = tk.Text(
             control_frame,
             height=2,
-            font=('Consolas', 9),
+            font=('Consolas', 7),
             bg='#ecf0f1',
             relief=tk.FLAT,
             wrap=tk.WORD
         )
-        self.status_text.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=(0, 10))
+        self.status_text.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
         self.log_status("Dashboard initialized. Loading 2-day historical data...")
         
-        # Add graph panel
-        self.setup_graph(main_frame)
+        # Add graph panel to left frame
+        self.setup_graph(left_frame)
     
     def setup_graph(self, parent):
         """Setup matplotlib graphs: NIFTY candlestick + A/D lines (2-day continuous view)"""
-        graph_frame = tk.LabelFrame(
-            parent,
-            text="NIFTY + Advance-Decline (2-Day Continuous)",
-            font=('Arial', 11, 'bold'),
-            bg='white',
-            fg='#2c3e50'
-        )
-        graph_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
-        
         # Create matplotlib figure with 2 subplots (NIFTY candlestick on top, A/D lines below)
-        self.fig = Figure(figsize=(14, 10), dpi=100, facecolor='white')
+        self.fig = Figure(figsize=(12, 10), dpi=100, facecolor='white')
         self.ax_nifty = self.fig.add_subplot(211)  # Top: NIFTY candlestick
         self.ax_ad = self.fig.add_subplot(212, sharex=self.ax_nifty)  # Bottom: A/D lines
         
@@ -494,9 +501,9 @@ class RealtimeAdvDeclDashboard:
         self.fig.tight_layout()
         
         # Embed in tkinter
-        self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     
     def log_status(self, message):
         """Log status message"""
