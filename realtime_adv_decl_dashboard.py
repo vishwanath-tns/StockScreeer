@@ -545,8 +545,9 @@ class RealtimeAdvDeclDashboard:
                 
                 nifty_data = {row[0]: float(row[1]) if row[1] else None for row in result}
                 
-                # Merge data into history_df (no gap filling - clean break between days)
+                # Merge data into history_df with NaN insertion to break line overnight
                 history_list = []
+                prev_row = None
                 
                 for row in breadth_data:
                     poll_time = row[0]
@@ -556,14 +557,33 @@ class RealtimeAdvDeclDashboard:
                     # Get NIFTY price for this poll time
                     nifty_ltp = nifty_data.get(poll_time)
                     
-                    # Add current row as-is (matplotlib will handle gaps naturally)
-                    history_list.append({
+                    # Check for overnight gap (yesterday close to today open)
+                    if prev_row is not None:
+                        prev_time = prev_row['poll_time']
+                        time_diff = (poll_time - prev_time).total_seconds() / 3600  # hours
+                        
+                        # If gap > 5 hours, insert NaN row to break the line
+                        if time_diff > 5:
+                            # Insert NaN row with timestamp between prev and current
+                            nan_time = prev_time + timedelta(minutes=1)
+                            history_list.append({
+                                'poll_time': nan_time,
+                                'nifty_ltp': float('nan'),
+                                'advances': float('nan'),
+                                'declines': float('nan'),
+                                'unchanged': float('nan')
+                            })
+                    
+                    # Add current row
+                    current_row = {
                         'poll_time': poll_time,
                         'nifty_ltp': nifty_ltp,
                         'advances': row[1],
                         'declines': row[2],
                         'unchanged': row[3]
-                    })
+                    }
+                    history_list.append(current_row)
+                    prev_row = current_row
                 
                 self.history_df = pd.DataFrame(history_list)
                 
