@@ -543,7 +543,24 @@ class RealtimeAdvDeclDashboard:
                     ORDER BY candle_timestamp
                 """), {'yesterday': yesterday})
                 
-                nifty_data = {row[0]: float(row[1]) if row[1] else None for row in result}
+                # Store all NIFTY candles as list of tuples (timestamp, price)
+                nifty_candles = [(row[0], float(row[1]) if row[1] else None) for row in result]
+                
+                # Function to find closest NIFTY price for a given poll_time
+                def find_closest_nifty(poll_time, candles):
+                    if not candles:
+                        return None
+                    # Find candle with timestamp closest to poll_time (within 5 minutes)
+                    closest = None
+                    min_diff = timedelta(minutes=5)
+                    for candle_time, price in candles:
+                        if not candle_time.tzinfo:
+                            candle_time = self.ist.localize(candle_time)
+                        diff = abs(poll_time - candle_time)
+                        if diff < min_diff:
+                            min_diff = diff
+                            closest = price
+                    return closest
                 
                 # Merge data into history_df with NaN insertion to break line overnight
                 history_list = []
@@ -554,8 +571,8 @@ class RealtimeAdvDeclDashboard:
                     if not poll_time.tzinfo:
                         poll_time = self.ist.localize(poll_time)
                     
-                    # Get NIFTY price for this poll time
-                    nifty_ltp = nifty_data.get(poll_time)
+                    # Get NIFTY price for this poll time (closest match within 5 min)
+                    nifty_ltp = find_closest_nifty(poll_time, nifty_candles)
                     
                     # Check for overnight gap (yesterday close to today open)
                     if prev_row is not None:
@@ -850,19 +867,25 @@ class RealtimeAdvDeclDashboard:
             # Sort by time
             df = df.sort_values('poll_time')
             
-            # Extract data
-            times = df['poll_time'].tolist()
-            nifty = df['nifty_ltp'].tolist()
-            advances = df['advances'].tolist()
-            declines = df['declines'].tolist()
+            # Extract data (skip NaN rows used for line breaks)
+            df_valid = df[~df['advances'].isna()].copy()
+            times = df_valid['poll_time'].tolist()
+            nifty = df_valid['nifty_ltp'].tolist()
+            advances = df_valid['advances'].tolist()
+            declines = df_valid['declines'].tolist()
             
-            # Filter out None values from NIFTY data
-            nifty_filtered = [(t, n) for t, n in zip(times, nifty) if n is not None]
+            # Use sequential indices instead of datetime for x-axis (removes gap)
+            x_indices = list(range(len(times)))
+            
+            # Filter out None/NaN values from NIFTY data
+            import math
+            nifty_filtered = [(i, n) for i, n in zip(x_indices, nifty) 
+                            if n is not None and not (isinstance(n, float) and math.isnan(n))]
             
             # Plot NIFTY on left y-axis (if we have valid data)
             if nifty_filtered:
-                nifty_times, nifty_values = zip(*nifty_filtered)
-                line1 = self.ax1.plot(nifty_times, nifty_values, 
+                nifty_indices, nifty_values = zip(*nifty_filtered)
+                line1 = self.ax1.plot(nifty_indices, nifty_values, 
                                      color='#2c3e50', linewidth=2.5, 
                                      marker='o', markersize=4,
                                      label=f'NIFTY ({nifty_values[-1]:.0f})')
@@ -871,20 +894,21 @@ class RealtimeAdvDeclDashboard:
                 self.log_status("⚠️ NIFTY data not available")
             
             # Plot A/D on right y-axis
-            line2 = self.ax2.plot(times, advances, 
+            line2 = self.ax2.plot(x_indices, advances, 
                                  color='#27ae60', linewidth=2, 
                                  marker='o', markersize=3,
-                                 label=f'Advances ({advances[-1]})')
-            line3 = self.ax2.plot(times, declines, 
+                                 label=f'Advances ({int(advances[-1])})')
+            line3 = self.ax2.plot(x_indices, declines, 
                                  color='#e74c3c', linewidth=2, 
                                  marker='s', markersize=3,
-                                 label=f'Declines ({declines[-1]})')
+                                 label=f'Declines ({int(declines[-1])})')
             
             # Add vertical line to separate yesterday/today
             today = datetime.now(self.ist).date()
-            today_start = self.ist.localize(datetime.combine(today, dt_time(9, 15)))
-            if any(t.date() == today for t in times):
-                self.ax1.axvline(x=today_start, color='gray', linestyle='--', 
+            today_indices = [i for i, t in enumerate(times) if t.date() == today]
+            if today_indices:
+                first_today_idx = today_indices[0]
+                self.ax1.axvline(x=first_today_idx, color='gray', linestyle='--', 
                                linewidth=1.5, alpha=0.7, label='Today Start')
             
             # Styling
@@ -903,12 +927,17 @@ class RealtimeAdvDeclDashboard:
             labels = [l.get_label() for l in lines]
             self.ax1.legend(lines, labels, loc='upper left', fontsize=9, framealpha=0.9)
             
-            # Format x-axis
-            self.ax1.xaxis.set_major_formatter(DateFormatter('%d-%b %H:%M'))
-            self.ax1.xaxis.set_major_locator(HourLocator(interval=2))  # Every 2 hours
+            # Format x-axis with datetime labels at sparse intervals
+            # Show every Nth label to avoid overcrowding
+            tick_interval = max(1, len(times) // 10)  # Show ~10 labels
+            tick_positions = list(range(0, len(times), tick_interval))
+            tick_labels = [times[i].strftime('%d-%b %H:%M') for i in tick_positions]
             
-            # Rotate x labels
-            plt.setp(self.ax1.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=8)
+            self.ax1.set_xticks(tick_positions)
+            self.ax1.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=8)
+            
+            # Set x-axis limits to remove padding
+            self.ax1.set_xlim(-0.5, len(times) - 0.5)
             
             # Tight layout
             self.fig.tight_layout()
