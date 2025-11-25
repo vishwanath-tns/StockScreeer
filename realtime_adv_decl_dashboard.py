@@ -558,7 +558,7 @@ class RealtimeAdvDeclDashboard:
                         low_price,
                         close_price
                     FROM intraday_1min_candles
-                    WHERE symbol = 'NIFTY'
+                    WHERE symbol = '^NSEI'
                       AND trade_date >= :yesterday
                     ORDER BY candle_timestamp
                 """), {'yesterday': yesterday})
