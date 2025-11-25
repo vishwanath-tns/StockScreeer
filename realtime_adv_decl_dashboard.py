@@ -136,7 +136,7 @@ class RealtimeAdvDeclDashboard:
         return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
     
     def load_yahoo_symbols_from_map(self):
-        """Load Yahoo symbols from nse_yahoo_symbol_map table"""
+        """Load Yahoo symbols from nse_yahoo_symbol_map table + add NIFTY"""
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(text("""
@@ -146,7 +146,12 @@ class RealtimeAdvDeclDashboard:
                     ORDER BY nse_symbol
                 """))
                 symbols = [row[0] for row in result.fetchall()]
-                self.log_status(f"✅ Loaded {len(symbols)} symbols from nse_yahoo_symbol_map")
+                
+                # Add NIFTY to symbols list for fetching
+                if '^NSEI' not in symbols:
+                    symbols.append('^NSEI')
+                
+                self.log_status(f"✅ Loaded {len(symbols)-1} stocks + NIFTY from database")
                 return symbols
         except Exception as e:
             self.log_status(f"❌ Error loading symbols: {e}")
@@ -747,6 +752,14 @@ class RealtimeAdvDeclDashboard:
             nifty_high = nifty_data.get('high')
             nifty_low = nifty_data.get('low')
             nifty_close = nifty_data.get('ltp')
+            
+            # Debug: Log NIFTY data
+            if nifty_data:
+                self.root.after(0, self.log_status,
+                              f"✅ NIFTY fetched: O={nifty_open} H={nifty_high} L={nifty_low} C={nifty_close}")
+            else:
+                self.root.after(0, self.log_status,
+                              f"⚠️ NIFTY data not found in fetch results")
             
             # Add to 2-day history
             poll_time = datetime.now(self.ist)
