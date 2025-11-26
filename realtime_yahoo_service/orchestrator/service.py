@@ -449,14 +449,15 @@ class OrchestratorService:
     
     async def run(self):
         """Run the orchestrator service (blocks until shutdown)"""
-        # Setup signal handlers
-        loop = asyncio.get_event_loop()
-        
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(
-                sig,
-                lambda: asyncio.create_task(self.stop())
-            )
+        # Setup signal handlers (Unix only)
+        import platform
+        if platform.system() != 'Windows':
+            loop = asyncio.get_event_loop()
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                loop.add_signal_handler(
+                    sig,
+                    lambda: asyncio.create_task(self.stop())
+                )
         
         try:
             await self.start()

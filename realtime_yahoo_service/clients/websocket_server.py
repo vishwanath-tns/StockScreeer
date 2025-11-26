@@ -138,11 +138,18 @@ class WebSocketServer(BaseSubscriber):
         
         Args:
             channel: Channel name
-            data: Serialized message data
+            data: Serialized message data (bytes) or already deserialized dict
         """
         try:
-            # Deserialize message
-            message = self.serializer.deserialize(data)
+            # Deserialize message (handle both bytes and already-deserialized dict)
+            if isinstance(data, bytes):
+                message = self.serializer.deserialize(data)
+            elif isinstance(data, dict):
+                # Already deserialized (in-memory broker optimization)
+                message = data
+            else:
+                # Unknown type, try to deserialize
+                message = self.serializer.deserialize(data)
             
             # Create WebSocket message
             ws_message = {

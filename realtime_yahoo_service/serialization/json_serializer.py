@@ -67,7 +67,7 @@ class JSONSerializer(IMessageSerializer):
         Deserialize JSON bytes to object
         
         Args:
-            data: JSON bytes (UTF-8 encoded)
+            data: JSON bytes (UTF-8 encoded) or already-deserialized dict
             
         Returns:
             Deserialized dict or list
@@ -76,6 +76,10 @@ class JSONSerializer(IMessageSerializer):
             DeserializationError: If deserialization fails
         """
         try:
+            # Handle already-deserialized data (in-memory broker optimization)
+            if isinstance(data, (dict, list)):
+                return data
+            
             # Decode bytes to string
             json_str = data.decode('utf-8')
             
