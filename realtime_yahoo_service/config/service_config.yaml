@@ -1,0 +1,104 @@
+# Service Configuration
+# ======================
+
+# Redis Configuration
+redis:
+  url: ${REDIS_URL:redis://localhost:6379/0}
+  connection_pool:
+    max_connections: 50
+    socket_timeout: 5
+    socket_connect_timeout: 5
+  reconnect:
+    max_retries: 10
+    backoff_base: 1  # seconds
+    backoff_max: 30  # seconds
+
+# Serialization Configuration
+serialization:
+  format: ${SERIALIZATION_FORMAT:msgpack}  # json, msgpack, protobuf
+  protobuf:
+    schemas_path: events/schemas/v1
+
+# Dead Letter Queue Configuration
+dlq:
+  enabled: ${ENABLE_DLQ:true}
+  retention_days: ${DLQ_RETENTION_DAYS:7}
+  max_records: ${DLQ_MAX_RECORDS:100000}
+  auto_cleanup: true
+  cleanup_interval: 86400  # 24 hours in seconds
+
+# Yahoo Finance Publisher Configuration
+yahoo_publisher:
+  batch_size: ${YAHOO_BATCH_SIZE:50}
+  rate_limit: ${YAHOO_RATE_LIMIT:20}  # calls per minute
+  poll_interval: ${YAHOO_POLL_INTERVAL:60}  # seconds
+  fetch_timeout: 30  # seconds
+  enable_prev_close_cache: true
+
+# Database Connection Pools
+connection_pools:
+  db_writer:
+    pool_size: ${DB_WRITER_POOL_SIZE:3}
+    max_overflow: ${DB_WRITER_MAX_OVERFLOW:5}
+    pool_pre_ping: true
+    pool_recycle: 3600
+  
+  state_tracker:
+    pool_size: ${STATE_TRACKER_POOL_SIZE:2}
+    max_overflow: ${STATE_TRACKER_MAX_OVERFLOW:3}
+    pool_pre_ping: true
+    pool_recycle: 3600
+  
+  analytics:
+    pool_size: ${ANALYTICS_POOL_SIZE:2}
+    max_overflow: ${ANALYTICS_MAX_OVERFLOW:3}
+    pool_pre_ping: true
+    pool_recycle: 3600
+
+# Subscriber Configuration
+subscribers:
+  db_writer:
+    batch_size: 1000
+    flush_timeout: 5  # seconds
+    enabled: true
+  
+  state_tracker:
+    gap_threshold: 300  # 5 minutes in seconds
+    enabled: true
+  
+  market_breadth:
+    buffer_timeout: 10  # seconds
+    enabled: true
+  
+  performance_monitor:
+    metrics_interval: 60  # seconds
+    enabled: true
+
+# HTTP Server Configuration
+http_server:
+  host: ${HTTP_HOST:0.0.0.0}
+  port: ${HTTP_PORT:8080}
+  endpoints:
+    health: /health
+    metrics: /metrics
+
+# WebSocket Server Configuration
+websocket_server:
+  host: ${WEBSOCKET_HOST:0.0.0.0}
+  port: ${WEBSOCKET_PORT:8765}
+  heartbeat_interval: ${WEBSOCKET_HEARTBEAT_INTERVAL:30}
+  max_message_size: 1048576  # 1MB
+  enabled: true
+
+# Logging Configuration
+logging:
+  level: ${LOG_LEVEL:INFO}
+  format: ${LOG_FORMAT:%(asctime)s - %(name)s - %(levelname)s - %(message)s}
+  handlers:
+    console:
+      enabled: true
+    file:
+      enabled: true
+      path: logs/realtime_service.log
+      max_bytes: 10485760  # 10MB
+      backup_count: 5
