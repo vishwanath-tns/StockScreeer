@@ -1,3 +1,5 @@
 """Client libraries and tools"""
 
-__all__ = ['python_client', 'websocket_server', 'cli_subscriber']
+from .websocket_server import WebSocketServer
+
+__all__ = ['python_client', 'websocket_server', 'cli_subscriber', 'WebSocketServer']
