@@ -1,9 +1,18 @@
-"""Subscriber implementations"""
+"""
+Subscribers Package
+===================
+
+Event subscribers for processing and storing market data.
+"""
+
+from .base_subscriber import (
+    ISubscriber,
+    BaseSubscriber,
+    SubscriberError,
+)
 
 __all__ = [
-    'base_subscriber',
-    'db_writer_subscriber',
-    'state_tracker_subscriber',
-    'performance_monitor_subscriber',
-    'market_breadth_subscriber'
+    'ISubscriber',
+    'BaseSubscriber',
+    'SubscriberError',
 ]
