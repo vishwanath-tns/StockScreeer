@@ -1,3 +1,13 @@
-"""Dead Letter Queue infrastructure"""
+"""
+DLQ Package
+===========
 
-__all__ = ['dlq_manager', 'dlq_subscriber', 'dlq_replayer']
+Dead Letter Queue for handling failed message processing.
+"""
+
+from .dlq_manager import DLQManager, DLQMessage
+
+__all__ = [
+    'DLQManager',
+    'DLQMessage',
+]
