@@ -1,3 +1,25 @@
-"""Redis-based event broker"""
+"""
+Redis Broker Package
+====================
 
-__all__ = ['redis_event_broker']
+Event broker implementations for real-time data distribution.
+"""
+
+from .base_broker import (
+    IEventBroker,
+    BrokerError,
+    PublishError,
+    SubscriptionError,
+    ConnectionError,
+)
+from .redis_event_broker import RedisEventBroker, create_redis_broker
+
+__all__ = [
+    'IEventBroker',
+    'BrokerError',
+    'PublishError',
+    'SubscriptionError',
+    'ConnectionError',
+    'RedisEventBroker',
+    'create_redis_broker',
+]
