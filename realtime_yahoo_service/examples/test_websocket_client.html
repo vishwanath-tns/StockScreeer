@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .disconnect-btn {
+            background-color: #dc3545;
+        }
+        .disconnect-btn:hover {
+            background-color: #c82333;
+        }
+        .clear-btn {
+            background-color: #6c757d;
+        }
+        .clear-btn:hover {
+            background-color: #5a6268;
+        }
+        #messages {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 3px;
+        }
+        .message.candle {
+            background-color: #e7f3ff;
+            border-left: 3px solid #0066cc;
+        }
+        .message.status {
+            background-color: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+        .message.breadth {
+            background-color: #d4edda;
+            border-left: 3px solid #28a745;
+        }
+        .message.trend {
+            background-color: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 11px;
+        }
+        .event-type {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 300px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Real-Time Yahoo Finance WebSocket Client</h1>
+        
+        <div id="status" class="status disconnected">
+            ⚠️ Disconnected
+        </div>
+        
+        <div>
+            <input type="text" id="wsUrl" value="ws://localhost:8765" placeholder="WebSocket URL">
+            <button id="connectBtn" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled class="disconnect-btn">Disconnect</button>
+            <button onclick="clearMessages()" class="clear-btn">Clear Messages</button>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Messages</div>
+                <div class="stat-value" id="totalMessages">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Candle Events</div>
+                <div class="stat-value" id="candleCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Status Events</div>
+                <div class="stat-value" id="statusCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Connection Time</div>
+                <div class="stat-value" id="uptime">0s</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>📨 Messages</h2>
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageCount = 0;
+        let candleCount = 0;
+        let statusCount = 0;
+        let breadthCount = 0;
+        let trendCount = 0;
+        let connectTime = null;
+        let uptimeInterval = null;
+
+        function connect() {
+            const url = document.getElementById('wsUrl').value;
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = function(event) {
+                    updateStatus(true);
+                    addMessage('info', 'Connected to ' + url);
+                    connectTime = Date.now();
+                    startUptimeCounter();
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleMessage(data);
+                    } catch (e) {
+                        addMessage('error', 'Failed to parse message: ' + e.message);
+                    }
+                };
+                
+                ws.onerror = function(error) {
+                    addMessage('error', 'WebSocket error occurred');
+                    console.error('WebSocket error:', error);
+                };
+                
+                ws.onclose = function(event) {
+                    updateStatus(false);
+                    addMessage('info', 'Disconnected from server');
+                    stopUptimeCounter();
+                };
+            } catch (e) {
+                addMessage('error', 'Failed to connect: ' + e.message);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function handleMessage(data) {
+            messageCount++;
+            document.getElementById('totalMessages').textContent = messageCount;
+            
+            const eventType = data.event_type || 'unknown';
+            
+            switch(eventType) {
+                case 'candle_data':
+                    candleCount++;
+                    document.getElementById('candleCount').textContent = candleCount;
+                    addCandleMessage(data);
+                    break;
+                case 'fetch_status':
+                    statusCount++;
+                    document.getElementById('statusCount').textContent = statusCount;
+                    addStatusMessage(data);
+                    break;
+                case 'market_breadth':
+                    breadthCount++;
+                    addBreadthMessage(data);
+                    break;
+                case 'trend_analysis':
+                    trendCount++;
+                    addTrendMessage(data);
+                    break;
+                default:
+                    addMessage('info', JSON.stringify(data, null, 2));
+            }
+        }
+
+        function addCandleMessage(data) {
+            const symbol = data.symbol || 'Unknown';
+            const price = data.close || 'N/A';
+            const change = data.change_pct ? data.change_pct.toFixed(2) + '%' : 'N/A';
+            const volume = data.volume || 'N/A';
+            
+            const html = `
+                <span class="event-type">📈 CANDLE</span>
+                <strong>${symbol}</strong>: $${price} (${change}) | Vol: ${volume}
+            `;
+            addMessage('candle', html);
+        }
+
+        function addStatusMessage(data) {
+            const publisher = data.publisher_id || 'Unknown';
+            const status = data.status || 'unknown';
+            const html = `
+                <span class="event-type">ℹ️ STATUS</span>
+                Publisher: ${publisher} | Status: ${status}
+            `;
+            addMessage('status', html);
+        }
+
+        function addBreadthMessage(data) {
+            const advancing = data.advancing || 0;
+            const declining = data.declining || 0;
+            const unchanged = data.unchanged || 0;
+            const html = `
+                <span class="event-type">📊 BREADTH</span>
+                Advancing: ${advancing} | Declining: ${declining} | Unchanged: ${unchanged}
+            `;
+            addMessage('breadth', html);
+        }
+
+        function addTrendMessage(data) {
+            const symbol = data.symbol || 'Unknown';
+            const trend = data.trend || 'neutral';
+            const sma20 = data.sma_20 ? data.sma_20.toFixed(2) : 'N/A';
+            const html = `
+                <span class="event-type">📉 TREND</span>
+                ${symbol}: ${trend} | SMA20: ${sma20}
+            `;
+            addMessage('trend', html);
+        }
+
+        function addMessage(type, content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                ${content}
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            // Keep only last 100 messages
+            if (messagesDiv.children.length > 100) {
+                messagesDiv.removeChild(messagesDiv.firstChild);
+            }
+        }
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = '✅ Connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = '⚠️ Disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function startUptimeCounter() {
+            uptimeInterval = setInterval(() => {
+                if (connectTime) {
+                    const uptime = Math.floor((Date.now() - connectTime) / 1000);
+                    document.getElementById('uptime').textContent = uptime + 's';
+                }
+            }, 1000);
+        }
+
+        function stopUptimeCounter() {
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+                uptimeInterval = null;
+            }
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+            messageCount = 0;
+            candleCount = 0;
+            statusCount = 0;
+            breadthCount = 0;
+            trendCount = 0;
+            document.getElementById('totalMessages').textContent = '0';
+            document.getElementById('candleCount').textContent = '0';
+            document.getElementById('statusCount').textContent = '0';
+        }
+
+        // Auto-connect on load (optional)
+        // window.onload = connect;
+    </script>
+</body>
+</html>

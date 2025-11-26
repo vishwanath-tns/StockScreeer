@@ -1,0 +1,38 @@
+broker:
+  type: inmemory  # No Redis needed for local testing
+
+serializer:
+  type: json  # Simple and readable
+
+dlq:
+  enabled: true
+  file_path: ./test_dlq
+
+publishers:
+  - id: yahoo_test
+    type: yahoo_finance
+    enabled: true
+    symbols: ['AAPL', 'GOOGL', 'MSFT']  # Just 3 symbols for quick testing
+    publish_interval: 10.0  # Every 10 seconds
+    batch_size: 10
+    rate_limit: 10
+    rate_limit_period: 60.0
+
+subscribers:
+  - id: state_tracker
+    type: state_tracker
+    enabled: true
+    
+  - id: websocket
+    type: websocket
+    enabled: true
+    host: localhost
+    port: 8765
+
+health:
+  check_interval: 30
+  restart_on_failure: false  # Manual control for testing
+
+logging:
+  level: INFO
+  file: test_service.log
