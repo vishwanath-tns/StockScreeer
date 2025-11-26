@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yahoo Finance Service - Live Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .status-indicator.connected {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        
+        .status-indicator.disconnected {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .status-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.green {
+            background: #28a745;
+        }
+        
+        .status-dot.red {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .metric-value.green {
+            color: #28a745;
+        }
+        
+        .metric-value.red {
+            color: #dc3545;
+        }
+        
+        .metric-value.blue {
+            color: #007bff;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .data-feed {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .data-feed h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .data-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border-left: 3px solid #007bff;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        .data-item .timestamp {
+            color: #666;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+        
+        .data-item .symbol {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .data-item .price {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .data-item .price.down {
+            color: #dc3545;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Real-Time Yahoo Finance Dashboard</h1>
+            <p class="subtitle">Live Market Data Streaming Service</p>
+        </div>
+        
+        <!-- Status Card -->
+        <div class="status-card">
+            <div id="connectionStatus" class="status-indicator disconnected">
+                <div class="status-dot red"></div>
+                <div>
+                    <strong>Service Status:</strong> Disconnected<br>
+                    <small>Attempting to connect to ws://localhost:8765...</small>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="connectBtn" onclick="connect()">🔌 Connect</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled>❌ Disconnect</button>
+                <button onclick="clearData()">🗑️ Clear Data</button>
+                <button onclick="location.reload()">🔄 Refresh</button>
+            </div>
+        </div>
+        
+        <!-- Metrics Grid -->
+        <div class="grid">
+            <div class="metric-card">
+                <div class="metric-label">Connection Status</div>
+                <div id="statusText" class="metric-value red">OFFLINE</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Messages</div>
+                <div id="totalMessages" class="metric-value blue">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Candle Events</div>
+                <div id="candleCount" class="metric-value green">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Uptime</div>
+                <div id="uptime" class="metric-value">0s</div>
+            </div>
+        </div>
+        
+        <!-- Data Feed -->
+        <div class="data-feed">
+            <h3>📡 Live Data Feed</h3>
+            <div id="dataContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <div>No data yet. Click Connect to start receiving live market data.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageCount = 0;
+        let candleCount = 0;
+        let connectTime = null;
+        let uptimeInterval = null;
+
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            const statusDot = statusDiv.querySelector('.status-dot');
+            const statusText = document.getElementById('statusText');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                statusDiv.className = 'status-indicator connected';
+                statusDot.className = 'status-dot green';
+                statusDiv.innerHTML = `
+                    <div class="status-dot green"></div>
+                    <div>
+                        <strong>Service Status:</strong> Connected ✅<br>
+                        <small>Receiving live market data from ws://localhost:8765</small>
+                    </div>
+                `;
+                statusText.textContent = 'ONLINE';
+                statusText.className = 'metric-value green';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.className = 'status-indicator disconnected';
+                statusDot.className = 'status-dot red';
+                statusDiv.innerHTML = `
+                    <div class="status-dot red"></div>
+                    <div>
+                        <strong>Service Status:</strong> Disconnected ❌<br>
+                        <small>Click Connect to start receiving data</small>
+                    </div>
+                `;
+                statusText.textContent = 'OFFLINE';
+                statusText.className = 'metric-value red';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function connect() {
+            const url = 'ws://localhost:8765';
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = function() {
+                    updateConnectionStatus(true);
+                    connectTime = Date.now();
+                    startUptimeCounter();
+                    addSystemMessage('Connected to service');
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleMessage(data);
+                    } catch (e) {
+                        console.error('Failed to parse message:', e);
+                    }
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    addSystemMessage('Connection error occurred', true);
+                };
+                
+                ws.onclose = function() {
+                    updateConnectionStatus(false);
+                    stopUptimeCounter();
+                    addSystemMessage('Disconnected from service', true);
+                };
+            } catch (e) {
+                addSystemMessage('Failed to connect: ' + e.message, true);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function handleMessage(data) {
+            messageCount++;
+            document.getElementById('totalMessages').textContent = messageCount;
+            
+            const eventType = data.event_type || data.channel || 'unknown';
+            const eventData = data.data || data;
+            
+            if (eventType.includes('candle') || eventData.event_type === 'candle_data') {
+                candleCount++;
+                document.getElementById('candleCount').textContent = candleCount;
+                addCandleData(eventData);
+            } else {
+                addGenericData(eventType, eventData);
+            }
+        }
+
+        function addCandleData(data) {
+            const container = document.getElementById('dataContainer');
+            
+            // Remove empty state
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const symbol = data.symbol || 'Unknown';
+            const price = data.close || data.last_price || 'N/A';
+            const change = data.change_pct ? data.change_pct.toFixed(2) : 0;
+            const volume = data.volume || 'N/A';
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const priceClass = parseFloat(change) >= 0 ? 'price' : 'price down';
+            const changeSymbol = parseFloat(change) >= 0 ? '▲' : '▼';
+            
+            const item = document.createElement('div');
+            item.className = 'data-item';
+            item.innerHTML = `
+                <div class="timestamp">${timestamp}</div>
+                <div>
+                    <span class="symbol">${symbol}</span>: 
+                    <span class="${priceClass}">$${price}</span> 
+                    <span class="${priceClass}">${changeSymbol} ${Math.abs(change)}%</span>
+                    | Vol: ${volume}
+                </div>
+            `;
+            
+            container.insertBefore(item, container.firstChild);
+            
+            // Keep only last 50 items
+            while (container.children.length > 50) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function addGenericData(type, data) {
+            const container = document.getElementById('dataContainer');
+            
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const item = document.createElement('div');
+            item.className = 'data-item';
+            item.innerHTML = `
+                <div class="timestamp">${timestamp}</div>
+                <div><strong>${type}</strong>: ${JSON.stringify(data).substring(0, 100)}...</div>
+            `;
+            
+            container.insertBefore(item, container.firstChild);
+            
+            while (container.children.length > 50) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function addSystemMessage(message, isError = false) {
+            const container = document.getElementById('dataContainer');
+            
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const item = document.createElement('div');
+            item.className = 'data-item';
+            item.style.borderLeftColor = isError ? '#dc3545' : '#ffc107';
+            item.innerHTML = `
+                <div class="timestamp">${timestamp}</div>
+                <div><strong>${isError ? '⚠️ ' : 'ℹ️ '}System:</strong> ${message}</div>
+            `;
+            
+            container.insertBefore(item, container.firstChild);
+        }
+
+        function startUptimeCounter() {
+            uptimeInterval = setInterval(() => {
+                if (connectTime) {
+                    const uptime = Math.floor((Date.now() - connectTime) / 1000);
+                    document.getElementById('uptime').textContent = uptime + 's';
+                }
+            }, 1000);
+        }
+
+        function stopUptimeCounter() {
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+                uptimeInterval = null;
+            }
+        }
+
+        function clearData() {
+            const container = document.getElementById('dataContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <div>Data cleared. Waiting for new messages...</div>
+                </div>
+            `;
+        }
+
+        // Auto-connect on load
+        window.onload = function() {
+            // Try to connect automatically after 1 second
+            setTimeout(() => {
+                connect();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

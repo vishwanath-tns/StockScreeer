@@ -6,33 +6,65 @@ Event-driven data distribution system for real-time market data with broker-agno
 
 ### Prerequisites
 
-- Python 3.10+
-- MySQL 8.0+
-- Redis 7.0+ (optional, for production)
+- Python 3.11+
+- MySQL 8.0+ (optional, for DBWriter subscriber)
+- Redis 7.0+ (optional, for distributed deployment)
 
 ### Installation
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
-
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your configuration
-nano .env
 ```
 
 ### Run the Service
 
 ```bash
-# Development mode (in-memory broker, JSON serialization)
-python realtime_service.py
+# Windows - Double-click this file:
+start_service.bat
 
-# Production mode (Redis broker, MessagePack serialization)
-export REDIS_URL=redis://localhost:6379/0
-export SERIALIZATION_FORMAT=msgpack
-python realtime_service.py
+# Or use command line:
+python main.py --config config\local_test.yaml
+```
+
+## 📊 How to Visualize & Monitor
+
+### Check if Service is Running
+
+```bash
+# Option 1: Quick status check
+python check_service_status.py
+
+# Option 2: Check if WebSocket port is open
+netstat -ano | findstr :8765
+```
+
+### Live Dashboard (Recommended)
+
+Open `dashboard.html` in your web browser for a beautiful real-time dashboard:
+
+1. **Start the service** (see above)
+2. **Open**: `dashboard.html` in Chrome/Firefox/Edge
+3. **Watch**: Real-time market data streaming with live metrics!
+
+**Features:**
+- 🟢 Connection status indicator
+- 📊 Live metrics (messages, candles, uptime)
+- 📡 Real-time data feed
+- 🎨 Beautiful UI with animations
+
+### Alternative: Simple WebSocket Client
+
+Open `examples\test_websocket_client.html` for a simpler client interface.
+
+### Command Line Monitoring
+
+```bash
+# Watch log file in real-time
+Get-Content test_service.log -Tail 20 -Wait
+
+# Check service statistics
+python -c "import socket; print('Service running!' if socket.socket().connect_ex(('localhost', 8765)) == 0 else 'Service not running')"
 ```
 
 ## 📁 Project Structure
