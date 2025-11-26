@@ -281,6 +281,23 @@ class FetchStatusEvent(BaseModel):
 
 
 # ============================================================================
+# Trend Analysis Event
+# ============================================================================
+
+class TrendAnalysisEvent(BaseModel):
+    """Trend analysis aggregated across multiple symbols"""
+    
+    timestamp: datetime = Field(..., description="Analysis timestamp")
+    analyses: list[dict] = Field(..., description="List of trend analysis dicts per symbol")
+    total_symbols: int = Field(..., description="Total symbols analyzed")
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+# ============================================================================
 # Exports
 # ============================================================================
 
@@ -289,4 +306,5 @@ __all__ = [
     'MarketBreadthEvent',
     'FetchStatusEvent',
     'FetchStatusType',
+    'TrendAnalysisEvent',
 ]

@@ -124,15 +124,25 @@ class BaseSubscriber(ISubscriber):
         self._session_maker = None
         
         if db_url:
-            self._db_engine = create_async_engine(
-                db_url,
-                poolclass=NullPool if 'sqlite' in db_url else None,
-                pool_size=pool_size,
-                max_overflow=max_overflow,
-                pool_recycle=pool_recycle,
-                pool_pre_ping=True,
-                echo=False,
-            )
+            # Conditionally set pool parameters based on database type
+            is_sqlite = 'sqlite' in db_url.lower()
+            engine_kwargs = {
+                'echo': False,
+            }
+            
+            if is_sqlite:
+                # SQLite uses NullPool and doesn't support pool parameters
+                engine_kwargs['poolclass'] = NullPool
+            else:
+                # Other databases use standard pooling
+                engine_kwargs.update({
+                    'pool_size': pool_size,
+                    'max_overflow': max_overflow,
+                    'pool_recycle': pool_recycle,
+                    'pool_pre_ping': True,
+                })
+            
+            self._db_engine = create_async_engine(db_url, **engine_kwargs)
             self._session_maker = sessionmaker(
                 self._db_engine,
                 class_=AsyncSession,
