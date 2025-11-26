@@ -13,6 +13,7 @@ from .base_broker import (
     ConnectionError,
 )
 from .redis_event_broker import RedisEventBroker, create_redis_broker
+from .inmemory_broker import InMemoryBroker, create_inmemory_broker
 
 __all__ = [
     'IEventBroker',
@@ -22,4 +23,6 @@ __all__ = [
     'ConnectionError',
     'RedisEventBroker',
     'create_redis_broker',
+    'InMemoryBroker',
+    'create_inmemory_broker',
 ]
