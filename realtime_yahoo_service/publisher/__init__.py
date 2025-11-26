@@ -11,10 +11,12 @@ from .base_publisher import (
     RateLimiter,
     PublisherError,
 )
+from .yahoo_publisher import YahooFinancePublisher
 
 __all__ = [
     'IPublisher',
     'BasePublisher',
     'RateLimiter',
     'PublisherError',
+    'YahooFinancePublisher',
 ]
