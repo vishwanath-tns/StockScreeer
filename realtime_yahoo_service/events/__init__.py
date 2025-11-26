@@ -1,3 +1,20 @@
-"""Event models and broker implementations"""
+"""
+Events Package
+==============
 
-__all__ = ['event_models', 'event_broker', 'broker_factory']
+Event models and Protocol Buffer schemas for real-time market events.
+"""
+
+from .event_models import (
+    CandleDataEvent,
+    MarketBreadthEvent,
+    FetchStatusEvent,
+    FetchStatusType,
+)
+
+__all__ = [
+    'CandleDataEvent',
+    'MarketBreadthEvent',
+    'FetchStatusEvent',
+    'FetchStatusType',
+]

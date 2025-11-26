@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package realtime_yahoo_service.events.v1;
+
+// MarketBreadth represents aggregated market-wide statistics
+message MarketBreadth {
+  // Schema version for backward compatibility
+  int32 schema_version = 1;
+  
+  // Index identifier (e.g., "NIFTY50", "NIFTY500", "SENSEX")
+  string index_name = 2;
+  
+  // Trade date in ISO 8601 format (YYYY-MM-DD)
+  string trade_date = 3;
+  
+  // Timestamp when data was computed (Unix epoch seconds)
+  int64 timestamp = 4;
+  
+  // Number of advancing stocks
+  int32 advances = 5;
+  
+  // Number of declining stocks
+  int32 declines = 6;
+  
+  // Number of unchanged stocks
+  int32 unchanged = 7;
+  
+  // Total number of stocks analyzed
+  int32 total_stocks = 8;
+  
+  // Advance/Decline ratio (advances / declines)
+  double ad_ratio = 9;
+  
+  // Market sentiment score (-1.0 to 1.0)
+  // Calculated as: (advances - declines) / total_stocks
+  double sentiment_score = 10;
+  
+  // Optional: Average percentage change across all stocks
+  optional double avg_pct_change = 11;
+  
+  // Optional: Number of stocks hitting 52-week high
+  optional int32 new_highs_52w = 12;
+  
+  // Optional: Number of stocks hitting 52-week low
+  optional int32 new_lows_52w = 13;
+  
+  // Data source identifier
+  string data_source = 14;
+}

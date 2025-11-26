@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package realtime_yahoo_service.events.v1;
+
+// CandleData represents real-time OHLCV data for a single symbol
+message CandleData {
+  // Schema version for backward compatibility
+  int32 schema_version = 1;
+  
+  // Stock symbol (e.g., "RELIANCE.NS", "TCS.NS")
+  string symbol = 2;
+  
+  // Trade date in ISO 8601 format (YYYY-MM-DD)
+  string trade_date = 3;
+  
+  // Timestamp when data was fetched (Unix epoch seconds)
+  int64 timestamp = 4;
+  
+  // Previous close price
+  double prev_close = 5;
+  
+  // Opening price
+  double open_price = 6;
+  
+  // High price
+  double high_price = 7;
+  
+  // Low price
+  double low_price = 8;
+  
+  // Closing price
+  double close_price = 9;
+  
+  // Trading volume
+  int64 volume = 10;
+  
+  // Delivery quantity (optional for NSE data)
+  optional int64 delivery_qty = 11;
+  
+  // Delivery percentage (optional for NSE data)
+  optional double delivery_per = 12;
+  
+  // Data source identifier (e.g., "yahoo_finance", "nse_bhav")
+  string data_source = 13;
+  
+  // Optional: Market series (e.g., "EQ", "BE")
+  optional string series = 14;
+  
+  // Optional: Exchange identifier (e.g., "NSE", "BSE")
+  optional string exchange = 15;
+}

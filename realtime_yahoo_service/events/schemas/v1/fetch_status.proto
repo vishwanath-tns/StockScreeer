@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package realtime_yahoo_service.events.v1;
+
+// FetchStatus represents publisher health and operational status
+message FetchStatus {
+  // Schema version for backward compatibility
+  int32 schema_version = 1;
+  
+  // Publisher identifier (e.g., "yahoo_publisher_1")
+  string publisher_id = 2;
+  
+  // Timestamp when status was emitted (Unix epoch seconds)
+  int64 timestamp = 3;
+  
+  // Status type
+  enum StatusType {
+    UNKNOWN = 0;
+    STARTED = 1;        // Publisher started successfully
+    HEALTHY = 2;        // Periodic health check
+    DEGRADED = 3;       // Operating with errors
+    UNHEALTHY = 4;      // Critical failures
+    STOPPED = 5;        // Publisher stopped gracefully
+    CRASHED = 6;        // Publisher crashed unexpectedly
+  }
+  StatusType status = 4;
+  
+  // Number of symbols successfully fetched in current batch
+  int32 symbols_succeeded = 5;
+  
+  // Number of symbols that failed in current batch
+  int32 symbols_failed = 6;
+  
+  // Total number of symbols being monitored
+  int32 total_symbols = 7;
+  
+  // Current fetch batch size
+  int32 batch_size = 8;
+  
+  // Current rate limit (requests per minute)
+  int32 rate_limit = 9;
+  
+  // Optional: Last error message if status is DEGRADED/UNHEALTHY
+  optional string error_message = 10;
+  
+  // Optional: List of failed symbols in current batch
+  repeated string failed_symbols = 11;
+  
+  // Fetch cycle duration in milliseconds
+  int64 fetch_duration_ms = 12;
+  
+  // Publisher uptime in seconds
+  int64 uptime_seconds = 13;
+  
+  // Total events published since start
+  int64 total_events_published = 14;
+}
