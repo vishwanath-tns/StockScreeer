@@ -15,7 +15,7 @@ import time
 from datetime import datetime
 from services.market_breadth_service import get_engine
 from sqlalchemy import text
-from nifty500_stocks_list import NIFTY_500_STOCKS
+from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
 
 def monitor_nifty500_progress():
     """Monitor the progress of Nifty 500 momentum scanning"""

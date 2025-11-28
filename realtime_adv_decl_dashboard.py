@@ -46,7 +46,7 @@ from realtime_market_breadth.core.realtime_data_fetcher import RealTimeDataFetch
 from realtime_market_breadth.core.realtime_adv_decl_calculator import IntradayAdvDeclCalculator
 from realtime_market_breadth.services.async_data_logger import AsyncDataLogger
 from realtime_market_breadth.services.candle_queue_processor import run_processor
-from nifty500_stocks_list import NIFTY_500_STOCKS
+from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
 
 load_dotenv()
 

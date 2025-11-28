@@ -5,6 +5,109 @@ Nifty 500 Momentum Scanner
 
 Comprehensive momentum analysis for all Nifty 500 equivalent stocks.
 Calculates momentum across multiple timeframes and provides detailed reports.
+
+WHAT THIS SCANNER DOES
+----------------------
+This scanner calculates price momentum (percentage change) for all 500 stocks in
+the Nifty 500 index across 6 different timeframes. It's designed to identify:
+
+1. **Short-term momentum leaders** - stocks with strong 1-week or 1-month gains
+2. **Long-term trend stocks** - stocks with consistent 6-12 month uptrends
+3. **Multi-timeframe momentum** - stocks positive across multiple periods
+4. **Weakness detection** - stocks with declining momentum for shorting ideas
+
+TIMEFRAMES ANALYZED
+-------------------
+- 1W (1 Week)   - Very short-term momentum, captures recent moves
+- 1M (1 Month)  - Short-term momentum, typical swing trading window
+- 3M (3 Months) - Medium-term momentum, quarterly performance
+- 6M (6 Months) - Medium-long term, half-year trend
+- 9M (9 Months) - Long-term momentum
+- 12M (12 Months) - Full year performance for annual comparison
+
+METRICS CALCULATED
+------------------
+For each stock and timeframe, the scanner computes:
+
+1. **Percentage Change**: (End Price - Start Price) / Start Price * 100
+2. **Absolute Change**: End Price - Start Price (in Rupees)
+3. **High/Low Prices**: Maximum and minimum prices during the period
+4. **Average Volume**: Mean daily volume during the period
+5. **Total Volume**: Cumulative volume (indicates accumulation/distribution)
+6. **Volume Surge Factor**: Current avg volume / Historical avg volume
+   - >1.5 = High volume (institutional interest)
+   - <0.5 = Low volume (lack of interest)
+7. **Price Volatility**: Annualized standard deviation of daily returns (%)
+8. **High-Low Ratio**: Period High / Period Low (range indicator)
+9. **Trading Days**: Actual number of trading days in the period
+
+DATABASE STORAGE
+----------------
+Results are stored in the `momentum_analysis` MySQL table:
+
+    CREATE TABLE momentum_analysis (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        symbol VARCHAR(20),
+        series VARCHAR(10),
+        duration_type VARCHAR(5),
+        duration_days INT,
+        start_date DATE,
+        end_date DATE,
+        calculation_date DATE,
+        start_price DECIMAL(10,2),
+        end_price DECIMAL(10,2),
+        high_price DECIMAL(10,2),
+        low_price DECIMAL(10,2),
+        absolute_change DECIMAL(10,2),
+        percentage_change DECIMAL(8,2),
+        avg_volume BIGINT,
+        total_volume BIGINT,
+        volume_surge_factor DECIMAL(8,4),
+        price_volatility DECIMAL(8,4),
+        high_low_ratio DECIMAL(8,4),
+        trading_days INT,
+        UNIQUE KEY (symbol, duration_type, end_date)
+    );
+
+HOW TO USE
+----------
+1. **Full Scan** (all 500 stocks, all timeframes):
+   $ python scanners/nifty500_momentum_scanner.py
+   
+   This takes ~15-20 minutes for 500 stocks × 6 timeframes = 3000 calculations
+
+2. **Quick Sample** (top 50 stocks, 1W + 1M only):
+   $ python scanners/nifty500_momentum_scanner.py sample
+   
+   Quick test to verify data and see top performers
+
+RELATED TOOLS
+-------------
+- `analysis/nifty500_momentum_report.py` - Generate PDF/CSV momentum reports
+- `services/momentum/momentum_calculator.py` - Core calculation engine
+- `services/momentum/database_service.py` - Database operations
+
+TRADING APPLICATIONS
+--------------------
+1. **Trend Following**: Buy stocks with positive momentum across 1M, 3M, 6M
+2. **Mean Reversion**: Look for oversold stocks (negative momentum) for bounce
+3. **Relative Strength**: Compare sector momentum to find market leaders
+4. **Rotation Strategy**: Move capital to highest momentum sectors/stocks
+5. **Risk Management**: Avoid stocks with declining multi-timeframe momentum
+
+OUTPUT EXAMPLE
+--------------
+    [BATCH] 1/20: Processing 25 stocks
+       Stocks: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK...
+       [*] Calculating momentum...
+       [OK] Calculated 150 momentum values
+       [SAVE] Storing results to database...
+       [OK] Stored 150 records
+       [SAMPLE] (RELIANCE): 1W = +2.45%
+
+Author: StockScreener Project
+Version: 2.0.0
+Last Updated: November 2025
 """
 
 import sys
@@ -13,11 +116,43 @@ sys.path.append('.')
 
 from datetime import datetime
 from services.momentum.momentum_calculator import MomentumCalculator, MomentumDuration
-from nifty500_stocks_list import NIFTY_500_STOCKS
+from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
 import time
 
 def run_nifty500_momentum_scan():
-    """Run complete momentum scan for all Nifty 500 stocks"""
+    """
+    Run complete momentum scan for all Nifty 500 stocks.
+    
+    This is the main function that:
+    1. Loads all 500 stocks from NIFTY_500_STOCKS list
+    2. Processes them in batches of 25 to avoid memory issues
+    3. Calculates momentum for all 6 timeframes (1W, 1M, 3M, 6M, 9M, 12M)
+    4. Stores results in MySQL database (momentum_analysis table)
+    5. Provides progress updates and summary statistics
+    
+    Processing Details:
+    - Uses ThreadPoolExecutor for parallel processing within batches
+    - 1 second delay between batches to avoid overwhelming database
+    - Failed stocks are tracked and reported at the end
+    
+    Expected Runtime:
+    - ~15-20 minutes for full 500 stocks
+    - 3000 total calculations (500 stocks × 6 timeframes)
+    
+    Returns:
+        dict: Summary statistics including:
+            - total_calculations: Number of successful momentum calculations
+            - total_stored: Number of records stored in database
+            - successful_stocks: Count of stocks with at least one calculation
+            - failed_stocks: Count of stocks that failed completely
+            - success_rate: Percentage of successful stocks
+            - completion_percentage: Actual vs expected record count
+    
+    Example:
+        >>> result = run_nifty500_momentum_scan()
+        >>> print(f"Success rate: {result['success_rate']:.1f}%")
+        Success rate: 98.4%
+    """
     
     print("=" * 80)
     print("[*] NIFTY 500 COMPREHENSIVE MOMENTUM ANALYSIS")
@@ -142,7 +277,33 @@ def run_nifty500_momentum_scan():
     }
 
 def quick_nifty500_momentum_sample():
-    """Quick momentum calculation for a sample of Nifty 500 stocks"""
+    """
+    Quick momentum calculation for a sample of Nifty 500 stocks.
+    
+    This is a faster alternative to full scan, useful for:
+    - Quick market overview
+    - Testing if momentum calculation is working
+    - Identifying today's short-term leaders
+    
+    Processing Details:
+    - Takes only top 50 stocks (most liquid/active)
+    - Calculates only 1W and 1M momentum (2 timeframes)
+    - ~2-3 minutes to complete
+    
+    Output:
+    - Stores results in database
+    - Prints top 10 performers by 1-week momentum
+    
+    Returns:
+        bool: True if successful, False if error occurred
+    
+    Example:
+        >>> success = quick_nifty500_momentum_sample()
+        >>> # Shows: TOP PERFORMERS (1W Momentum):
+        >>> # 1. ADANIGREEN   +12.45%
+        >>> # 2. TATAPOWER    +8.32%
+        >>> # ...
+    """
     
     print("[SAMPLE] QUICK NIFTY 500 MOMENTUM SAMPLE")
     print("=" * 50)

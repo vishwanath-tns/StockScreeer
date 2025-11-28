@@ -4,7 +4,7 @@ Quick download yesterday's data for all Nifty 500 stocks
 Uses the same NIFTY_500_STOCKS list as the dashboard
 """
 
-from nifty500_stocks_list import NIFTY_500_STOCKS
+from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
 from sync_bhav_gui import engine
 from sqlalchemy import text
 from datetime import datetime, date, timedelta

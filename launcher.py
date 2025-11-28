@@ -23,51 +23,57 @@ PROJECT_ROOT = Path(__file__).parent
 APPS = {
     "📊 Dashboards": [
         ("Real-Time Market Dashboard", "realtime_adv_decl_dashboard.py", "Live advance-decline tracking for Nifty 500"),
-        ("Yahoo Finance Dashboard", "yahoo_finance_dashboard.py", "General market dashboard"),
         ("Progress Dashboard", "progress_dashboard.py", "View project progress statistics"),
+        ("Vedic Dashboard", "vedic_astrology/launch_dashboard.py", "Planetary position analysis"),
     ],
     
     "📥 Data Download": [
-        ("Quick Nifty500 Download", "quick_download_nifty500.py", "Download last 7 days for all Nifty 500 stocks"),
-        ("BHAV Data Sync (GUI)", "sync_bhav_gui.py", "Import NSE BHAV copy files"),
-        ("Bulk Stock Downloader", "yfinance_downloader/yfinance_downloader_gui.py", "GUI for bulk stock downloads"),
-        ("NSE Indices Download", "download_nse_indices_bulk.py", "Download NSE index data"),
+        ("Quick Nifty500 Download", "data_tools/quick_download_nifty500.py", "Download last 7 days for all Nifty 500 stocks"),
+        ("BHAV Data Sync (GUI)", "data_tools/sync_bhav_gui.py", "Import NSE BHAV copy files"),
+        ("Rebuild Intraday Data", "data_tools/rebuild_intraday_data.py", "Rebuild intraday candle data"),
+        ("Refetch Nifty Today", "data_tools/refetch_nifty_today.py", "Refresh today's Nifty data"),
     ],
     
     "🔍 Scanners": [
-        ("VCP Scanner", "vcp_patterns/vcp_scanner.py", "Volatility Contraction Pattern scanner"),
-        ("Cup & Handle Scanner", "cup_handle_scanner.py", "Cup and handle pattern scanner"),
-        ("RSI Cross Scanner", "rsi_cross_scanner.py", "RSI crossover scanner"),
-        ("52-Week Scanner", "week52_scanner.py", "52-week high/low scanner"),
-        ("Momentum Scanner", "nifty500_momentum_scanner.py", "Momentum-based stock scanner"),
-        ("Pattern Scanner GUI", "pattern_scanner/pattern_scanner_gui.py", "Visual pattern scanner"),
+        ("Momentum Scanner GUI", "scanners/momentum_scanner_gui.py", "Visual momentum scanner (Yahoo Finance)"),
+        ("Cup & Handle Scanner", "scanners/cup_handle_scanner.py", "Cup and handle pattern scanner"),
+        ("Cup & Handle Analyzer", "scanners/cup_handle_analyzer.py", "Detailed cup and handle analysis"),
+        ("Momentum Scanner (CLI)", "scanners/nifty500_momentum_scanner.py", "Momentum-based stock scanner (NSE BHAV)"),
+        ("RSI Divergences", "scanners/rsi_divergences.py", "RSI divergence scanner"),
+        ("RSI Fractals", "scanners/rsi_fractals.py", "RSI fractal scanner"),
+        ("52-Week Scanner", "scanners/week52_v2.py", "52-week high/low scanner"),
+        ("Volatility Screener", "scanners/volatility_trading_screener.py", "Volatility trading scanner"),
+        ("Minervini Screener", "scanners/minervini_screener.py", "Mark Minervini criteria scanner"),
+        ("Scanner GUI", "scanners/scanner_gui.py", "Visual scanner interface"),
+        ("VCP Scanner", "volatility_patterns/analysis/vcp_scanner.py", "Volatility Contraction Pattern"),
     ],
     
     "📈 Charts & Analysis": [
-        ("Stock Chart Viewer", "chart_window.py", "Interactive stock charts"),
-        ("Chart Visualizer", "chart_visualizer/chart_visualizer.py", "Advanced chart visualization"),
-        ("VCP Charts", "vcp_patterns/vcp_visualizer.py", "VCP pattern visualization"),
-        ("Cup Handle Charts", "cup_handle_charts.py", "Cup and handle pattern charts"),
-        ("Sector Charts PDF", "pdf_reports/sector_charts_pdf_generator.py", "Generate sector chart PDFs"),
+        ("Chart Tool", "charts/chart_tool.py", "Interactive stock charts"),
+        ("Chart Window", "charts/chart_window.py", "Standalone chart window"),
+        ("Compute Moving Averages", "analysis/compute_moving_averages.py", "Calculate SMAs for stocks"),
     ],
     
     "📑 Reports": [
-        ("Nifty50 Report", "generate_full_nifty50_report.py", "Complete Nifty 50 analysis report"),
-        ("Sector Report", "sector_analysis/sector_report_generator.py", "Sectoral analysis report"),
-        ("Momentum Report", "nifty500_momentum_report.py", "Momentum rankings report"),
-        ("PDF Report Generator", "pdf_reports/pdf_report_generator.py", "Custom PDF report builder"),
+        ("Nifty50 Report", "analysis/generate_full_nifty50_report.py", "Complete Nifty 50 analysis report"),
+        ("Momentum Report", "analysis/nifty500_momentum_report.py", "Momentum rankings report"),
+        ("Sector Report", "services/sector_report_generator.py", "Sectoral analysis report"),
+        ("Block/Bulk Deals PDF", "block_bulk_deals/generate_pdf_report.py", "Block and bulk deals report"),
+        ("Zodiac Market Report", "vedic_astrology/zodiac_market_report.py", "Zodiac-based market report"),
     ],
     
     "🛠️ Utilities": [
         ("Start Work Day", "start_work.py", "Morning summary and context"),
         ("Log Progress", "log.py", "Log project changes"),
         ("AI Context", "ai_context.py", "Show all context for AI assistant"),
-        ("Check Data Coverage", "scripts/check_data_completeness.py", "Verify data completeness"),
+        ("Symbol Mapping", "utilities/update_symbol_mappings.py", "Update NSE-Yahoo symbol mappings"),
+        ("Available Stocks", "utilities/available_stocks_list.py", "List available stock symbols"),
     ],
     
     "🔮 Vedic Astrology": [
-        ("Vedic Dashboard", "vedic_astrology/vedic_dashboard.py", "Planetary position analysis"),
+        ("Launch Dashboard", "vedic_astrology/launch_dashboard.py", "Main vedic dashboard"),
         ("Zodiac Report", "vedic_astrology/zodiac_market_report.py", "Zodiac-based market report"),
+        ("Generate PDF Report", "vedic_astrology/generate_zodiac_pdf_report.py", "Generate zodiac PDF"),
     ],
 }
 

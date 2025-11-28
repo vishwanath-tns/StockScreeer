@@ -34,7 +34,7 @@ print(f'\n=== Available Symbols with Previous Close ===')
 print(f'Total .NS symbols with prev close: {len(symbols_with_prevclose)}')
 
 # Check how many of these are in Nifty 500
-from nifty500_stocks_list import NIFTY_500_STOCKS
+from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
 nifty500_yahoo = [f"{s}.NS" for s in NIFTY_500_STOCKS]
 symbols_dict = {row[0]: row[1] for row in symbols_with_prevclose}
 

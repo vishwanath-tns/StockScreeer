@@ -6,7 +6,7 @@ Detects if NSE market is currently open.
 Handles timezone (IST) and market holidays.
 """
 
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta
 import pytz
 import logging
 
