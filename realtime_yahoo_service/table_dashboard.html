@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Price Table - Real-Time</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .header .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .status-banner {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.offline {
+            background: #ef4444;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        th {
+            padding: 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        th.right {
+            text-align: right;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+        
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+        
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        td {
+            padding: 20px;
+            font-size: 15px;
+        }
+        
+        td.right {
+            text-align: right;
+        }
+        
+        .symbol {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1f2937;
+        }
+        
+        .price {
+            font-weight: 600;
+            font-size: 18px;
+            color: #059669;
+        }
+        
+        .price.down {
+            color: #dc2626;
+        }
+        
+        .change {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .change.up {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .change.down {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .volume {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .timestamp {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #f3f4f6;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .last-update {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Real-Time Futures Price Table</h1>
+            <p class="subtitle">Live streaming market data</p>
+        </div>
+        
+        <div class="status-banner">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="connect()" id="connectBtn">Connect</button>
+                <button class="btn btn-secondary" onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th class="right">Price</th>
+                        <th class="right">Change</th>
+                        <th class="right">Change %</th>
+                        <th class="right">Volume</th>
+                        <th class="right">Last Update</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📡</div>
+                                <div>Waiting for data...</div>
+                                <div style="margin-top: 10px;"><span class="loading"></span></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="last-update" id="lastUpdate"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let symbolData = {};
+        
+        const symbolNames = {
+            'GC=F': 'Gold Futures',
+            'SI=F': 'Silver Futures',
+            'CL=F': 'Crude Oil Futures',
+            'ES=F': 'E-mini S&P 500',
+            'NQ=F': 'Nasdaq 100 Futures',
+            'YM=F': 'Mini Dow Jones'
+        };
+        
+        function connect() {
+            try {
+                ws = new WebSocket('ws://localhost:8765');
+                
+                ws.onopen = () => {
+                    document.getElementById('statusDot').classList.remove('offline');
+                    document.getElementById('statusText').textContent = 'Connected';
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                };
+                
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    handleMessage(message);
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+                
+                ws.onclose = () => {
+                    document.getElementById('statusDot').classList.add('offline');
+                    document.getElementById('statusText').textContent = 'Disconnected';
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                };
+            } catch (e) {
+                console.error('Connection failed:', e);
+            }
+        }
+        
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function handleMessage(message) {
+            const eventType = message.event_type || message.channel || '';
+            
+            if (eventType.includes('candle') || (message.data && message.data.symbol)) {
+                const data = message.data || message;
+                updateSymbolData(data);
+            }
+        }
+        
+        function updateSymbolData(data) {
+            console.log('Received data:', data);
+            
+            const symbol = data.symbol;
+            if (!symbol) return;
+            
+            const closePrice = data.close_price || data.close || 0;
+            const openPrice = data.open_price || data.open || closePrice;
+            const prevClose = data.prev_close || openPrice;
+            const volume = data.volume !== undefined ? data.volume : 0;
+            
+            // Calculate change
+            const change = closePrice - prevClose;
+            const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
+            
+            symbolData[symbol] = {
+                symbol: symbol,
+                name: symbolNames[symbol] || symbol,
+                price: closePrice,
+                change: change,
+                changePercent: changePercent,
+                volume: volume,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            
+            renderTable();
+        }
+        
+        function formatVolume(volume) {
+            if (volume === 0) return '-';
+            if (volume >= 1000000000) return (volume / 1000000000).toFixed(2) + 'B';
+            if (volume >= 1000000) return (volume / 1000000).toFixed(2) + 'M';
+            if (volume >= 1000) return (volume / 1000).toFixed(2) + 'K';
+            return volume.toLocaleString();
+        }
+        
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            
+            if (Object.keys(symbolData).length === 0) {
+                return;
+            }
+            
+            let html = '';
+            
+            // Sort by symbol
+            const symbols = Object.keys(symbolData).sort();
+            
+            for (const symbol of symbols) {
+                const item = symbolData[symbol];
+                const isPositive = item.change >= 0;
+                const priceClass = isPositive ? 'price' : 'price down';
+                const changeClass = isPositive ? 'change up' : 'change down';
+                const arrow = isPositive ? '▲' : '▼';
+                
+                html += `
+                    <tr>
+                        <td><span class="symbol">${item.symbol}</span></td>
+                        <td>${item.name}</td>
+                        <td class="right"><span class="${priceClass}">$${item.price.toFixed(2)}</span></td>
+                        <td class="right"><span class="${changeClass}">${arrow} ${Math.abs(item.change).toFixed(2)}</span></td>
+                        <td class="right"><span class="${changeClass}">${isPositive ? '+' : ''}${item.changePercent.toFixed(2)}%</span></td>
+                        <td class="right"><span class="volume">${formatVolume(item.volume)}</span></td>
+                        <td class="right"><span class="timestamp">${item.timestamp}</span></td>
+                    </tr>
+                `;
+            }
+            
+            tbody.innerHTML = html;
+            
+            // Update last update time
+            document.getElementById('lastUpdate').textContent = 
+                `Last updated: ${new Date().toLocaleString()}`;
+        }
+        
+        // Auto-connect on page load
+        window.addEventListener('load', () => {
+            connect();
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            disconnect();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# Configuration for Real-Time Yahoo Finance Service with Database Storage
+# IMPORTANT: Uses dedicated 'realtime_market_data' table
+# DO NOT use nse_equity_bhavcopy_full - that's for NSE BHAV copy data only
+
+broker:
+  type: inmemory  # Use inmemory for local testing, redis for production
+
+serializer:
+  type: json  # Simple and readable
+
+dlq:
+  enabled: true
+  file_path: ./dlq_with_db
+
+publishers:
+  - id: yahoo_realtime
+    type: yahoo_finance
+    enabled: true
+    symbols: ['GC=F', 'SI=F', 'CL=F']  # Gold, Silver, Crude Oil Futures
+    publish_interval: 10.0  # Every 10 seconds
+    data_interval: '5m'  # 5-minute interval has volume data
+    period: '1d'  # Last 1 day of data
+    batch_size: 10
+    rate_limit: 10
+    rate_limit_period: 60.0
+
+subscribers:
+  - id: state_tracker
+    type: state_tracker
+    enabled: true
+  
+  # Database writer - stores to dedicated realtime_market_data table
+  - id: db_writer
+    type: db_writer
+    enabled: true
+    db_url: "mysql+pymysql://YOUR_USER:YOUR_PASSWORD@localhost:3306/YOUR_DATABASE"
+    table_name: realtime_market_data  # DEDICATED TABLE - not nse_equity_bhavcopy_full!
+    batch_size: 50
+    pool_size: 5
+    
+  - id: websocket
+    type: websocket
+    enabled: true
+    host: localhost
+    port: 8765
+
+health:
+  check_interval: 30
+  restart_on_failure: false
+
+logging:
+  level: INFO
+  file: realtime_service_with_db.log
+
+# SETUP INSTRUCTIONS:
+# 1. Create the database table first:
+#    mysql -u YOUR_USER -p YOUR_DATABASE < schema/realtime_market_data.sql
+#
+# 2. Update the db_url above with your actual MySQL credentials
+#
+# 3. Run the service:
+#    python main.py --config config/local_test_with_db.yaml

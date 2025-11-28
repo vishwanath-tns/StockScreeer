@@ -12,8 +12,10 @@ publishers:
   - id: yahoo_test
     type: yahoo_finance
     enabled: true
-    symbols: ['AAPL', 'GOOGL', 'MSFT']  # Just 3 symbols for quick testing
+    symbols: ['GC=F', 'SI=F', 'CL=F']  # Gold, Silver, Crude Oil Futures
     publish_interval: 10.0  # Every 10 seconds
+    data_interval: '5m'  # 5-minute interval has volume data for futures
+    period: '1d'  # Last 1 day of data
     batch_size: 10
     rate_limit: 10
     rate_limit_period: 60.0

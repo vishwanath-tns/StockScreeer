@@ -168,13 +168,13 @@ class WebSocketServer(BaseSubscriber):
             logger.error(f"Error processing message on {channel}: {e}")
             self._stats['total_errors'] = self._stats.get('total_errors', 0) + 1
     
-    async def _handle_client(self, websocket: WebSocketServerProtocol, path: str):
+    async def _handle_client(self, websocket: WebSocketServerProtocol, path: str = "/"):
         """
         Handle a new WebSocket client connection.
         
         Args:
             websocket: WebSocket connection
-            path: Request path
+            path: Request path (optional, for compatibility with different websockets versions)
         """
         client_id = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
         logger.info(f"New client connected: {client_id}")

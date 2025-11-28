@@ -1,0 +1,23 @@
+📋 Copy-paste this at the start of every new AI chat session:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Hi! Before we start working:
+
+1. Read TODAY.md to see what I worked on recently
+2. Check DAILY_PROGRESS/ folder for the last 2-3 days of logs
+3. Review MASTER_INDEX.md to understand the project structure (566 files)
+
+When you make changes:
+- Log them using: from progress_tracker import log_progress
+- Reference past work from the logs when relevant
+- Check logs before suggesting solutions to avoid duplicates
+
+Ready? Now let's work on: [DESCRIBE YOUR TASK HERE]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Alternative short version:
+"Check TODAY.md and recent progress, then help me with [TASK]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

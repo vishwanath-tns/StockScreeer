@@ -46,6 +46,7 @@ from realtime_market_breadth.core.realtime_data_fetcher import RealTimeDataFetch
 from realtime_market_breadth.core.realtime_adv_decl_calculator import IntradayAdvDeclCalculator
 from realtime_market_breadth.services.async_data_logger import AsyncDataLogger
 from realtime_market_breadth.services.candle_queue_processor import run_processor
+from nifty500_stocks_list import NIFTY_500_STOCKS
 
 load_dotenv()
 
@@ -97,8 +98,8 @@ class RealtimeAdvDeclDashboard:
         self.setup_ui()
         
         # Now load data (after UI is ready so log_status works)
-        # Load verified symbols from nse_yahoo_symbol_map
-        self.symbols = self.load_yahoo_symbols_from_map()
+        # Load Nifty 500 symbols from the official list
+        self.symbols = self.load_nifty500_symbols()
         
         # Load 2-day historical data on startup
         self.log_status("Loading 2-day historical data...")
@@ -135,14 +136,36 @@ class RealtimeAdvDeclDashboard:
         )
         return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
     
+    def load_nifty500_symbols(self):
+        """Load all 500 Nifty stocks from the official list"""
+        try:
+            # Convert NSE symbols to Yahoo Finance format (add .NS suffix)
+            yahoo_symbols = [f"{symbol}.NS" for symbol in NIFTY_500_STOCKS]
+            
+            # Add NIFTY index
+            if '^NSEI' not in yahoo_symbols:
+                yahoo_symbols.append('^NSEI')
+            
+            self.log_status(f"✅ Loaded {len(NIFTY_500_STOCKS)} Nifty 500 stocks + NIFTY index")
+            return yahoo_symbols
+            
+        except Exception as e:
+            self.log_status(f"❌ Error loading Nifty 500: {e}")
+            # Fallback to database method
+            return self.load_yahoo_symbols_from_map()
+    
+    def load_nifty500_from_list(self):
+        """Alias for load_nifty500_symbols (for compatibility)"""
+        return self.load_nifty500_symbols()
+    
     def load_yahoo_symbols_from_map(self):
-        """Load Yahoo symbols from nse_yahoo_symbol_map table + add NIFTY"""
+        """Load Yahoo symbols from nse_yahoo_symbol_map table + add NIFTY (fallback method)"""
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(text("""
                     SELECT yahoo_symbol 
                     FROM nse_yahoo_symbol_map 
-                    WHERE is_active = 1
+                    WHERE is_active = 1 AND is_verified = 1
                     ORDER BY nse_symbol
                 """))
                 symbols = [row[0] for row in result.fetchall()]
@@ -151,7 +174,7 @@ class RealtimeAdvDeclDashboard:
                 if '^NSEI' not in symbols:
                     symbols.append('^NSEI')
                 
-                self.log_status(f"✅ Loaded {len(symbols)-1} stocks + NIFTY from database")
+                self.log_status(f"✅ Loaded {len(symbols)-1} verified stocks + NIFTY from database")
                 return symbols
         except Exception as e:
             self.log_status(f"❌ Error loading symbols: {e}")

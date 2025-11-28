@@ -196,7 +196,7 @@ class YahooFinancePublisher(BasePublisher):
                 period=self.period,
                 interval=self.data_interval,
                 group_by='ticker',
-                auto_adjust=True,
+                auto_adjust=False,  # Keep raw data including volume
                 prepost=False,
                 threads=True,
                 progress=False,
@@ -268,16 +268,40 @@ class YahooFinancePublisher(BasePublisher):
             unix_timestamp = int(timestamp_dt.timestamp())
             
             # Extract OHLCV values with safe conversion
+            # Provide defaults for None values to avoid validation errors
+            open_price = self._safe_float(latest.get('Open'))
+            high_price = self._safe_float(latest.get('High'))
+            low_price = self._safe_float(latest.get('Low'))
+            close_price = self._safe_float(latest.get('Close'))
+            volume = self._safe_int(latest.get('Volume'))
+            
+            # Skip if all critical values are None (no data available)
+            if all(v is None for v in [open_price, high_price, low_price, close_price]):
+                logger.warning(f"No price data available for {symbol}, skipping")
+                return
+            
+            # Use close as fallback for missing values
+            if close_price is None:
+                close_price = open_price or high_price or low_price or 0.0
+            if open_price is None:
+                open_price = close_price
+            if high_price is None:
+                high_price = max(open_price, close_price)
+            if low_price is None:
+                low_price = min(open_price, close_price)
+            if volume is None:
+                volume = 0
+            
             event = CandleDataEvent(
                 symbol=symbol,
                 trade_date=trade_date,
                 timestamp=unix_timestamp,
-                open_price=self._safe_float(latest.get('Open')),
-                high_price=self._safe_float(latest.get('High')),
-                low_price=self._safe_float(latest.get('Low')),
-                close_price=self._safe_float(latest.get('Close')),
-                volume=self._safe_int(latest.get('Volume')),
-                prev_close=self._safe_float(latest.get('Close')),  # Previous close
+                open_price=open_price,
+                high_price=high_price,
+                low_price=low_price,
+                close_price=close_price,
+                volume=volume,
+                prev_close=close_price,  # Use current close as prev_close
                 series='EQ',  # Default to equity series
                 delivery_qty=None,  # Not available from Yahoo Finance
                 delivery_per=None,  # Not available from Yahoo Finance

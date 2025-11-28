@@ -378,7 +378,7 @@
             }
         }
 
-        function addCandleData(data) {
+        function addCandleData(eventData) {
             const container = document.getElementById('dataContainer');
             
             // Remove empty state
@@ -387,14 +387,51 @@
                 emptyState.remove();
             }
             
+            // Extract actual data - handle nested structure
+            const data = eventData.data || eventData;
+            
+            // Debug: log the data structure
+            console.log('Candle data received:', data);
+            
             const symbol = data.symbol || 'Unknown';
-            const price = data.close || data.last_price || 'N/A';
-            const change = data.change_pct ? data.change_pct.toFixed(2) : 0;
-            const volume = data.volume || 'N/A';
+            const price = data.close_price || data.close || data.last_price || 'N/A';
+            const openPrice = data.open_price || data.open || 0;
+            const prevClose = data.prev_close || openPrice || 0;
+            
+            // Calculate change percentage
+            let change = data.change_pct || data.change_percent || 0;
+            if (change === 0 && price !== 'N/A' && prevClose > 0) {
+                change = ((price - prevClose) / prevClose) * 100;
+            }
+            
+            const volume = data.volume !== undefined && data.volume !== null ? data.volume : (data.total_volume || 0);
             const timestamp = new Date().toLocaleTimeString();
             
-            const priceClass = parseFloat(change) >= 0 ? 'price' : 'price down';
-            const changeSymbol = parseFloat(change) >= 0 ? '▲' : '▼';
+            // Format numbers
+            const priceNum = typeof price === 'number' ? price.toFixed(2) : price;
+            const changeNum = typeof change === 'number' ? change.toFixed(2) : change;
+            
+            // Format volume with commas or abbreviations
+            let volumeStr = 'N/A';
+            if (volume !== null && volume !== undefined) {
+                const volNum = typeof volume === 'number' ? volume : parseInt(volume);
+                if (!isNaN(volNum)) {
+                    if (volNum === 0) {
+                        volumeStr = '-'; // Show dash for zero volume (common in futures off-hours)
+                    } else if (volNum >= 1000000000) {
+                        volumeStr = (volNum / 1000000000).toFixed(2) + 'B';
+                    } else if (volNum >= 1000000) {
+                        volumeStr = (volNum / 1000000).toFixed(2) + 'M';
+                    } else if (volNum >= 1000) {
+                        volumeStr = (volNum / 1000).toFixed(2) + 'K';
+                    } else {
+                        volumeStr = volNum.toLocaleString();
+                    }
+                }
+            }
+            
+            const priceClass = parseFloat(changeNum) >= 0 ? 'price' : 'price down';
+            const changeSymbol = parseFloat(changeNum) >= 0 ? '▲' : '▼';
             
             const item = document.createElement('div');
             item.className = 'data-item';
@@ -402,9 +439,9 @@
                 <div class="timestamp">${timestamp}</div>
                 <div>
                     <span class="symbol">${symbol}</span>: 
-                    <span class="${priceClass}">$${price}</span> 
-                    <span class="${priceClass}">${changeSymbol} ${Math.abs(change)}%</span>
-                    | Vol: ${volume}
+                    <span class="${priceClass}">$${priceNum}</span> 
+                    <span class="${priceClass}">${changeSymbol} ${Math.abs(changeNum)}%</span>
+                    | Vol: ${volumeStr}
                 </div>
             `;
             

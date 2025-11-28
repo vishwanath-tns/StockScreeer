@@ -2,10 +2,48 @@
 
 Help a coding assistant be productive quickly in this repo by documenting the app entrypoints, data flows, environment expectations, and small examples taken directly from the code.
 
+## 🔴 IMPORTANT: Check Progress Logs First! 🔴
+
+**ALWAYS start by reading recent progress to understand context:**
+
+1. **Read PROGRESS_HUB.py** - CRITICAL: Current status with TODO/DONE/FIXME visible in Todo Tree
+2. **Run: python ai_context.py** - Get complete context summary
+3. **Read TODAY.md** - See what was done most recently
+4. **Check DAILY_PROGRESS/ folder** - Review last 2-3 days of logs
+5. **Read MASTER_INDEX.md** - Understand project structure (566 files documented)
+
+**When user asks "What did we do?" or starts new work:**
+```python
+# BEST: Get all context at once
+python ai_context.py
+
+# Or individually:
+cat PROGRESS_HUB.py  # Shows current TODO/DONE/FIXME
+cat TODAY.md
+cat DAILY_PROGRESS/2025-11-28_progress.md  # Check recent dates
+```
+
+**PROGRESS_HUB.py is the single source of truth:**
+- Auto-updated with every change
+- Visible in VS Code Todo Tree sidebar
+- Contains: recent changes, current focus, next steps, known issues
+- Human AND AI read this file first!
+
+**Progress Tracking System:**
+- All changes are logged in `DAILY_PROGRESS/YYYY-MM-DD_progress.md`
+- Use `python log.py` to log any changes you make
+- User expects you to reference past work from these logs
+- See `AI_ASSISTANT_GUIDE.md` for full details
+
 ## Where to start
 
-- Primary script: `sync_bhav_gui.py` — single-file app that contains the full pipeline: file discovery -> parsing -> upsert to MySQL -> simple Tk GUI.
-- Dependencies: see `requirements.txt` (pandas, sqlalchemy, pymysql, python-dotenv, tqdm).
+- **Documentation Hub**: `MASTER_INDEX.md` - Complete reference for all 566 files
+- **Main Applications**:
+  - `realtime_adv_decl_dashboard.py` - Real-time market dashboard
+  - `quick_download_nifty500.py` - Bulk data downloader
+  - `sync_bhav_gui.py` - NSE BHAV data importer (detailed below)
+- **Dependencies**: see `requirements.txt` (pandas, sqlalchemy, pymysql, python-dotenv, tqdm)
+- **Progress Tracking**: `progress_tracker.py`, `log.py`, `start_work.py`
 
 ## Big picture / architecture
 
@@ -69,6 +107,31 @@ Notes: `BHAV_FOLDER` is read at module import time (python-dotenv loads `.env` w
 
 - There is no automated test harness or CI in the repo. Avoid changing behaviour without manual verification.
 - The script assumes MySQL (driver `mysql+pymysql`) and UTF8MB4 charset.
+
+## 📝 Progress Tracking (CRITICAL for AI Assistants)
+
+**When making ANY change:**
+1. **Log it immediately:**
+   ```python
+   from progress_tracker import log_progress
+   log_progress("create", "filename.py", "What you did and why", "category")
+   ```
+
+2. **Categories:** feature, bugfix, cleanup, docs, database, refactor
+3. **Actions:** create, modify, fix, delete, cleanup, refactor
+
+**Before starting new work:**
+- Ask user: "Should I check your recent progress logs?"
+- Read `TODAY.md` to see yesterday's context
+- Search `DAILY_PROGRESS/*.md` for related past work
+
+**User expects you to:**
+- Remember what was done in previous sessions (via logs)
+- Reference past decisions and changes
+- Suggest next steps based on progress history
+- Avoid duplicate work by checking logs
+
+**Full details:** See `AI_ASSISTANT_GUIDE.md` for complete AI integration guide.
 
 ---
 If you'd like, I can iterate: add quick schema migration SQL examples, a small headless CLI wrapper, or unit tests for parsing helpers (recommended next steps). Tell me which area you want expanded.
