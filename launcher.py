@@ -21,6 +21,10 @@ PROJECT_ROOT = Path(__file__).parent
 # =============================================================================
 
 APPS = {
+    "🧙 Wizards": [
+        ("Daily Data Wizard", "wizards/daily_data_wizard.py", "Daily sync, MA, RSI calculations - Run this every day!"),
+    ],
+    
     "📊 Dashboards": [
         ("Real-Time Market Dashboard", "realtime_adv_decl_dashboard.py", "Live advance-decline tracking for Nifty 500"),
         ("Progress Dashboard", "progress_dashboard.py", "View project progress statistics"),
@@ -28,6 +32,7 @@ APPS = {
     ],
     
     "📥 Data Download": [
+        ("Yahoo Finance Downloader", "data_tools/yahoo_downloader_gui.py", "Download daily & intraday data from Yahoo Finance"),
         ("Quick Nifty500 Download", "data_tools/quick_download_nifty500.py", "Download last 7 days for all Nifty 500 stocks"),
         ("BHAV Data Sync (GUI)", "data_tools/sync_bhav_gui.py", "Import NSE BHAV copy files"),
         ("Rebuild Intraday Data", "data_tools/rebuild_intraday_data.py", "Rebuild intraday candle data"),
@@ -51,6 +56,7 @@ APPS = {
     "📈 Charts & Analysis": [
         ("Chart Tool", "charts/chart_tool.py", "Interactive stock charts"),
         ("Chart Window", "charts/chart_window.py", "Standalone chart window"),
+        ("Price Cluster Analyzer", "analysis/price_cluster_analyzer.py", "Find support/resistance price zones"),
         ("Compute Moving Averages", "analysis/compute_moving_averages.py", "Calculate SMAs for stocks"),
     ],
     

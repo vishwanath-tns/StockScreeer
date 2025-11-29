@@ -11,7 +11,23 @@
 # =============================================================================
 
 # ┌─────────────────────────────────────────────────────────────────────────────
-# │ 📆 2025-11-28 (Today) - MAJOR CLEANUP & ORGANIZATION DAY
+# │ 📆 2025-11-29 (Today) - MAJOR FEATURE ADDITIONS
+# └─────────────────────────────────────────────────────────────────────────────
+
+# TIMELINE: 2025-11-29 AM - Created scanners/momentum_scanner_gui.py (Nifty500 momentum scanner)
+# TIMELINE: 2025-11-29 AM - Fixed momentum scanner: .NS suffix, light theme, SQLAlchemy engine
+# TIMELINE: 2025-11-29 AM - Created data_tools/yahoo_downloader_gui.py (daily + intraday)
+# TIMELINE: 2025-11-29 PM - Created analysis/price_cluster_analyzer.py (support/resistance zones)
+# TIMELINE: 2025-11-29 PM - Added candlestick chart with price zones overlay
+# TIMELINE: 2025-11-29 PM - Fixed zone plotting, removed weekend gaps from chart
+# TIMELINE: 2025-11-29 PM - Added chart duration options (1Y, 2Y, 3Y, 5Y, All)
+# TIMELINE: 2025-11-29 PM - Updated launcher.py with new tools
+# TIMELINE: 2025-11-29 PM - Tagged and pushed v2.5.0
+# TIMELINE: 2025-11-29 PM - Created wizards/daily_data_wizard.py (daily data sync + calculations)
+# TIMELINE: 2025-11-29 PM - Added parallel processing to wizard (5 download workers, 10 calc workers)
+
+# ┌─────────────────────────────────────────────────────────────────────────────
+# │ 📆 2025-11-28 - MAJOR CLEANUP & ORGANIZATION DAY
 # └─────────────────────────────────────────────────────────────────────────────
 
 # TIMELINE: 2025-11-28 10:56 - Fixed dashboard bug (0/0/0 display issue)
@@ -56,18 +72,16 @@
 # TIMELINE: Pre-2025-11-28 - Set up MySQL database with market data tables
 
 # =============================================================================
-# 📊 TODAY'S SUMMARY (2025-11-28)
+# 📊 TODAY'S SUMMARY (2025-11-29)
 # =============================================================================
 
-# DONE: Total changes today: 29 logged actions
-# DONE: Fixed dashboard bug (advance-decline 0/0/0)
-# DONE: Created complete progress tracking system (9 files)
-# DONE: Created VS Code Todo Tree integration
-# DONE: Archived 136 test/demo/debug/check files
-# DONE: Consolidated 47 duplicate files
-# DONE: Created launcher.py central GUI
-# DONE: Organized 60+ Python files by feature
-# DONE: Organized PDFs, docs, SQL, logs to subfolders
+# DONE: Created momentum_scanner_gui.py (Nifty500 momentum scanner)
+# DONE: Created yahoo_downloader_gui.py (daily + intraday downloader)
+# DONE: Created price_cluster_analyzer.py (support/resistance zones)
+# DONE: Added candlestick chart with price zones
+# DONE: Fixed zone plotting and removed weekend gaps
+# DONE: Updated launcher.py with 3 new tools
+# DONE: Tagged and pushed v2.5.0
 
 # =============================================================================
 # 🗂️ PROJECT ORGANIZATION (Current State)
@@ -87,21 +101,24 @@
 # 🎯 CURRENT STATUS
 # =============================================================================
 
-# DONE: All cleanup tasks complete!
-# DONE: Project fully reorganized by feature
+# DONE: Momentum Scanner GUI complete and tested
+# DONE: Yahoo Downloader GUI complete (daily + intraday)
+# DONE: Price Cluster Analyzer with charts complete
+# DONE: v2.5.0 tagged and pushed
+# TODO: Test intraday download functionality
+# TODO: Add more chart indicators (SMAs, RSI, etc.)
 # TODO: Continue daily progress logging
-# TODO: Run 'python start_work.py' each morning
 
 # =============================================================================
 # 🚀 QUICK START COMMANDS
 # =============================================================================
 
 # START: python launcher.py              # Central GUI (start here!)
+# START: python scanners/momentum_scanner_gui.py  # Momentum Scanner
+# START: python data_tools/yahoo_downloader_gui.py  # Yahoo Downloader
+# START: python analysis/price_cluster_analyzer.py  # Price Clusters
 # START: python realtime_adv_decl_dashboard.py  # Main dashboard
-# START: python quick_download_nifty500.py      # Download data
 # START: python start_work.py            # Morning summary
-# START: python ai_context.py            # AI context loader
-# START: python log.py <action> <file> <desc> <category>  # Log changes
 
 # =============================================================================
 # 📚 DOCUMENTATION
