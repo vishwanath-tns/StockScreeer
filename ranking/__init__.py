@@ -30,6 +30,7 @@ from .services import (
 from .db import RankingRepository, create_ranking_tables
 from .gui import RankingsViewer
 from .exports import RankingsExporter
+from .historical import HistoricalRankingsBuilder
 
 __all__ = [
     # Main orchestrator
@@ -48,4 +49,6 @@ __all__ = [
     "RankingsViewer",
     # Export
     "RankingsExporter",
+    # Historical
+    "HistoricalRankingsBuilder",
 ]
