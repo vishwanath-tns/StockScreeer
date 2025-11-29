@@ -51,6 +51,7 @@ from sqlalchemy import create_engine, text
 import yfinance as yf
 
 from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
+from ranking import RankingOrchestrator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -1424,6 +1425,87 @@ class WizardStepsExecutor:
             logger.error(f"Step 6 failed: {e}")
             self.state_manager.complete_step(step_id, False, str(e), self.failed_symbols)
             return False, str(e)
+    
+    def step7_calculate_rankings(self) -> Tuple[bool, str]:
+        """Calculate stock rankings (RS Rating, Momentum, Trend Template, Composite)"""
+        step_id = 7
+        self.failed_symbols = []
+        
+        try:
+            self.progress_callback(0, "Initializing ranking system...")
+            
+            # Track ranking progress
+            ranking_stages = [
+                "Loading data", "RS Rating", "Momentum", 
+                "Trend Template", "Technical", "Composite", "Saving"
+            ]
+            current_stage = 0
+            
+            def ranking_progress(stage: str, current: int, total: int):
+                nonlocal current_stage
+                # Calculate overall progress based on stage
+                stage_weight = 100 // len(ranking_stages)
+                base_progress = ranking_stages.index(stage) * stage_weight if stage in ranking_stages else 0
+                stage_progress = (current / total * stage_weight) if total > 0 else 0
+                overall = min(99, int(base_progress + stage_progress))
+                
+                self.progress_callback(overall, f"{stage}: {current}/{total}")
+            
+            # Start tracking step
+            self.state_manager.start_step(step_id, "Calculate Rankings", len(self.all_symbols))
+            
+            # Get database engine
+            engine = self.db.get_engine()
+            
+            # Create orchestrator with our database engine
+            orchestrator = RankingOrchestrator(
+                engine=engine,
+                event_callback=lambda ch, msg: logger.info(f"[{ch}] {msg}")
+            )
+            
+            self.progress_callback(5, "Running ranking calculations...")
+            
+            # Calculate rankings for all stocks
+            results = orchestrator.calculate_rankings(
+                symbols=None,  # All available symbols
+                calculation_date=date.today(),
+                save_to_db=True,
+                save_history=True,
+                progress_callback=ranking_progress,
+            )
+            
+            # Check for stop request
+            if self.stop_requested:
+                self.state_manager.complete_step(step_id, False, "Stopped by user", [])
+                return False, "Stopped by user"
+            
+            # Count results
+            total_ranked = len(results)
+            successful = sum(1 for r in results.values() if r.success)
+            failed = total_ranked - successful
+            
+            # Get top 5 for summary
+            top_stocks = orchestrator.get_top_stocks(n=5)
+            top_summary = ""
+            if not top_stocks.empty:
+                top_symbols = top_stocks['symbol'].tolist()[:5]
+                top_summary = f" | Top 5: {', '.join(top_symbols)}"
+            
+            msg = f"Rankings complete: {successful}/{total_ranked} stocks ranked{top_summary}"
+            
+            if failed > 0:
+                for symbol, r in results.items():
+                    if not r.success:
+                        self.failed_symbols.append(symbol)
+            
+            self.progress_callback(100, msg)
+            self.state_manager.complete_step(step_id, True, msg, self.failed_symbols)
+            return True, msg
+            
+        except Exception as e:
+            logger.error(f"Step 7 failed: {e}")
+            self.state_manager.complete_step(step_id, False, str(e), self.failed_symbols)
+            return False, str(e)
 
 
 # =============================================================================
@@ -1455,6 +1537,7 @@ class DailyDataWizardGUI:
             WizardStep(4, "Calculate Daily MA", "Calculate EMA(21), SMA(5,50,150,200) for daily data"),
             WizardStep(5, "Calculate Intraday MA", "Calculate EMA(21), SMA(50,200) for 1min, 5min, 60min data"),
             WizardStep(6, "Calculate RSI", "Calculate 9-period RSI for daily and intraday data"),
+            WizardStep(7, "Calculate Rankings", "Calculate RS Rating, Momentum, Trend Template, and Composite scores"),
         ]
         
         # Colors
@@ -1743,6 +1826,7 @@ class DailyDataWizardGUI:
             self.executor.step4_calculate_daily_ma,
             self.executor.step5_calculate_intraday_ma,
             self.executor.step6_calculate_rsi,
+            self.executor.step7_calculate_rankings,
         ]
         
         for i, (step, method) in enumerate(zip(self.steps, step_methods)):
