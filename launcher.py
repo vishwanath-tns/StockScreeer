@@ -25,6 +25,13 @@ APPS = {
         ("Daily Data Wizard", "wizards/daily_data_wizard.py", "Daily sync, MA, RSI calculations - Run this every day!"),
     ],
     
+    "⭐ Stock Ratings": [
+        ("Price & Ratings Analyzer", "launch_price_ratings_analyzer.py", "Price correlation, signals, sector rotation analysis"),
+        ("Rankings Data Analyzer", "launch_rankings_analyzer.py", "Validate and explore historical rankings data"),
+        ("Parallel Rankings Builder", "ranking/parallel/parallel_gui.py", "Build historical rankings with Redis workers"),
+        ("Index Ratings Test", "test_index_ratings.py", "View current sector/index ratings"),
+    ],
+    
     "📊 Dashboards": [
         ("Real-Time Market Dashboard", "realtime_adv_decl_dashboard.py", "Live advance-decline tracking for Nifty 500"),
         ("Progress Dashboard", "progress_dashboard.py", "View project progress statistics"),

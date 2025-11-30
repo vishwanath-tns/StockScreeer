@@ -324,19 +324,44 @@ Tips:
             logger.debug(f"Error updating workers: {e}")
     
     def _update_queue_stats(self):
-        """Update queue statistics."""
+        """Update queue statistics and main progress display."""
         try:
             stats = self.dispatcher.redis.get_queue_stats()
             
-            self.queue_stats["pending"].set(str(stats.get("pending", 0)))
-            self.queue_stats["processing"].set(str(stats.get("processing", 0)))
-            self.queue_stats["completed"].set(str(stats.get("completed", 0)))
-            self.queue_stats["failed"].set(str(stats.get("failed", 0)))
+            pending = stats.get("pending", 0)
+            processing = stats.get("processing", 0)
+            completed = stats.get("completed", 0)
+            failed = stats.get("failed", 0)
+            
+            self.queue_stats["pending"].set(str(pending))
+            self.queue_stats["processing"].set(str(processing))
+            self.queue_stats["completed"].set(str(completed))
+            self.queue_stats["failed"].set(str(failed))
+            
+            # Also update main progress display if jobs are running
+            total = pending + processing + completed + failed
+            if total > 0:
+                self.total_var.set(str(total))
+                self.completed_var.set(str(completed))
+                self.failed_var.set(str(failed))
+                
+                # Calculate progress percentage
+                done = completed + failed
+                progress_pct = (done / total) * 100 if total > 0 else 0
+                self.progress_var.set(progress_pct)
+                
+                # Update status based on state
+                if pending > 0 or processing > 0:
+                    self.status_var.set(f"Running ({processing} active)")
+                elif done == total and total > 0:
+                    self.status_var.set("Complete")
+                else:
+                    self.status_var.set("Ready")
             
         except Exception as e:
             logger.debug(f"Error updating queue stats: {e}")
     
-    def _start_workers(self):
+    def _start_workers(self, show_message=True):
         """Start worker processes."""
         if not self.redis_available:
             messagebox.showerror("Error", "Redis is not available")
@@ -349,39 +374,51 @@ Tips:
         
         # Get Python executable
         python_exe = sys.executable
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         
-        # Start workers
+        # Start workers as background processes (no console windows)
         for i in range(num_workers):
-            worker_id = f"gui-worker-{i+1}"
+            worker_id = f"gui-worker-{i+1}-{int(time.time())}"
             
             # Start worker process
             cmd = [python_exe, "-m", "ranking.parallel.worker", "--id", worker_id]
             
-            # Start in new console on Windows
+            # Start as hidden background process on Windows
             if sys.platform == "win32":
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
                 proc = subprocess.Popen(
                     cmd,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                    cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                    startupinfo=startupinfo,
+                    cwd=project_root,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
                 )
             else:
-                proc = subprocess.Popen(cmd)
+                proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             
             self.worker_processes.append(proc)
             logger.info(f"Started worker {worker_id} (PID: {proc.pid})")
         
-        messagebox.showinfo("Workers Started", f"Started {num_workers} worker processes.\nCheck the new terminal windows.")
+        if show_message:
+            messagebox.showinfo("Workers Started", f"Started {num_workers} background worker processes.")
     
     def _stop_workers(self):
-        """Stop all worker processes."""
+        """Stop all worker processes started by this GUI."""
+        stopped = 0
         for proc in self.worker_processes:
             try:
                 proc.terminate()
+                stopped += 1
             except:
                 pass
         
         self.worker_processes = []
-        messagebox.showinfo("Workers Stopped", "All worker processes stopped.")
+        if stopped > 0:
+            messagebox.showinfo("Workers Stopped", f"Stopped {stopped} worker processes.")
+        else:
+            messagebox.showinfo("Workers", "No GUI-started workers to stop.")
     
     def _start_build(self):
         """Start the build process."""
@@ -389,18 +426,13 @@ Tips:
             messagebox.showerror("Error", "Redis is not available")
             return
         
-        # Check for workers
+        # Check for workers - auto-start if none
         workers = self.dispatcher.get_active_workers()
         if not workers:
-            if not messagebox.askyesno(
-                "No Workers",
-                "No workers are active. Start workers first?\n\n"
-                "Click Yes to start workers, No to continue anyway."
-            ):
-                return
-            else:
-                self._start_workers()
-                time.sleep(2)  # Wait for workers to start
+            self.status_var.set("Starting workers...")
+            self.root.update()
+            self._start_workers(show_message=False)
+            time.sleep(3)  # Wait for workers to register
         
         # Get parameters
         try:
@@ -416,7 +448,7 @@ Tips:
         self.is_running = True
         self.start_btn.configure(state=tk.DISABLED)
         self.stop_btn.configure(state=tk.NORMAL)
-        self.status_var.set("Starting...")
+        self.status_var.set("Creating jobs...")
         
         # Start build thread
         thread = threading.Thread(

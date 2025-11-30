@@ -76,6 +76,9 @@ NSE_INDICES = [
     "^CNXINFRA",  # Nifty Infra
     "^CNXPSUBANK",# Nifty PSU Bank
     "^CNXMEDIA",  # Nifty Media
+    "^NSMIDCP",   # Nifty Midcap 100
+    "NIFTY_FIN_SERVICE.NS",  # Nifty Financial Services
+    "NIFTY_PVT_BANK.NS",     # Nifty Private Bank
 ]
 
 # Intraday intervals
@@ -503,8 +506,12 @@ class WizardStepsExecutor:
     def _sync_daily_symbol(self, symbol: str, engine) -> Tuple[str, bool, str]:
         """Sync daily data for a single symbol (worker function)"""
         try:
+            # Determine the correct table based on symbol type
+            is_index = symbol.startswith('^') or symbol.startswith('NIFTY')
+            table_name = 'yfinance_indices_daily_quotes' if is_index else 'yfinance_daily_quotes'
+            
             # Get last date for this symbol
-            query = "SELECT MAX(date) as last_date FROM yfinance_daily_quotes WHERE symbol = %s"
+            query = f"SELECT MAX(date) as last_date FROM {table_name} WHERE symbol = %s"
             df = pd.read_sql(query, engine, params=(symbol,))
             last_date = df['last_date'].iloc[0] if not df.empty and df['last_date'].iloc[0] else None
             
@@ -534,9 +541,10 @@ class WizardStepsExecutor:
                 df = df[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume']]
                 df['date'] = pd.to_datetime(df['date']).dt.date
                 
-                # Insert into database
-                df.to_sql('yfinance_daily_quotes', engine, if_exists='append', 
+                # Insert into correct table (indices vs stocks)
+                df.to_sql(table_name, engine, if_exists='append', 
                          index=False, method='multi', chunksize=500)
+                return symbol, True, f"{len(df)} rows"
                 return symbol, True, f"{len(df)} rows"
             else:
                 return symbol, True, "no new data"

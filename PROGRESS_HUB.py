@@ -11,7 +11,21 @@
 # =============================================================================
 
 # ┌─────────────────────────────────────────────────────────────────────────────
-# │ 📆 2025-11-29 (Today) - MAJOR FEATURE ADDITIONS
+# │ 📆 2025-11-30 (Today) - SECTOR ROTATION & INDEX RATINGS
+# └─────────────────────────────────────────────────────────────────────────────
+
+# TIMELINE: 2025-11-30 AM - Created ranking/services/index_rating_service.py (sector ratings)
+# TIMELINE: 2025-11-30 AM - Added "🔄 Sector Rotation" tab to Price & Ratings Analyzer
+# TIMELINE: 2025-11-30 AM - Updated indices data to 2025-11-28 (was outdated)
+# TIMELINE: 2025-11-30 AM - Fixed wizards/daily_data_wizard.py to save indices to correct table
+# TIMELINE: 2025-11-30 AM - Added more indices: ^NSMIDCP, NIFTY_FIN_SERVICE.NS, NIFTY_PVT_BANK.NS
+# TIMELINE: 2025-11-30 AM - Created fill_index_rankings.py, backfilled 4,881 index ranking records
+# TIMELINE: 2025-11-30 AM - Integrated Stock Ratings apps into launcher.py (new ⭐ category)
+# TIMELINE: 2025-11-30 PM - Created generate_rankings_guide_pdf.py (PDF documentation)
+# TIMELINE: 2025-11-30 PM - Generated reports/Rankings_Distribution_Guide.pdf
+
+# ┌─────────────────────────────────────────────────────────────────────────────
+# │ 📆 2025-11-29 - ANALYSIS TOOLS & WIZARDS
 # └─────────────────────────────────────────────────────────────────────────────
 
 # TIMELINE: 2025-11-29 AM - Created scanners/momentum_scanner_gui.py (Nifty500 momentum scanner)
@@ -72,16 +86,17 @@
 # TIMELINE: Pre-2025-11-28 - Set up MySQL database with market data tables
 
 # =============================================================================
-# 📊 TODAY'S SUMMARY (2025-11-29)
+# 📊 TODAY'S SUMMARY (2025-11-30)
 # =============================================================================
 
-# DONE: Created momentum_scanner_gui.py (Nifty500 momentum scanner)
-# DONE: Created yahoo_downloader_gui.py (daily + intraday downloader)
-# DONE: Created price_cluster_analyzer.py (support/resistance zones)
-# DONE: Added candlestick chart with price zones
-# DONE: Fixed zone plotting and removed weekend gaps
-# DONE: Updated launcher.py with 3 new tools
-# DONE: Tagged and pushed v2.5.0
+# DONE: Created IndexRatingService for sector rotation analysis
+# DONE: Added Sector Rotation tab to Price & Ratings Analyzer
+# DONE: Fixed Daily Data Wizard - indices now save to correct table
+# DONE: Backfilled 4,881 index ranking records for 5 indices
+# DONE: Integrated Stock Ratings apps into launcher (⭐ Stock Ratings category)
+# DONE: Created Rankings_Distribution_Guide.pdf explaining all metrics
+# TODO: Add more sector indices to tracking list
+# TODO: Create sector rotation alerts/notifications
 
 # =============================================================================
 # 🗂️ PROJECT ORGANIZATION (Current State)
@@ -101,13 +116,13 @@
 # 🎯 CURRENT STATUS
 # =============================================================================
 
-# DONE: Momentum Scanner GUI complete and tested
-# DONE: Yahoo Downloader GUI complete (daily + intraday)
-# DONE: Price Cluster Analyzer with charts complete
-# DONE: v2.5.0 tagged and pushed
-# TODO: Test intraday download functionality
-# TODO: Add more chart indicators (SMAs, RSI, etc.)
-# TODO: Continue daily progress logging
+# DONE: IndexRatingService for sector rotation complete
+# DONE: Sector Rotation tab in Price & Ratings Analyzer
+# DONE: Index rankings backfilled (17,902 total records)
+# DONE: Rankings Distribution Guide PDF generated
+# DONE: v2.6.0 ready to tag and push
+# TODO: Add more sector indices
+# TODO: Create sector rotation alerts
 
 # =============================================================================
 # 🚀 QUICK START COMMANDS

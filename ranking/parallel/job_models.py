@@ -61,32 +61,53 @@ class RankingJob:
             "batch_id": self.batch_id,
             "priority": self.priority,
             "job_id": self.job_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else "",
+            "started_at": self.started_at.isoformat() if self.started_at else "",
+            "completed_at": self.completed_at.isoformat() if self.completed_at else "",
             "status": self.status.value,
             "worker_id": self.worker_id,
-            "result": self.result,
+            "result": self.result if self.result else "",
             "error": self.error,
         }
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'RankingJob':
         """Create from dictionary."""
+        # Helper to safely parse datetime - handles 'None' strings and empty values
+        def parse_datetime(val):
+            if not val or val == 'None' or val == 'null':
+                return None
+            try:
+                return datetime.fromisoformat(val)
+            except (ValueError, TypeError):
+                return None
+        
+        def parse_date(val):
+            if not val or val == 'None' or val == 'null':
+                return None
+            try:
+                return date.fromisoformat(val) if isinstance(val, str) else val
+            except (ValueError, TypeError):
+                return None
+        
+        calc_date = parse_date(data.get("calculation_date"))
+        if calc_date is None:
+            raise ValueError(f"Invalid calculation_date: {data.get('calculation_date')}")
+        
         return cls(
             job_type=JobType(data.get("job_type", "calculate_date")),
-            calculation_date=date.fromisoformat(data["calculation_date"]) if isinstance(data.get("calculation_date"), str) else data.get("calculation_date"),
-            symbols=data.get("symbols", []),
+            calculation_date=calc_date,
+            symbols=data.get("symbols", []) if isinstance(data.get("symbols"), list) else [],
             batch_id=data.get("batch_id", ""),
             priority=int(data.get("priority", 0)),
             job_id=data.get("job_id", ""),
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None,
-            started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
-            completed_at=datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None,
+            created_at=parse_datetime(data.get("created_at")),
+            started_at=parse_datetime(data.get("started_at")),
+            completed_at=parse_datetime(data.get("completed_at")),
             status=JobStatus(data.get("status", "pending")),
-            worker_id=data.get("worker_id", ""),
-            result=data.get("result"),
-            error=data.get("error", ""),
+            worker_id=str(data.get("worker_id", "")),
+            result=data.get("result") if data.get("result") and data.get("result") != 'None' else None,
+            error=str(data.get("error", "")),
         )
 
 
