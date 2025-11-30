@@ -1514,6 +1514,74 @@ class WizardStepsExecutor:
             logger.error(f"Step 7 failed: {e}")
             self.state_manager.complete_step(step_id, False, str(e), self.failed_symbols)
             return False, str(e)
+    
+    def step8_calculate_bollinger_bands(self) -> Tuple[bool, str]:
+        """Calculate Bollinger Bands indicators for all stocks"""
+        step_id = 8
+        self.failed_symbols = []
+        
+        try:
+            self.progress_callback(0, "Initializing Bollinger Bands computation...")
+            
+            # Start tracking step
+            self.state_manager.start_step(step_id, "Calculate Bollinger Bands", len(self.all_symbols))
+            
+            # Import BB compute service
+            try:
+                from bollinger.services.daily_bb_compute import DailyBBCompute, create_bb_tables
+            except ImportError as e:
+                msg = f"Bollinger module not available: {e}"
+                logger.warning(msg)
+                self.state_manager.complete_step(step_id, False, msg, [])
+                return False, msg
+            
+            # Get database engine
+            engine = self.db.get_engine()
+            
+            # Ensure BB tables exist
+            self.progress_callback(5, "Creating/verifying BB tables...")
+            create_bb_tables(engine)
+            
+            # Progress callback wrapper
+            def bb_progress(current: int, total: int, message: str):
+                self.progress_callback(current, message)
+            
+            # Create BB compute service
+            bb_compute = DailyBBCompute(
+                engine=engine,
+                lookback_days=252,
+                progress_callback=bb_progress
+            )
+            
+            self.progress_callback(10, "Running BB calculations...")
+            
+            # Run BB computation
+            stats = bb_compute.run()
+            
+            # Check for stop request
+            if self.stop_requested:
+                self.state_manager.complete_step(step_id, False, "Stopped by user", [])
+                return False, "Stopped by user"
+            
+            # Build summary message
+            msg = (f"BB computed: {stats.symbols_processed} stocks | "
+                   f"Squeeze: {stats.squeeze_count} | Bulge: {stats.bulge_count} | "
+                   f"Uptrend: {stats.uptrend_count} | Downtrend: {stats.downtrend_count} | "
+                   f"Time: {stats.execution_time_sec:.1f}s")
+            
+            if stats.symbols_failed > 0:
+                self.failed_symbols = [err.split(':')[0] for err in stats.errors[:20]]
+            
+            self.progress_callback(100, msg)
+            
+            success = stats.symbols_failed < stats.symbols_processed  # Success if most succeeded
+            self.state_manager.complete_step(step_id, success, msg, self.failed_symbols)
+            return success, msg
+            
+        except Exception as e:
+            logger.error(f"Step 8 failed: {e}")
+            self.state_manager.complete_step(step_id, False, str(e), self.failed_symbols)
+            return False, str(e)
 
 
 # =============================================================================
@@ -1546,6 +1614,7 @@ class DailyDataWizardGUI:
             WizardStep(5, "Calculate Intraday MA", "Calculate EMA(21), SMA(50,200) for 1min, 5min, 60min data"),
             WizardStep(6, "Calculate RSI", "Calculate 9-period RSI for daily and intraday data"),
             WizardStep(7, "Calculate Rankings", "Calculate RS Rating, Momentum, Trend Template, and Composite scores"),
+            WizardStep(8, "Calculate Bollinger Bands", "Calculate BB indicators (%b, BandWidth, squeeze/bulge detection)"),
         ]
         
         # Colors
@@ -1835,6 +1904,7 @@ class DailyDataWizardGUI:
             self.executor.step5_calculate_intraday_ma,
             self.executor.step6_calculate_rsi,
             self.executor.step7_calculate_rankings,
+            self.executor.step8_calculate_bollinger_bands,
         ]
         
         for i, (step, method) in enumerate(zip(self.steps, step_methods)):

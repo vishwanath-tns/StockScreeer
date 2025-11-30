@@ -32,6 +32,13 @@ APPS = {
         ("Index Ratings Test", "test_index_ratings.py", "View current sector/index ratings"),
     ],
     
+    "📊 Bollinger Bands": [
+        ("BB Visualizer", "bollinger/launch_bb_visualizer.py", "Interactive chart: Price with BB overlay, %b, BandWidth indicators"),
+        ("BB Analyzer", "bollinger/launch_bb_analyzer.py", "Bollinger Bands analysis with %b, BandWidth, ratings & signals"),
+        ("BB Scanner", "bollinger/launch_bb_scanner.py", "Scan for squeeze, bulge, trend, pullback setups"),
+        ("BB Historical Backfill", "bollinger/launch_bb_backfill_gui.py", "One-time: Compute BB for all historical data (GUI with progress)"),
+    ],
+    
     "📊 Dashboards": [
         ("Real-Time Market Dashboard", "realtime_adv_decl_dashboard.py", "Live advance-decline tracking for Nifty 500"),
         ("Progress Dashboard", "progress_dashboard.py", "View project progress statistics"),
