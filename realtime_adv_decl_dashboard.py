@@ -86,9 +86,15 @@ class RealtimeAdvDeclDashboard:
         self.polling_thread = None
         self.stop_polling = threading.Event()
         
-        # 2-day history dataframe (yesterday + today)
+        # 2-day history dataframe (yesterday + today) - for 5-min poll snapshots
         self.history_df = pd.DataFrame(columns=[
             'poll_time', 'nifty_ltp', 'advances', 'declines', 'unchanged'
+        ])
+        
+        # 1-minute A/D history - stores advance/decline counts per minute
+        # This is calculated from all 1-min candles fetched every 5 minutes
+        self.minute_ad_df = pd.DataFrame(columns=[
+            'candle_time', 'advances', 'declines', 'unchanged'
         ])
         
         # Track last poll time for smart resume
@@ -547,14 +553,15 @@ class RealtimeAdvDeclDashboard:
         """Load 2 days of historical data (yesterday + today) from database on startup
         
         Ensures continuous display from yesterday 3:30 PM to today 9:15 AM without gaps
+        Uses 4-day lookback to handle weekends (Sat/Sun are non-trading days)
         """
         try:
             with self.engine.connect() as conn:
-                # Get yesterday's date
+                # Get today's date and use 4-day lookback to handle weekends
                 today = datetime.now(self.ist).date()
-                yesterday = today - timedelta(days=1)
+                lookback_start = today - timedelta(days=4)  # 4 days back to handle weekends
                 
-                # Load breadth snapshots from last 2 days
+                # Load breadth snapshots from last 4 days (to cover weekends)
                 result = conn.execute(text("""
                     SELECT 
                         poll_time,
@@ -562,16 +569,18 @@ class RealtimeAdvDeclDashboard:
                         declines,
                         unchanged
                     FROM intraday_advance_decline
-                    WHERE trade_date >= :yesterday
+                    WHERE trade_date >= :lookback_start
                       AND advances > 0
                       AND declines > 0
                     ORDER BY poll_time
-                """), {'yesterday': yesterday})
+                """), {'lookback_start': lookback_start})
                 
                 breadth_data = result.fetchall()
                 
+                self.log_status(f"Query returned {len(breadth_data)} breadth rows (from {lookback_start})")
+                
                 if not breadth_data:
-                    self.log_status("No historical data found for last 2 days")
+                    self.log_status("No historical data found for last 4 days")
                     return
                 
                 # Load NIFTY candles for the same period (OHLC data for candlestick)
@@ -584,9 +593,9 @@ class RealtimeAdvDeclDashboard:
                         close_price
                     FROM intraday_1min_candles
                     WHERE symbol = '^NSEI'
-                      AND trade_date >= :yesterday
+                      AND trade_date >= :lookback_start
                     ORDER BY candle_timestamp
-                """), {'yesterday': yesterday})
+                """), {'lookback_start': lookback_start})
                 
                 # Store all NIFTY candles as list of tuples (timestamp, open, high, low, close)
                 nifty_candles = [
@@ -597,6 +606,8 @@ class RealtimeAdvDeclDashboard:
                      float(row[4]) if row[4] else None)  # close
                     for row in result
                 ]
+                
+                self.log_status(f"Loaded {len(nifty_candles)} NIFTY candles")
                 
                 # Function to find closest NIFTY OHLC for a given poll_time
                 def find_closest_nifty(poll_time, candles):
@@ -825,7 +836,11 @@ class RealtimeAdvDeclDashboard:
             }
             self.logger.log_breadth_snapshot(breadth, stock_details)
             
-            # Queue 1-min candles to separate process (IN-MEMORY, fast)
+            # ===== CALCULATE 1-MIN ADVANCE/DECLINE FROM CANDLE DATA =====
+            # Group all candles by their timestamp (rounded to minute)
+            from collections import defaultdict
+            minute_candles = defaultdict(list)  # {candle_time: [(symbol, close, prev_close), ...]}
+            
             candles_queued = 0
             symbols_with_candles = 0
             symbols_without_prevclose = []
@@ -843,6 +858,32 @@ class RealtimeAdvDeclDashboard:
                 
                 if all_candles and prev_close:
                     for candle in all_candles:
+                        candle_ts = candle.get('timestamp')
+                        close_price = candle.get('ltp') or candle.get('close')
+                        
+                        if candle_ts and close_price:
+                            # Normalize timestamp to minute
+                            if isinstance(candle_ts, str):
+                                try:
+                                    candle_ts = pd.to_datetime(candle_ts)
+                                except:
+                                    continue
+                            
+                            # Convert pandas Timestamp to python datetime if needed
+                            if hasattr(candle_ts, 'to_pydatetime'):
+                                candle_ts = candle_ts.to_pydatetime()
+                            
+                            # Ensure timezone aware
+                            if candle_ts.tzinfo is None:
+                                candle_ts = self.ist.localize(candle_ts)
+                            else:
+                                candle_ts = candle_ts.astimezone(self.ist)
+                            
+                            # Round to minute
+                            minute_key = candle_ts.replace(second=0, microsecond=0)
+                            minute_candles[minute_key].append((symbol, float(close_price), float(prev_close)))
+                        
+                        # Also queue to DB processor
                         candle_record = {
                             'poll_time': poll_time,
                             'trade_date': trade_date,
@@ -851,7 +892,7 @@ class RealtimeAdvDeclDashboard:
                             'open_price': candle.get('open'),
                             'high_price': candle.get('high'),
                             'low_price': candle.get('low'),
-                            'close_price': candle.get('ltp'),
+                            'close_price': close_price,
                             'volume': candle.get('volume', 0),
                             'prev_close': prev_close
                         }
@@ -860,6 +901,53 @@ class RealtimeAdvDeclDashboard:
                             candles_queued += 1
                         except:
                             pass  # Queue full, skip
+            
+            # Calculate A/D for each minute and add to minute_ad_df
+            new_minute_rows = []
+            for minute_time in sorted(minute_candles.keys()):
+                candles_in_minute = minute_candles[minute_time]
+                advances = 0
+                declines = 0
+                unchanged = 0
+                
+                for symbol, close_price, prev_close in candles_in_minute:
+                    if close_price > prev_close:
+                        advances += 1
+                    elif close_price < prev_close:
+                        declines += 1
+                    else:
+                        unchanged += 1
+                
+                new_minute_rows.append({
+                    'candle_time': minute_time,
+                    'advances': advances,
+                    'declines': declines,
+                    'unchanged': unchanged
+                })
+            
+            if new_minute_rows:
+                new_minute_df = pd.DataFrame(new_minute_rows)
+                
+                # Debug: Show what new minutes we're adding
+                if new_minute_rows:
+                    first_min = min(r['candle_time'] for r in new_minute_rows)
+                    last_min = max(r['candle_time'] for r in new_minute_rows)
+                    last_row = [r for r in new_minute_rows if r['candle_time'] == last_min][0]
+                    total_stocks = last_row['advances'] + last_row['declines'] + last_row['unchanged']
+                    self.root.after(0, self.log_status, 
+                                  f"📊 Candle A/D: {first_min.strftime('%H:%M')}-{last_min.strftime('%H:%M')}, Latest ({total_stocks} stocks): Adv={last_row['advances']} Dec={last_row['declines']}")
+                
+                # Remove duplicates - keep latest for each minute
+                self.minute_ad_df = pd.concat([self.minute_ad_df, new_minute_df], ignore_index=True)
+                self.minute_ad_df = self.minute_ad_df.drop_duplicates(subset=['candle_time'], keep='last')
+                self.minute_ad_df = self.minute_ad_df.sort_values('candle_time')
+                
+                # Keep only 2 days
+                cutoff_time = datetime.now(self.ist) - timedelta(days=2)
+                self.minute_ad_df = self.minute_ad_df[self.minute_ad_df['candle_time'] >= cutoff_time]
+                
+                self.root.after(0, self.log_status, 
+                              f"📊 minute_ad_df now has {len(self.minute_ad_df)} rows")
             
             if candles_queued > 0:
                 self.root.after(0, self.log_status, 
@@ -936,122 +1024,251 @@ class RealtimeAdvDeclDashboard:
         self._update_movers()
     
     def update_2day_chart(self):
-        """Update the 2-day continuous NIFTY candlestick + A/D line charts"""
-        if self.history_df.empty:
-            return
+        """Update the 2-day continuous NIFTY candlestick + A/D line charts
         
+        NIFTY data is loaded directly from intraday_1min_candles table (^NSEI symbol)
+        A/D data is loaded from history_df which comes from intraday_advance_decline table
+        """
         try:
             # Clear previous plots
             self.ax_nifty.clear()
             self.ax_ad.clear()
             
-            # Filter to 2 days only
-            cutoff = datetime.now(self.ist) - timedelta(days=2)
-            df = self.history_df[self.history_df['poll_time'] >= cutoff].copy()
+            # Use 4-day lookback to handle weekends
+            cutoff = datetime.now(self.ist) - timedelta(days=4)
+            cutoff_date = cutoff.date()
             
-            if len(df) < 2:
-                self.ax_nifty.text(0.5, 0.5, 'Waiting for more data...', 
-                            ha='center', va='center', fontsize=12, color='gray',
-                            transform=self.ax_nifty.transAxes)
-                self.canvas.draw()
-                return
+            # ===== LOAD NIFTY CANDLES DIRECTLY FROM DATABASE =====
+            nifty_times = []
+            nifty_open = []
+            nifty_high = []
+            nifty_low = []
+            nifty_close = []
             
-            # Sort by time
-            df = df.sort_values('poll_time')
+            try:
+                # First try to fetch NIFTY data live from Yahoo Finance for today
+                import yfinance as yf
+                
+                nifty_ticker = yf.Ticker("^NSEI")
+                # Get 2-day intraday data at 1-minute interval
+                nifty_data = nifty_ticker.history(period="2d", interval="1m")
+                
+                if not nifty_data.empty:
+                    for idx, row in nifty_data.iterrows():
+                        ts = idx.to_pydatetime()
+                        if not hasattr(ts, 'tzinfo') or ts.tzinfo is None:
+                            ts = self.ist.localize(ts)
+                        elif ts.tzinfo != self.ist:
+                            ts = ts.astimezone(self.ist)
+                        
+                        nifty_times.append(ts)
+                        nifty_open.append(float(row['Open']))
+                        nifty_high.append(float(row['High']))
+                        nifty_low.append(float(row['Low']))
+                        nifty_close.append(float(row['Close']))
+                    
+                    self.log_status(f"NIFTY candles from Yahoo: {len(nifty_times)}")
+                else:
+                    self.log_status("No NIFTY data from Yahoo Finance")
+                    
+            except Exception as e:
+                self.log_status(f"Error loading NIFTY from Yahoo: {e}")
+                # Fallback to database
+                try:
+                    with self.engine.connect() as conn:
+                        result = conn.execute(text("""
+                            SELECT 
+                                candle_timestamp,
+                                open_price,
+                                high_price,
+                                low_price,
+                                close_price
+                            FROM intraday_1min_candles
+                            WHERE symbol = '^NSEI'
+                              AND trade_date >= :lookback_start
+                            ORDER BY candle_timestamp
+                        """), {'lookback_start': cutoff_date})
+                        
+                        for row in result:
+                            ts = row[0]
+                            if ts and row[1] and row[2] and row[3] and row[4]:
+                                if not hasattr(ts, 'tzinfo') or ts.tzinfo is None:
+                                    ts = self.ist.localize(ts)
+                                nifty_times.append(ts)
+                                nifty_open.append(float(row[1]))
+                                nifty_high.append(float(row[2]))
+                                nifty_low.append(float(row[3]))
+                                nifty_close.append(float(row[4]))
+                        
+                    self.log_status(f"NIFTY candles from DB fallback: {len(nifty_times)}")
+                except Exception as e2:
+                    self.log_status(f"DB fallback also failed: {e2}")
             
-            # Extract data (skip NaN rows used for line breaks)
-            df_valid = df[~df['advances'].isna()].copy()
-            times = df_valid['poll_time'].tolist()
-            nifty_open = df_valid['nifty_open'].tolist()
-            nifty_high = df_valid['nifty_high'].tolist()
-            nifty_low = df_valid['nifty_low'].tolist()
-            nifty_close = df_valid['nifty_close'].tolist()
-            advances = df_valid['advances'].tolist()
-            declines = df_valid['declines'].tolist()
+            # ===== LOAD A/D DATA FROM 1-MIN CANDLE DATA =====
+            # Use minute_ad_df which has 1-min granularity A/D counts
+            ad_times = []
+            advances = []
+            declines = []
             
-            # Use sequential indices instead of datetime for x-axis (removes gap)
-            x_indices = list(range(len(times)))
+            if not self.minute_ad_df.empty:
+                df = self.minute_ad_df.copy()
+                
+                self.log_status(f"minute_ad_df has {len(df)} rows before filtering")
+                
+                # Convert candle_time to timezone-aware datetime for comparison
+                def normalize_time(dt):
+                    if dt is None:
+                        return None
+                    # Convert pandas Timestamp to datetime if needed
+                    if hasattr(dt, 'to_pydatetime'):
+                        dt = dt.to_pydatetime()
+                    # Make timezone aware
+                    if hasattr(dt, 'tzinfo'):
+                        if dt.tzinfo is None:
+                            return self.ist.localize(dt)
+                        else:
+                            return dt.astimezone(self.ist)
+                    return dt
+                
+                df['candle_time_normalized'] = df['candle_time'].apply(normalize_time)
+                
+                # Filter by cutoff (already timezone-aware)
+                df = df[df['candle_time_normalized'] >= cutoff]
+                df = df.sort_values('candle_time')
+                
+                # Extract valid A/D data
+                df_valid = df[~df['advances'].isna()].copy()
+                ad_times = df_valid['candle_time_normalized'].tolist()
+                advances = df_valid['advances'].tolist()
+                declines = df_valid['declines'].tolist()
+                
+                # Debug: Show latest data
+                if ad_times:
+                    self.log_status(f"A/D 1-min data: {len(ad_times)} pts, latest={ad_times[-1].strftime('%H:%M')}: Adv={advances[-1]} Dec={declines[-1]}")
+                else:
+                    self.log_status(f"A/D 1-min data: 0 points after filtering")
+            else:
+                self.log_status("minute_ad_df is empty, using fallback")
+                # Fallback to poll-based history_df if no minute data yet
+                if not self.history_df.empty:
+                    df = self.history_df.copy()
+                    
+                    def make_aware(dt):
+                        if dt is None:
+                            return None
+                        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+                            return dt
+                        return self.ist.localize(dt)
+                    
+                    df['poll_time_aware'] = df['poll_time'].apply(make_aware)
+                    df = df[df['poll_time_aware'] >= cutoff]
+                    df = df.sort_values('poll_time')
+                    
+                    df_valid = df[~df['advances'].isna()].copy()
+                    ad_times = df_valid['poll_time'].tolist()
+                    advances = df_valid['advances'].tolist()
+                    declines = df_valid['declines'].tolist()
+                    
+                    self.log_status(f"A/D fallback (5-min poll): {len(ad_times)}")
             
-            # ===== NIFTY CANDLESTICK CHART =====
+            # ===== DRAW NIFTY CANDLESTICK CHART =====
             import math
             from matplotlib.patches import Rectangle
             
-            # Draw candlesticks for NIFTY (wider candles for better visibility)
-            candle_width = 0.8
-            for i, (o, h, l, c) in enumerate(zip(nifty_open, nifty_high, nifty_low, nifty_close)):
-                if o is None or h is None or l is None or c is None:
-                    continue
-                if isinstance(o, float) and math.isnan(o):
-                    continue
+            if len(nifty_times) >= 2:
+                # Use sequential indices for x-axis (removes overnight gap)
+                x_indices_nifty = list(range(len(nifty_times)))
                 
-                # Color: green if close > open, red if close < open
-                color = '#27ae60' if c >= o else '#e74c3c'
+                # Draw candlesticks
+                candle_width = 0.8
+                for i, (o, h, l, c) in enumerate(zip(nifty_open, nifty_high, nifty_low, nifty_close)):
+                    color = '#27ae60' if c >= o else '#e74c3c'
+                    
+                    # High-low line (wick)
+                    self.ax_nifty.plot([i, i], [l, h], color=color, linewidth=1.5, alpha=0.8)
+                    
+                    # Candlestick body
+                    body_height = abs(c - o) if c != o else h * 0.001
+                    body_bottom = min(o, c)
+                    rect = Rectangle((i - candle_width/2, body_bottom), candle_width, body_height,
+                                    facecolor=color, edgecolor=color, alpha=0.8, linewidth=1)
+                    self.ax_nifty.add_patch(rect)
                 
-                # High-low line (wick)
-                self.ax_nifty.plot([i, i], [l, h], color=color, linewidth=1.5, alpha=0.8)
+                # NIFTY styling
+                self.ax_nifty.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
+                self.ax_nifty.set_title('NIFTY 50 (Intraday 1-min)', fontsize=11, fontweight='bold', pad=10)
+                self.ax_nifty.grid(True, alpha=0.3, linestyle='--')
                 
-                # Candlestick body
-                body_height = abs(c - o) if c != o else h * 0.001  # Tiny height for doji
-                body_bottom = min(o, c)
-                rect = Rectangle((i - candle_width/2, body_bottom), candle_width, body_height,
-                                facecolor=color, edgecolor=color, alpha=0.8, linewidth=1)
-                self.ax_nifty.add_patch(rect)
+                # Add latest price as legend
+                if nifty_close:
+                    self.ax_nifty.legend([f'Last: ₹{nifty_close[-1]:.2f}'], loc='upper left', fontsize=9)
+                
+                # Format x-axis with time labels
+                tick_interval = max(1, len(nifty_times) // 10)
+                tick_positions = list(range(0, len(nifty_times), tick_interval))
+                tick_labels = [nifty_times[i].strftime('%d-%b %H:%M') for i in tick_positions]
+                self.ax_nifty.set_xticks(tick_positions)
+                self.ax_nifty.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=8)
+                self.ax_nifty.set_xlim(-0.5, len(nifty_times) - 0.5)
+                
+                # Add vertical line to separate days
+                today = datetime.now(self.ist).date()
+                for i, t in enumerate(nifty_times):
+                    if t.date() == today and i > 0 and nifty_times[i-1].date() != today:
+                        self.ax_nifty.axvline(x=i - 0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+                        break
+            else:
+                self.ax_nifty.text(0.5, 0.5, 'NIFTY: No intraday data', 
+                            ha='center', va='center', fontsize=12, color='gray',
+                            transform=self.ax_nifty.transAxes)
+                self.ax_nifty.set_title('NIFTY 50 (Intraday 1-min)', fontsize=11, fontweight='bold', pad=10)
             
-            # NIFTY styling
-            self.ax_nifty.set_ylabel('NIFTY Price (₹)', fontsize=10, fontweight='bold', color='#2c3e50')
-            self.ax_nifty.set_title('NIFTY 50 (Yesterday + Today)', fontsize=11, fontweight='bold', pad=10)
-            self.ax_nifty.grid(True, alpha=0.3, linestyle='--')
-            
-            # Add latest price as legend
-            if nifty_close and not (isinstance(nifty_close[-1], float) and math.isnan(nifty_close[-1])):
-                self.ax_nifty.legend([f'Last: ₹{nifty_close[-1]:.2f}'], loc='upper left', fontsize=9)
-            
-            # ===== ADVANCE-DECLINE LINE CHART =====
-            line1 = self.ax_ad.plot(x_indices, advances, 
-                                    color='#27ae60', linewidth=2, 
-                                    marker='o', markersize=3,
-                                    label=f'Advances ({int(advances[-1])})')
-            line2 = self.ax_ad.plot(x_indices, declines, 
-                                    color='#e74c3c', linewidth=2, 
-                                    marker='s', markersize=3,
-                                    label=f'Declines ({int(declines[-1])})')
-            
-            # A/D styling
-            self.ax_ad.set_xlabel('Time (Yesterday + Today)', fontsize=10, fontweight='bold')
-            self.ax_ad.set_ylabel('Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
-            self.ax_ad.set_title('Advance-Decline Count', fontsize=11, fontweight='bold', pad=10)
-            self.ax_ad.grid(True, alpha=0.3, linestyle='--')
-            self.ax_ad.legend(loc='upper left', fontsize=9, framealpha=0.9)
-            
-            # Add subtle vertical line to separate yesterday/today on both charts (optional)
-            today = datetime.now(self.ist).date()
-            today_indices = [i for i, t in enumerate(times) if t.date() == today]
-            if today_indices and len(today_indices) > 0:
-                first_today_idx = today_indices[0]
-                # Only draw line if there's a clear gap (more than 1 index jump)
-                if first_today_idx > 0:
-                    self.ax_nifty.axvline(x=first_today_idx - 0.5, color='gray', linestyle=':', 
-                                         linewidth=1, alpha=0.5)
-                    self.ax_ad.axvline(x=first_today_idx - 0.5, color='gray', linestyle=':', 
-                                      linewidth=1, alpha=0.5)
-            
-            # Format x-axis with datetime labels at sparse intervals
-            # Show every Nth label to avoid overcrowding
-            tick_interval = max(1, len(times) // 10)  # Show ~10 labels
-            tick_positions = list(range(0, len(times), tick_interval))
-            tick_labels = [times[i].strftime('%d-%b %H:%M') for i in tick_positions]
-            
-            self.ax_ad.set_xticks(tick_positions)
-            self.ax_ad.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=8)
-            
-            # Set x-axis limits to remove padding
-            self.ax_nifty.set_xlim(-0.5, len(times) - 0.5)
-            self.ax_ad.set_xlim(-0.5, len(times) - 0.5)
+            # ===== DRAW ADVANCE-DECLINE LINE CHART =====
+            if len(ad_times) >= 2:
+                x_indices_ad = list(range(len(ad_times)))
+                
+                last_adv = int(advances[-1]) if advances and advances[-1] is not None else 0
+                last_dec = int(declines[-1]) if declines and declines[-1] is not None else 0
+                last_time = ad_times[-1].strftime('%H:%M') if ad_times else ''
+                
+                self.ax_ad.plot(x_indices_ad, advances, 
+                                color='#27ae60', linewidth=2, 
+                                marker='o', markersize=3,
+                                label=f'Advances ({last_adv}) @ {last_time}')
+                self.ax_ad.plot(x_indices_ad, declines, 
+                                color='#e74c3c', linewidth=2, 
+                                marker='s', markersize=3,
+                                label=f'Declines ({last_dec}) @ {last_time}')
+                
+                # A/D styling
+                self.ax_ad.set_xlabel('Time', fontsize=10, fontweight='bold')
+                self.ax_ad.set_ylabel('Stock Count', fontsize=10, fontweight='bold', color='#27ae60')
+                self.ax_ad.set_title('Advance-Decline Count', fontsize=11, fontweight='bold', pad=10)
+                self.ax_ad.grid(True, alpha=0.3, linestyle='--')
+                self.ax_ad.legend(loc='upper left', fontsize=9, framealpha=0.9)
+                
+                # Format x-axis
+                tick_interval = max(1, len(ad_times) // 10)
+                tick_positions = list(range(0, len(ad_times), tick_interval))
+                tick_labels = [ad_times[i].strftime('%d-%b %H:%M') for i in tick_positions]
+                self.ax_ad.set_xticks(tick_positions)
+                self.ax_ad.set_xticklabels(tick_labels, rotation=45, ha='right', fontsize=8)
+                self.ax_ad.set_xlim(-0.5, len(ad_times) - 0.5)
+                
+                # Add day separator
+                today = datetime.now(self.ist).date()
+                for i, t in enumerate(ad_times):
+                    if t.date() == today and i > 0 and ad_times[i-1].date() != today:
+                        self.ax_ad.axvline(x=i - 0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+                        break
+            else:
+                self.ax_ad.text(0.5, 0.5, 'A/D: Waiting for data...', 
+                            ha='center', va='center', fontsize=12, color='gray',
+                            transform=self.ax_ad.transAxes)
+                self.ax_ad.set_title('Advance-Decline Count', fontsize=11, fontweight='bold', pad=10)
             
             # Tight layout
             self.fig.tight_layout()
-            
-            # Redraw
             self.canvas.draw()
             
         except Exception as e:
@@ -1060,7 +1277,7 @@ class RealtimeAdvDeclDashboard:
             traceback.print_exc()
     
     def _update_movers(self):
-        """Update top gainers and losers"""
+        """Update top gainers and losers (using yesterday's close as reference)"""
         # Gainers
         self.gainers_text.delete('1.0', tk.END)
         gainers = self.calculator.get_top_gainers(5)
@@ -1068,9 +1285,11 @@ class RealtimeAdvDeclDashboard:
         if gainers:
             for i, stock in enumerate(gainers, 1):
                 symbol_short = stock.symbol.replace('.NS', '')
+                # change_pct is calculated as: (ltp - prev_close) / prev_close * 100
+                # where prev_close is yesterday's closing price
                 self.gainers_text.insert(
                     tk.END,
-                    f"{i}. {symbol_short:<12} Rs{stock.ltp:>8.2f}  {stock.change_pct:>+6.2f}%\n"
+                    f"{i}. {symbol_short:<12} ₹{stock.ltp:>8.2f}  {stock.change_pct:>+6.2f}%\n"
                 )
         else:
             self.gainers_text.insert(tk.END, "No data available")
@@ -1084,7 +1303,7 @@ class RealtimeAdvDeclDashboard:
                 symbol_short = stock.symbol.replace('.NS', '')
                 self.losers_text.insert(
                     tk.END,
-                    f"{i}. {symbol_short:<12} Rs{stock.ltp:>8.2f}  {stock.change_pct:>+6.2f}%\n"
+                    f"{i}. {symbol_short:<12} ₹{stock.ltp:>8.2f}  {stock.change_pct:>+6.2f}%\n"
                 )
         else:
             self.losers_text.insert(tk.END, "No data available")

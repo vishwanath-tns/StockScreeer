@@ -282,6 +282,42 @@ class WizardStateManager:
             summary += f" | ⚠️ {len(state.symbols_failed)} failed"
         
         return summary
+    
+    def get_detailed_stats(self, step_id: int) -> Dict:
+        """Get detailed statistics for a step"""
+        state = self.get_step_state(step_id)
+        
+        # Calculate duration
+        duration_str = "--:--:--"
+        duration_sec = 0
+        if state.last_run_start and state.last_run_end:
+            try:
+                start = datetime.fromisoformat(state.last_run_start)
+                end = datetime.fromisoformat(state.last_run_end)
+                duration = end - start
+                duration_sec = duration.total_seconds()
+                duration_str = str(duration).split('.')[0]
+            except:
+                pass
+        
+        success_count = state.symbols_processed - len(state.symbols_failed) if state.symbols_failed else state.symbols_processed
+        failure_count = len(state.symbols_failed) if state.symbols_failed else 0
+        
+        return {
+            'step_id': step_id,
+            'step_name': state.step_name,
+            'status': state.last_status,
+            'total': state.symbols_total,
+            'processed': state.symbols_processed,
+            'success': success_count,
+            'failed': failure_count,
+            'failed_symbols': state.symbols_failed[:10] if state.symbols_failed else [],  # First 10 failures
+            'total_failed': len(state.symbols_failed) if state.symbols_failed else 0,
+            'duration': duration_str,
+            'duration_sec': duration_sec,
+            'error_message': state.error_message,
+            'success_rate': f"{(success_count / state.symbols_total * 100):.1f}%" if state.symbols_total > 0 else "N/A"
+        }
 
 
 # =============================================================================
@@ -521,10 +557,11 @@ class WizardStepsExecutor:
             else:
                 start_date = (datetime.now() - timedelta(days=365*5)).strftime('%Y-%m-%d')
             
-            end_date = datetime.now().strftime('%Y-%m-%d')
+            # Add 1 day to end_date because yfinance uses exclusive end date
+            end_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
             
-            # Skip if already up to date
-            if last_date and pd.to_datetime(last_date).date() >= (datetime.now().date() - timedelta(days=1)):
+            # Skip if already up to date (have today's data)
+            if last_date and pd.to_datetime(last_date).date() >= datetime.now().date():
                 return symbol, True, "up to date"
             
             # Download from Yahoo Finance
@@ -553,6 +590,40 @@ class WizardStepsExecutor:
             logger.error(f"Error syncing {symbol}: {e}")
             return symbol, False, str(e)
     
+    def _check_today_data_available(self) -> Tuple[bool, str, str]:
+        """
+        Check if today's market data is available on Yahoo Finance.
+        
+        Returns:
+            Tuple of (is_available, latest_date_str, message)
+        """
+        test_symbols = ['RELIANCE.NS', 'TCS.NS', 'HDFCBANK.NS']
+        today = datetime.now().date()
+        
+        self.progress_callback(0, "Checking if today's data is available on Yahoo Finance...")
+        
+        for symbol in test_symbols:
+            try:
+                ticker = yf.Ticker(symbol)
+                hist = ticker.history(period='5d')
+                
+                if not hist.empty:
+                    latest_date = hist.index[-1].date()
+                    
+                    if latest_date >= today:
+                        return True, str(latest_date), f"Today's data available (latest: {latest_date})"
+                    else:
+                        # Check if today is a trading day (not weekend)
+                        if today.weekday() >= 5:  # Saturday=5, Sunday=6
+                            return True, str(latest_date), f"Weekend - using latest data from {latest_date}"
+                        
+                        return False, str(latest_date), f"Today's data NOT available yet. Latest: {latest_date}"
+            except Exception as e:
+                logger.warning(f"Error checking {symbol}: {e}")
+                continue
+        
+        return False, "", "Could not verify data availability"
+    
     def step1_sync_daily_data(self) -> Tuple[bool, str]:
         """Sync daily data for all Nifty 500 stocks and indices (PARALLEL)"""
         step_id = 1
@@ -568,7 +639,19 @@ class WizardStepsExecutor:
             # Start tracking this step
             self.state_manager.start_step(step_id, "Sync Daily Data", total)
             
-            self.progress_callback(0, f"Syncing daily data for {total} symbols (parallel)...")
+            # Check if today's data is available on Yahoo Finance
+            is_available, latest_date, check_msg = self._check_today_data_available()
+            
+            if not is_available:
+                msg = f"BLOCKED: {check_msg}. Please wait and try again later."
+                self.progress_callback(0, msg)
+                logger.warning(msg)
+                self.state_manager.complete_step(step_id, False, msg, [])
+                return False, msg
+            
+            self.progress_callback(5, f"Data check passed: {check_msg}")
+            
+            self.progress_callback(10, f"Syncing daily data for {total} symbols (parallel)...")
             
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_DOWNLOAD) as executor:
                 # Submit all tasks
@@ -596,8 +679,10 @@ class WizardStepsExecutor:
                     # Update state periodically
                     self.state_manager.update_step_progress(step_id, processed, self.failed_symbols)
                     
+                    # Progress from 10-100% (first 10% was data check)
+                    progress_pct = 10 + int(processed / total * 90)
                     self.progress_callback(
-                        int(processed / total * 100), 
+                        progress_pct, 
                         f"Daily: {symbol} ({msg}) [{processed}/{total}]"
                     )
             
@@ -1492,6 +1577,9 @@ class WizardStepsExecutor:
             successful = sum(1 for r in results.values() if r.success)
             failed = total_ranked - successful
             
+            # Update state with actual processed count
+            self.state_manager.update_step_progress(step_id, total_ranked, [])
+            
             # Get top 5 for summary
             top_stocks = orchestrator.get_top_stocks(n=5)
             top_summary = ""
@@ -1558,6 +1646,13 @@ class WizardStepsExecutor:
             # Run BB computation
             stats = bb_compute.run()
             
+            # Update state with actual processed count
+            self.state_manager.update_step_progress(
+                step_id, 
+                stats.symbols_processed + stats.symbols_failed,
+                [err.split(':')[0] for err in stats.errors] if stats.errors else []
+            )
+            
             # Check for stop request
             if self.stop_requested:
                 self.state_manager.complete_step(step_id, False, "Stopped by user", [])
@@ -1574,7 +1669,9 @@ class WizardStepsExecutor:
             
             self.progress_callback(100, msg)
             
-            success = stats.symbols_failed < stats.symbols_processed  # Success if most succeeded
+            # Success if any symbols were processed successfully
+            # Many symbols may fail due to insufficient history (< 30 days needed for BB)
+            success = stats.symbols_processed > 0
             self.state_manager.complete_step(step_id, success, msg, self.failed_symbols)
             return success, msg
             
@@ -1594,7 +1691,8 @@ class DailyDataWizardGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("🧙 Daily Data Wizard")
-        self.root.geometry("900x900")
+        self.root.geometry("1200x700")
+        self.root.minsize(1000, 600)
         
         # Services
         self.db = WizardDBService()
@@ -1635,19 +1733,19 @@ class DailyDataWizardGUI:
         self.setup_ui()
     
     def setup_ui(self):
-        """Setup the user interface"""
+        """Setup the user interface with horizontal split layout"""
         # Main container
         main_frame = tk.Frame(self.root, bg=self.colors['bg'])
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
         
-        # Title
+        # Title row at top
         title_frame = tk.Frame(main_frame, bg=self.colors['bg'])
-        title_frame.pack(fill=tk.X, pady=(0, 20))
+        title_frame.pack(fill=tk.X, pady=(0, 15))
         
         tk.Label(
             title_frame,
             text="🧙 Daily Data Wizard",
-            font=('Segoe UI', 24, 'bold'),
+            font=('Segoe UI', 20, 'bold'),
             fg=self.colors['primary'],
             bg=self.colors['bg']
         ).pack(side=tk.LEFT)
@@ -1660,99 +1758,151 @@ class DailyDataWizardGUI:
             bg=self.colors['bg']
         ).pack(side=tk.RIGHT)
         
-        # Steps list
+        # Horizontal split: Left = Steps, Right = Controls + Log
+        content_frame = tk.Frame(main_frame, bg=self.colors['bg'])
+        content_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # ─────────────────────────────────────────────────────────────────
+        # LEFT PANEL: Wizard Steps
+        # ─────────────────────────────────────────────────────────────────
+        left_panel = tk.Frame(content_frame, bg=self.colors['bg'])
+        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        
         steps_frame = tk.LabelFrame(
-            main_frame, text="Wizard Steps",
-            font=('Segoe UI', 12, 'bold'),
+            left_panel, text="Wizard Steps",
+            font=('Segoe UI', 11, 'bold'),
             fg=self.colors['text'], bg=self.colors['card']
         )
-        steps_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+        steps_frame.pack(fill=tk.BOTH, expand=True)
         
+        # Canvas with scrollbar for steps
+        canvas = tk.Canvas(steps_frame, bg=self.colors['card'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(steps_frame, orient="vertical", command=canvas.yview)
+        self.steps_inner_frame = tk.Frame(canvas, bg=self.colors['card'])
+        
+        self.steps_inner_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=self.steps_inner_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Create step widgets
         self.step_widgets = []
-        self.step_frames = []  # Track frames for refresh
+        self.step_frames = []
         for step in self.steps:
-            step_widget = self._create_step_widget(steps_frame, step)
+            step_widget = self._create_step_widget(self.steps_inner_frame, step)
             self.step_widgets.append(step_widget)
             self.step_frames.append(step_widget['frame'])
         
-        # Progress section
-        progress_frame = tk.Frame(main_frame, bg=self.colors['card'])
-        progress_frame.pack(fill=tk.X, pady=10)
+        # ─────────────────────────────────────────────────────────────────
+        # RIGHT PANEL: Controls, Progress, and Log
+        # ─────────────────────────────────────────────────────────────────
+        right_panel = tk.Frame(content_frame, bg=self.colors['bg'], width=400)
+        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, padx=(10, 0))
+        right_panel.pack_propagate(False)  # Fixed width
         
-        self.overall_label = tk.Label(
-            progress_frame,
-            text="Overall Progress: 0%",
+        # Control Buttons
+        button_frame = tk.LabelFrame(
+            right_panel, text="Controls",
             font=('Segoe UI', 11, 'bold'),
-            fg=self.colors['text'],
-            bg=self.colors['card']
+            fg=self.colors['text'], bg=self.colors['card']
         )
-        self.overall_label.pack(anchor='w', padx=10, pady=5)
+        button_frame.pack(fill=tk.X, pady=(0, 10))
         
-        self.overall_progress = ttk.Progressbar(
-            progress_frame, length=800, mode='determinate'
-        )
-        self.overall_progress.pack(padx=10, pady=5)
-        
-        self.status_label = tk.Label(
-            progress_frame,
-            text="Click 'Start Wizard' to begin",
-            font=('Segoe UI', 10),
-            fg=self.colors['secondary'],
-            bg=self.colors['card']
-        )
-        self.status_label.pack(anchor='w', padx=10, pady=5)
-        
-        # Buttons
-        button_frame = tk.Frame(main_frame, bg=self.colors['bg'])
-        button_frame.pack(fill=tk.X, pady=10)
+        buttons_inner = tk.Frame(button_frame, bg=self.colors['card'])
+        buttons_inner.pack(fill=tk.X, padx=10, pady=15)
         
         self.start_btn = tk.Button(
-            button_frame, text="▶️ Start Wizard",
+            buttons_inner, text="▶️ Start Wizard",
             command=self.start_wizard,
-            font=('Segoe UI', 12, 'bold'),
+            font=('Segoe UI', 11, 'bold'),
             fg='white', bg=self.colors['primary'],
             activebackground='#1d4ed8',
-            relief='flat', cursor='hand2', padx=30, pady=10
+            relief='flat', cursor='hand2', padx=20, pady=8
         )
         self.start_btn.pack(side=tk.LEFT, padx=5)
         
         self.stop_btn = tk.Button(
-            button_frame, text="⏹️ Stop",
+            buttons_inner, text="⏹️ Stop",
             command=self.stop_wizard,
-            font=('Segoe UI', 12, 'bold'),
+            font=('Segoe UI', 11, 'bold'),
             fg='white', bg=self.colors['error'],
             activebackground='#b91c1c',
-            relief='flat', cursor='hand2', padx=30, pady=10,
+            relief='flat', cursor='hand2', padx=20, pady=8,
             state='disabled'
         )
         self.stop_btn.pack(side=tk.LEFT, padx=5)
         
         self.reset_btn = tk.Button(
-            button_frame, text="🔄 Reset",
+            buttons_inner, text="🔄 Reset",
             command=self.reset_wizard,
-            font=('Segoe UI', 12),
+            font=('Segoe UI', 11),
             fg=self.colors['text'], bg='#e2e8f0',
-            relief='flat', cursor='hand2', padx=20, pady=10
+            relief='flat', cursor='hand2', padx=15, pady=8
         )
         self.reset_btn.pack(side=tk.LEFT, padx=5)
         
-        # Log area
-        log_frame = tk.LabelFrame(
-            main_frame, text="Log",
-            font=('Segoe UI', 10, 'bold'),
+        # Progress Section
+        progress_frame = tk.LabelFrame(
+            right_panel, text="Progress",
+            font=('Segoe UI', 11, 'bold'),
             fg=self.colors['text'], bg=self.colors['card']
         )
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+        progress_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        progress_inner = tk.Frame(progress_frame, bg=self.colors['card'])
+        progress_inner.pack(fill=tk.X, padx=10, pady=10)
+        
+        self.overall_label = tk.Label(
+            progress_inner,
+            text="Overall Progress: 0%",
+            font=('Segoe UI', 11, 'bold'),
+            fg=self.colors['text'],
+            bg=self.colors['card']
+        )
+        self.overall_label.pack(anchor='w', pady=(0, 5))
+        
+        self.overall_progress = ttk.Progressbar(
+            progress_inner, length=350, mode='determinate'
+        )
+        self.overall_progress.pack(fill=tk.X, pady=5)
+        
+        self.status_label = tk.Label(
+            progress_inner,
+            text="Click 'Start Wizard' to begin",
+            font=('Segoe UI', 10),
+            fg=self.colors['secondary'],
+            bg=self.colors['card'],
+            wraplength=350,
+            justify='left'
+        )
+        self.status_label.pack(anchor='w', pady=(5, 0))
+        
+        # Log Area (fills remaining space)
+        log_frame = tk.LabelFrame(
+            right_panel, text="Log",
+            font=('Segoe UI', 11, 'bold'),
+            fg=self.colors['text'], bg=self.colors['card']
+        )
+        log_frame.pack(fill=tk.BOTH, expand=True)
+        
+        log_inner = tk.Frame(log_frame, bg=self.colors['card'])
+        log_inner.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         self.log_text = tk.Text(
-            log_frame, height=8, font=('Consolas', 9),
+            log_inner, font=('Consolas', 9),
             bg='#1e293b', fg='#e2e8f0', wrap=tk.WORD
         )
-        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-        scrollbar = ttk.Scrollbar(self.log_text, command=self.log_text.yview)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.log_text.config(yscrollcommand=scrollbar.set)
+        scrollbar_log = ttk.Scrollbar(log_inner, command=self.log_text.yview)
+        scrollbar_log.pack(side=tk.RIGHT, fill=tk.Y)
+        self.log_text.config(yscrollcommand=scrollbar_log.set)
     
     def _create_step_widget(self, parent, step: WizardStep) -> dict:
         """Create a widget for a wizard step"""
@@ -1935,11 +2085,16 @@ class DailyDataWizardGUI:
                 
                 self.root.after(0, lambda m=message: self.log(m))
                 
+                # Log detailed statistics after each step
+                self._log_step_details(step.id)
+                
             except Exception as e:
                 step.status = StepStatus.FAILED
                 step.end_time = datetime.now()
                 step.message = str(e)
                 self.root.after(0, lambda e=e: self.log(f"Error: {e}"))
+                import traceback
+                self.root.after(0, lambda: self.log(f"Traceback: {traceback.format_exc()}"))
             
             self._update_step_widget(i, step)
             
@@ -1955,6 +2110,10 @@ class DailyDataWizardGUI:
         self.root.after(0, lambda: self.reset_btn.configure(state='normal'))
         self.root.after(0, lambda: self.status_label.configure(text="Wizard completed!"))
         self.root.after(0, lambda: self.log("Wizard completed!"))
+        
+        # Log final summary
+        self.root.after(0, self._log_final_summary)
+        
         # Refresh last run labels to show updated status
         self.root.after(0, self._refresh_last_run_labels)
     
@@ -1967,6 +2126,83 @@ class DailyDataWizardGUI:
                 widget = self.step_widgets[i]
                 if 'last_run' in widget:
                     widget['last_run'].configure(text=f"Last: {summary}")
+    
+    def _log_step_details(self, step_id: int):
+        """Log detailed statistics for a completed step"""
+        stats = self.state_manager.get_detailed_stats(step_id)
+        
+        # Build detailed log message
+        lines = [
+            f"{'='*60}",
+            f"📊 STEP {step_id} DETAILS: {stats['step_name']}",
+            f"{'='*60}",
+            f"   Status:       {stats['status'].upper()}",
+            f"   Duration:     {stats['duration']}",
+            f"   Success Rate: {stats['success_rate']}",
+            f"   ─────────────────────────────────",
+            f"   Total:        {stats['total']} symbols",
+            f"   Processed:    {stats['processed']} symbols",
+            f"   ✅ Success:    {stats['success']} symbols",
+            f"   ❌ Failed:     {stats['failed']} symbols",
+        ]
+        
+        # Show failed symbols if any (first 10)
+        if stats['failed_symbols']:
+            lines.append(f"   ─────────────────────────────────")
+            lines.append(f"   Failed symbols (first {len(stats['failed_symbols'])} of {stats['total_failed']}):")
+            for sym in stats['failed_symbols']:
+                lines.append(f"      • {sym}")
+            if stats['total_failed'] > len(stats['failed_symbols']):
+                lines.append(f"      ... and {stats['total_failed'] - len(stats['failed_symbols'])} more")
+        
+        lines.append(f"{'='*60}")
+        
+        # Log each line
+        for line in lines:
+            self.root.after(0, lambda l=line: self.log(l))
+    
+    def _log_final_summary(self):
+        """Log final summary of all steps"""
+        lines = [
+            "",
+            "╔" + "═"*68 + "╗",
+            "║" + " 📋 WIZARD EXECUTION SUMMARY ".center(68) + "║",
+            "╠" + "═"*68 + "╣",
+        ]
+        
+        total_success = 0
+        total_failed = 0
+        total_duration = 0
+        
+        for step in self.steps:
+            stats = self.state_manager.get_detailed_stats(step.id)
+            status_icon = "✅" if stats['status'] == 'completed' else "⚠️" if stats['status'] == 'partial' else "❌"
+            
+            # Format step name to fit
+            step_name = f"Step {step.id}: {step.name}"[:45]
+            
+            line = f"║ {status_icon} {step_name:<45} │ {stats['success']:>4}/{stats['total']:<4} │ {stats['duration']:>8} ║"
+            lines.append(line)
+            
+            total_success += stats['success']
+            total_failed += stats['failed']
+            total_duration += stats['duration_sec']
+        
+        lines.append("╠" + "═"*68 + "╣")
+        
+        # Overall stats
+        total_mins = int(total_duration // 60)
+        total_secs = int(total_duration % 60)
+        duration_str = f"{total_mins}m {total_secs}s"
+        
+        lines.append(f"║ {'TOTALS:':<47} │ {total_success:>4} ok  │ {duration_str:>8} ║")
+        lines.append(f"║ {'':47} │ {total_failed:>4} err │ {'':>8} ║")
+        lines.append("╚" + "═"*68 + "╝")
+        lines.append("")
+        
+        # Log each line
+        for line in lines:
+            self.log(line)
     
     def _step_progress_callback(self, progress: int, message: str):
         """Callback for step progress updates"""

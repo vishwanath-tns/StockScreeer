@@ -1,33 +1,33 @@
 {
-  "last_updated": "2025-11-29T19:22:58.689258",
+  "last_updated": "2025-12-03T21:30:10.674918",
   "steps": [
     {
       "step_id": 1,
       "step_name": "Sync Daily Data",
-      "last_run_start": "2025-11-29T19:19:59.363521",
-      "last_run_end": "2025-11-29T19:20:00.903562",
+      "last_run_start": "2025-12-03T21:10:04.341635",
+      "last_run_end": "2025-12-03T21:10:36.271598",
       "last_status": "completed",
-      "symbols_processed": 512,
-      "symbols_total": 512,
+      "symbols_processed": 515,
+      "symbols_total": 515,
       "symbols_failed": [],
-      "error_message": "512 synced, 0 failed"
+      "error_message": "515 synced, 0 failed"
     },
     {
       "step_id": 2,
       "step_name": "Sync Intraday Data",
-      "last_run_start": "2025-11-29T19:20:00.920621",
-      "last_run_end": "2025-11-29T19:21:38.310093",
+      "last_run_start": "2025-12-03T21:10:36.328717",
+      "last_run_end": "2025-12-03T21:15:39.674980",
       "last_status": "completed",
-      "symbols_processed": 1536,
-      "symbols_total": 1536,
+      "symbols_processed": 1545,
+      "symbols_total": 1545,
       "symbols_failed": [],
-      "error_message": "1536 synced, 0 failed"
+      "error_message": "1545 synced, 0 failed"
     },
     {
       "step_id": 3,
       "step_name": "Verify Data Sync",
-      "last_run_start": "2025-11-29T19:21:38.319124",
-      "last_run_end": "2025-11-29T19:21:52.757071",
+      "last_run_start": "2025-12-03T21:15:39.689547",
+      "last_run_end": "2025-12-03T21:15:54.045837",
       "last_status": "completed",
       "symbols_processed": 50,
       "symbols_total": 50,
@@ -37,46 +37,57 @@
     {
       "step_id": 4,
       "step_name": "Calculate Daily MA",
-      "last_run_start": "2025-11-29T19:21:52.767550",
-      "last_run_end": "2025-11-29T19:21:54.924339",
+      "last_run_start": "2025-12-03T21:15:54.082440",
+      "last_run_end": "2025-12-03T21:16:44.648985",
       "last_status": "completed",
-      "symbols_processed": 512,
-      "symbols_total": 512,
+      "symbols_processed": 515,
+      "symbols_total": 515,
       "symbols_failed": [],
-      "error_message": "Daily MA calculation complete: 512/512 symbols processed"
+      "error_message": "Daily MA calculation complete: 515/515 symbols processed"
     },
     {
       "step_id": 5,
       "step_name": "Calculate Intraday MA",
-      "last_run_start": "2025-11-29T19:21:54.933337",
-      "last_run_end": "2025-11-29T19:22:13.235489",
+      "last_run_start": "2025-12-03T21:16:44.684701",
+      "last_run_end": "2025-12-03T21:22:24.032388",
       "last_status": "completed",
-      "symbols_processed": 1536,
-      "symbols_total": 1536,
+      "symbols_processed": 1545,
+      "symbols_total": 1545,
       "symbols_failed": [],
-      "error_message": "Intraday MA calculation complete: 1536/1536 processed"
+      "error_message": "Intraday MA calculation complete: 1545/1545 processed"
     },
     {
       "step_id": 6,
       "step_name": "Calculate RSI",
-      "last_run_start": "2025-11-29T19:22:13.245489",
-      "last_run_end": "2025-11-29T19:22:34.190372",
+      "last_run_start": "2025-12-03T21:22:24.067644",
+      "last_run_end": "2025-12-03T21:29:02.399483",
       "last_status": "completed",
-      "symbols_processed": 2048,
-      "symbols_total": 2048,
+      "symbols_processed": 2060,
+      "symbols_total": 2060,
       "symbols_failed": [],
-      "error_message": "RSI calculation complete: 2048/2048 processed"
+      "error_message": "RSI calculation complete: 2060/2060 processed"
     },
     {
       "step_id": 7,
       "step_name": "Calculate Rankings",
-      "last_run_start": "2025-11-29T19:22:34.200378",
-      "last_run_end": "2025-11-29T19:22:58.689258",
+      "last_run_start": "2025-12-03T21:29:02.434640",
+      "last_run_end": "2025-12-03T21:29:39.705056",
       "last_status": "completed",
-      "symbols_processed": 0,
-      "symbols_total": 512,
+      "symbols_processed": 484,
+      "symbols_total": 515,
       "symbols_failed": [],
-      "error_message": "Rankings complete: 761/761 stocks ranked | Top 5: LTF.NS, LTF, MUTHOOTFIN, MUTHOOTFIN.NS, NAVINFLUOR.NS"
+      "error_message": "Rankings complete: 484/484 stocks ranked | Top 5: LTF.NS, MUTHOOTFIN.NS, FORCEMOT.NS, NAVINFLUOR.NS, BSE.NS"
+    },
+    {
+      "step_id": 8,
+      "step_name": "Calculate Bollinger Bands",
+      "last_run_start": "2025-12-03T21:29:39.797666",
+      "last_run_end": "2025-12-03T21:30:10.674918",
+      "last_status": "completed",
+      "symbols_processed": 500,
+      "symbols_total": 515,
+      "symbols_failed": [],
+      "error_message": "BB computed: 499 stocks | Squeeze: 101 | Bulge: 22 | Uptrend: 91 | Downtrend: 215 | Time: 30.2s"
     }
   ]
 }

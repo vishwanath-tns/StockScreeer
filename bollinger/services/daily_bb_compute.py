@@ -208,35 +208,30 @@ class DailyBBCompute:
         if df is None or len(df) < 30:  # Need at least 30 days for BB
             return None
         
-        # Calculate BB for standard config
-        config = self.BB_CONFIGS[0][1]  # Standard 20,2
-        bb_series = self.calculator.calculate_series(
-            df['close'].values,
-            df['high'].values,
-            df['low'].values,
-            config
-        )
+        # Add symbol column for calculator
+        df['symbol'] = symbol
         
-        if not bb_series:
+        # Calculate BB using the calculate() method
+        config = self.BB_CONFIGS[0][1]  # Standard 20,2
+        self.calculator.config = config
+        bb_result = self.calculator.calculate(df, bandwidth_lookback=126)
+        
+        if not bb_result.success or not bb_result.current:
             return None
         
         # Get latest BB values
-        latest = bb_series[-1]
+        latest = bb_result.current
         
         # Calculate bandwidth percentile over 126 days (6 months)
-        bandwidths = [bb.bandwidth for bb in bb_series[-126:] if bb.bandwidth > 0]
-        if bandwidths:
-            bw_percentile = (sum(1 for bw in bandwidths if bw < latest.bandwidth) / len(bandwidths)) * 100
-        else:
-            bw_percentile = 50.0
+        bw_percentile = latest.bandwidth_percentile
         
         # Detect squeeze/bulge
         is_squeeze = bw_percentile <= 10  # Bottom 10%
         is_bulge = bw_percentile >= 90    # Top 10%
         
-        # Classify trend based on %b
-        if len(bb_series) >= 5:
-            recent_pb = [bb.percent_b for bb in bb_series[-5:]]
+        # Classify trend based on %b using history
+        if bb_result.history and len(bb_result.history) >= 5:
+            recent_pb = [bb.percent_b for bb in bb_result.history[:5]]  # Most recent 5
             avg_pb = sum(recent_pb) / len(recent_pb)
             
             if avg_pb > 0.7:
@@ -252,9 +247,9 @@ class DailyBBCompute:
             trend = 'neutral'
             trend_strength = 50.0
         
-        # Count consecutive days in current state
-        squeeze_days = self._count_consecutive_state(bb_series, lambda bb: bb.bandwidth_percentile <= 10) if is_squeeze else 0
-        trend_days = self._count_consecutive_trend(bb_series, trend)
+        # Count consecutive days in current state using history
+        squeeze_days = self._count_consecutive_state_from_history(bb_result.history, lambda bb: bb.bandwidth_percentile <= 10) if is_squeeze else 0
+        trend_days = self._count_consecutive_trend_from_history(bb_result.history, trend)
         
         return {
             'symbol': symbol,
@@ -277,12 +272,50 @@ class DailyBBCompute:
             'distance_from_middle': ((latest.close - latest.middle) / latest.middle) * 100 if latest.middle else 0,
         }
     
+    def _count_consecutive_state_from_history(self, history: List, condition: Callable) -> int:
+        """Count consecutive days from history where condition is True."""
+        if not history:
+            return 0
+        count = 0
+        for bb in history:  # History is most recent first
+            if condition(bb):
+                count += 1
+            else:
+                break
+        return count
+    
+    def _count_consecutive_trend_from_history(self, history: List, current_trend: str) -> int:
+        """Count consecutive days in the same trend."""
+        if not history or len(history) < 5:
+            return 0
+        
+        count = 0
+        window = 5
+        
+        for i in range(0, len(history) - window + 1):
+            recent_pb = [bb.percent_b for bb in history[i:i+window]]
+            avg_pb = sum(recent_pb) / len(recent_pb)
+            
+            if avg_pb > 0.7:
+                trend = 'uptrend'
+            elif avg_pb < 0.3:
+                trend = 'downtrend'
+            else:
+                trend = 'neutral'
+            
+            if trend == current_trend:
+                count += 1
+            else:
+                break
+        
+        return count
+    
     def _fetch_ohlc(self, symbol: str, end_date: date) -> Optional[pd.DataFrame]:
         """Fetch OHLC history for a symbol from Yahoo Finance data."""
         start_date = end_date - timedelta(days=self.lookback_days * 2)  # Extra buffer for non-trading days
         
         query = """
-            SELECT date as trade_date, open, high, low, close, volume
+            SELECT date, open, high, low, close, volume
             FROM yfinance_daily_quotes
             WHERE symbol = :symbol
               AND date BETWEEN :start_date AND :end_date

@@ -1,0 +1,35 @@
+# Stock Alert System - Additional Dependencies
+
+# Core async
+asyncio-mqtt>=0.16.0
+
+# Redis (async support)
+redis>=4.5.0
+
+# MySQL async
+aiomysql>=0.2.0
+
+# FastAPI & web
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+
+# Authentication
+PyJWT>=2.8.0
+bcrypt>=4.0.0
+passlib>=1.7.0
+
+# HTTP client for webhooks
+aiohttp>=3.8.0
+
+# Desktop notifications (Windows)
+win10toast>=0.9
+plyer>=2.1.0
+
+# Already in main requirements.txt:
+# yfinance
+# pandas
+# sqlalchemy
+# pymysql
+# python-dotenv

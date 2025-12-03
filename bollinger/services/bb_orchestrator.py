@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import pandas as pd
 
-from ..models.bb_models import BBConfig, BollingerBands, BBRating
+from ..models.bb_models import BBConfig, BollingerBands, BBRating, BB_PRESETS
 from ..models.signal_models import BBSignal, SignalType
 from ..models.scan_models import ScanType, ScanResult
 from ..db.bb_repository import BBRepository
@@ -57,7 +57,7 @@ class BBOrchestrator:
             config: BB calculation config
             use_redis: Enable Redis for parallel processing
         """
-        self.config = config or BBConfig.STANDARD
+        self.config = config or BB_PRESETS["standard"]
         self.use_redis = use_redis
         
         # Initialize components

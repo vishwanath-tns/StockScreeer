@@ -25,6 +25,12 @@ APPS = {
         ("Daily Data Wizard", "wizards/daily_data_wizard.py", "Daily sync, MA, RSI calculations - Run this every day!"),
     ],
     
+    "💼 Portfolio & Analysis": [
+        ("Portfolio Manager", "portfolio_gui.py", "Manage portfolios from scanner results, track P&L and performance"),
+        ("Volume Analysis Scanner", "volume_analysis_gui.py", "Detect accumulation/distribution patterns with OBV, CMF, VWAP"),
+        ("Fast Price Monitor", "fast_price_monitor.py", "Real-time price alerts with 5-second updates (BTC-USD, etc.)"),
+    ],
+    
     "⭐ Stock Ratings": [
         ("Price & Ratings Analyzer", "launch_price_ratings_analyzer.py", "Price correlation, signals, sector rotation analysis"),
         ("Rankings Data Analyzer", "launch_rankings_analyzer.py", "Validate and explore historical rankings data"),
@@ -40,7 +46,8 @@ APPS = {
     ],
     
     "📊 Dashboards": [
-        ("Real-Time Market Dashboard", "realtime_adv_decl_dashboard.py", "Live advance-decline tracking for Nifty 500"),
+        ("Real-Time Market Breadth (PyQtGraph)", "realtime_adv_decl_dashboard_pyqt.py", "High-performance live A/D monitor with PyQtGraph charts"),
+        ("Real-Time Market Breadth (Classic)", "realtime_adv_decl_dashboard.py", "Live advance-decline tracking (Tkinter/Matplotlib)"),
         ("Progress Dashboard", "progress_dashboard.py", "View project progress statistics"),
         ("Vedic Dashboard", "vedic_astrology/launch_dashboard.py", "Planetary position analysis"),
     ],

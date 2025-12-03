@@ -68,7 +68,7 @@ class BBAnalyzerGUI(QMainWindow):
         self._create_toolbar()
         
         # Main splitter
-        splitter = QSplitter(Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         
         # Left panel - Symbol list and analysis
         left_panel = self._create_left_panel()
@@ -190,8 +190,8 @@ class BBAnalyzerGUI(QMainWindow):
         table.setHorizontalHeaderLabels([
             "Symbol", "Score", "%b", "BW", "Days", "Action"
         ])
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.setSelectionBehavior(QTableWidget.SelectRows)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         table.cellDoubleClicked.connect(self._on_table_double_click)
         
         layout.addWidget(table)
@@ -237,7 +237,7 @@ class BBAnalyzerGUI(QMainWindow):
             "Symbol", "Date", "Type", "Pattern", "Confidence",
             "Price", "Target", "Vol Conf"
         ])
-        self.signals_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.signals_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.signals_table.cellDoubleClicked.connect(self._on_signal_click)
         
         layout.addWidget(self.signals_table)
@@ -272,7 +272,7 @@ class BBAnalyzerGUI(QMainWindow):
             "Symbol", "Score", "Grade", "Squeeze", "Trend",
             "Momentum", "Pattern", "%b"
         ])
-        self.ratings_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.ratings_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.ratings_table.cellDoubleClicked.connect(self._on_table_double_click)
         
         layout.addWidget(self.ratings_table)
@@ -286,7 +286,7 @@ class BBAnalyzerGUI(QMainWindow):
         
         # Symbol info header
         self.symbol_header = QLabel("Select a symbol to analyze")
-        self.symbol_header.setFont(QFont("Arial", 14, QFont.Bold))
+        self.symbol_header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         layout.addWidget(self.symbol_header)
         
         # Chart placeholder (will be replaced with actual chart)
@@ -295,7 +295,7 @@ class BBAnalyzerGUI(QMainWindow):
             self.chart = BBChartWidget()
         except ImportError:
             self.chart = QLabel("Chart requires pyqtgraph.\nInstall with: pip install pyqtgraph")
-            self.chart.setAlignment(Qt.AlignCenter)
+            self.chart.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.chart.setStyleSheet("background: #1E1E1E; color: white; padding: 20px;")
         
         layout.addWidget(self.chart, stretch=3)

@@ -7,6 +7,7 @@ Defines tables for storing BB calculations, ratings, and signals.
 import os
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
 
 load_dotenv()
 
@@ -15,11 +16,14 @@ def get_bb_engine():
     """Create SQLAlchemy engine for BB operations."""
     host = os.getenv("MYSQL_HOST", "localhost")
     port = os.getenv("MYSQL_PORT", "3306")
-    db = os.getenv("MYSQL_DB", "marketdata")
+    db = os.getenv("MYSQL_DB", "stockdata")
     user = os.getenv("MYSQL_USER", "root")
     password = os.getenv("MYSQL_PASSWORD", "")
     
-    url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}?charset=utf8mb4"
+    # URL-encode the password to handle special characters like @
+    encoded_password = quote_plus(password)
+    
+    url = f"mysql+pymysql://{user}:{encoded_password}@{host}:{port}/{db}?charset=utf8mb4"
     return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
 
 

@@ -130,9 +130,9 @@ class BBChartWidget(QWidget):
         
         # Create plot items
         self.price_line = self.price_plot.plot(pen=pg.mkPen(COLORS['price'], width=2))
-        self.upper_band = self.price_plot.plot(pen=pg.mkPen(COLORS['upper_band'], width=1, style=Qt.DashLine))
+        self.upper_band = self.price_plot.plot(pen=pg.mkPen(COLORS['upper_band'], width=1, style=Qt.PenStyle.DashLine))
         self.middle_band = self.price_plot.plot(pen=pg.mkPen(COLORS['middle_band'], width=1))
-        self.lower_band = self.price_plot.plot(pen=pg.mkPen(COLORS['lower_band'], width=1, style=Qt.DashLine))
+        self.lower_band = self.price_plot.plot(pen=pg.mkPen(COLORS['lower_band'], width=1, style=Qt.PenStyle.DashLine))
         
         # Fill between bands
         self.band_fill = pg.FillBetweenItem(
@@ -173,9 +173,9 @@ class BBChartWidget(QWidget):
         self.pb_plot.showGrid(x=True, y=True, alpha=0.3)
         
         # Reference lines at 0, 0.5, 1
-        self.pb_plot.addLine(y=0, pen=pg.mkPen('gray', style=Qt.DashLine))
-        self.pb_plot.addLine(y=0.5, pen=pg.mkPen('gray', style=Qt.DotLine))
-        self.pb_plot.addLine(y=1, pen=pg.mkPen('gray', style=Qt.DashLine))
+        self.pb_plot.addLine(y=0, pen=pg.mkPen('gray', style=Qt.PenStyle.DashLine))
+        self.pb_plot.addLine(y=0.5, pen=pg.mkPen('gray', style=Qt.PenStyle.DotLine))
+        self.pb_plot.addLine(y=1, pen=pg.mkPen('gray', style=Qt.PenStyle.DashLine))
         
         self.pb_line = self.pb_plot.plot(pen=pg.mkPen(COLORS['percent_b'], width=2))
     

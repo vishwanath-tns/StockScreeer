@@ -130,15 +130,17 @@ class TrendScanResult:
     """
     symbol: str
     scan_date: date
-    trend_type: str  # "uptrend" or "downtrend"
+    trend_direction: str  # "UPTREND" or "DOWNTREND"
     trend_strength: float  # 0-100
     trend_days: int
     percent_b: float
+    avg_percent_b: float
+    upper_touches: int
+    lower_touches: int
+    trend_phase: str  # "HEALTHY", "EXTENDED", "PULLBACK", etc.
     close: float
-    upper_band: float
     middle_band: float
-    lower_band: float
-    consistency: float  # % of days confirming trend
+    distance_from_middle_pct: float
     
     @property
     def is_strong_trend(self) -> bool:
@@ -153,21 +155,22 @@ class PullbackScanResult:
     """
     symbol: str
     scan_date: date
-    pullback_type: str  # "bullish" or "bearish"
+    pullback_type: str  # "BULLISH" or "BEARISH"
     trend_strength: float
-    pullback_depth: float  # How far pulled back
+    trend_days: int
     percent_b: float
+    pullback_depth: float  # How far pulled back
+    setup_quality: float  # 0-100, higher = better setup
     close: float
     middle_band: float
-    quality_score: float  # 0-100, higher = better setup
-    entry_zone_low: float
-    entry_zone_high: float
-    suggested_stop: float
+    target_band: float
+    stop_band: float
+    risk_reward: float
     
     @property
     def is_high_quality(self) -> bool:
         """Setup quality above 70."""
-        return self.quality_score >= 70.0
+        return self.setup_quality >= 70.0
 
 
 @dataclass

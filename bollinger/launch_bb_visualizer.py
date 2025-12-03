@@ -56,6 +56,9 @@ from urllib.parse import quote_plus
 
 load_dotenv()
 
+# Build version for tracking updates
+BUILD_VERSION = "2025-12-03 01:00"
+
 
 class TradingDateAxis(AxisItem):
     """Custom axis that maps sequential indices to trading dates (skips weekends)."""
@@ -216,7 +219,7 @@ class BBVisualizerGUI(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("📈 Bollinger Bands Visualizer")
+        self.setWindowTitle(f"📈 Bollinger Bands Visualizer  [Build: {BUILD_VERSION}]")
         self.setMinimumSize(1400, 900)
         
         self.engine = self._get_engine()
@@ -731,19 +734,19 @@ class BBVisualizerGUI(QMainWindow):
         self._highlight_squeeze_regions(indices, valid_data)
         
         # Volume bars with color based on price change
-        all_indices = list(range(len(self.current_data)))
-        volumes = [d.volume for d in self.current_data]
+        # Use same valid_data and indices as candlesticks to keep alignment
+        volumes = [d.volume for d in valid_data]
         
         # Color bars based on close vs open
         brushes = []
-        for d in self.current_data:
+        for d in valid_data:
             if d.close >= d.open:
                 brushes.append(pg.mkBrush(COLORS['volume_up']))
             else:
                 brushes.append(pg.mkBrush(COLORS['volume_down']))
         
         self.volume_bars.setOpts(
-            x=all_indices, 
+            x=indices, 
             height=volumes, 
             width=0.7,
             brushes=brushes
