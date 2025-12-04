@@ -106,6 +106,7 @@ APPS = {
     
     "🪙 Crypto": [
         ("Crypto Data Wizard", "crypto/wizards/crypto_data_wizard.py", "Sync Top 100 cryptos: daily data, MAs, RSI, A/D breadth"),
+        ("Crypto Visualizer", "crypto/gui/crypto_visualizer.py", "Price chart with candlesticks, SMAs, RSI - PyQtGraph"),
         ("Crypto Symbol List", "crypto/data/crypto_symbols.py", "View Top 100 crypto symbols by market cap"),
     ],
 }
