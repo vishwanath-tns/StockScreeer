@@ -192,9 +192,12 @@ class PortfolioGUI(QMainWindow):
         self.current_portfolio = None
         self.worker = None
         
-        # Real-time equity tracking
-        self.intraday_equity = []  # List of (timestamp, pnl_percent) tuples
-        self.max_intraday_points = 500  # Keep last 500 data points
+        # Real-time equity tracking - SEPARATE for each portfolio
+        self.intraday_equity_by_portfolio = {}  # {portfolio_name: [(timestamp, pnl_percent), ...]}
+        self.max_intraday_points = 500  # Keep last 500 data points per portfolio
+        
+        # Convenience property for current portfolio's intraday data
+        self._current_intraday_key = None
         
         self.setup_ui()
         self.setWindowTitle("📊 Portfolio Manager")
@@ -469,17 +472,33 @@ class PortfolioGUI(QMainWindow):
             item.setData(Qt.ItemDataRole.UserRole, name)
             self.portfolio_list.addItem(item)
     
+    @property
+    def intraday_equity(self):
+        """Get intraday equity data for current portfolio."""
+        if not self.current_portfolio:
+            return []
+        name = self.current_portfolio.name
+        if name not in self.intraday_equity_by_portfolio:
+            self.intraday_equity_by_portfolio[name] = []
+        return self.intraday_equity_by_portfolio[name]
+    
+    @intraday_equity.setter
+    def intraday_equity(self, value):
+        """Set intraday equity data for current portfolio."""
+        if self.current_portfolio:
+            self.intraday_equity_by_portfolio[self.current_portfolio.name] = value
+    
     def on_portfolio_selected(self, item: QListWidgetItem):
         """Handle portfolio selection."""
         name = item.data(Qt.ItemDataRole.UserRole)
         self.current_portfolio = self.tracker.manager.get_portfolio(name)
         
-        # Clear intraday data when switching portfolios
-        self.intraday_equity = []
+        # Initialize intraday data for this portfolio if not exists
+        if name not in self.intraday_equity_by_portfolio:
+            self.intraday_equity_by_portfolio[name] = []
         
-        # Reset realtime checkbox when switching
-        if hasattr(self, 'realtime_check') and self.realtime_check.isChecked():
-            self.realtime_check.setChecked(False)
+        # Keep realtime running - don't reset checkbox
+        # Each portfolio maintains its own separate equity curve
         
         self.refresh_portfolio_view()
     
@@ -667,10 +686,11 @@ class PortfolioGUI(QMainWindow):
             self.intraday_equity = self.intraday_equity[-self.max_intraday_points:]
     
     def clear_intraday_equity(self):
-        """Clear intraday equity data."""
-        self.intraday_equity = []
+        """Clear intraday equity data for current portfolio only."""
+        if self.current_portfolio:
+            self.intraday_equity_by_portfolio[self.current_portfolio.name] = []
         self.update_equity_curve()
-        self.status_bar.showMessage("Cleared intraday equity data")
+        self.status_bar.showMessage(f"Cleared intraday equity data for {self.current_portfolio.name if self.current_portfolio else 'N/A'}")
     
     def realtime_update(self):
         """Real-time update for equity curve (called by timer)."""
