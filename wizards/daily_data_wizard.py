@@ -53,6 +53,14 @@ import yfinance as yf
 from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
 from ranking import RankingOrchestrator
 
+# Import A/D calculator for post-sync update
+try:
+    from utilities.yfinance_advance_decline import update_latest as update_ad_latest
+    AD_MODULE_AVAILABLE = True
+except ImportError:
+    AD_MODULE_AVAILABLE = False
+    logger.warning("yfinance_advance_decline module not found - A/D update will be skipped")
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -2087,6 +2095,16 @@ class DailyDataWizardGUI:
                 
                 # Log detailed statistics after each step
                 self._log_step_details(step.id)
+                
+                # After Step 1 (Sync Daily Data) - Update Advance/Decline calculations
+                if step.id == 1 and success and AD_MODULE_AVAILABLE:
+                    try:
+                        self.root.after(0, lambda: self.log("📊 Updating Advance/Decline data..."))
+                        engine = self.db.get_engine()
+                        ad_result = update_ad_latest(engine)
+                        self.root.after(0, lambda r=ad_result: self.log(f"✅ A/D Update: {r}"))
+                    except Exception as ad_e:
+                        self.root.after(0, lambda e=ad_e: self.log(f"⚠️ A/D Update failed: {e}"))
                 
             except Exception as e:
                 step.status = StepStatus.FAILED

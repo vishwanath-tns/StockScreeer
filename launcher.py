@@ -46,6 +46,7 @@ APPS = {
     ],
     
     "📊 Dashboards": [
+        ("Historical A/D Visualizer", "historical_ad_visualizer.py", "Historical Advance/Decline analysis with NIFTY overlay, turning points"),
         ("Real-Time Market Breadth (PyQtGraph)", "realtime_adv_decl_dashboard_pyqt.py", "High-performance live A/D monitor with PyQtGraph charts"),
         ("Real-Time Market Breadth (Classic)", "realtime_adv_decl_dashboard.py", "Live advance-decline tracking (Tkinter/Matplotlib)"),
         ("Progress Dashboard", "progress_dashboard.py", "View project progress statistics"),
