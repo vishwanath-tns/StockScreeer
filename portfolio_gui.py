@@ -192,6 +192,10 @@ class PortfolioGUI(QMainWindow):
         self.current_portfolio = None
         self.worker = None
         
+        # Real-time equity tracking
+        self.intraday_equity = []  # List of (timestamp, pnl_percent) tuples
+        self.max_intraday_points = 500  # Keep last 500 data points
+        
         self.setup_ui()
         self.setWindowTitle("📊 Portfolio Manager")
         self.setMinimumSize(1200, 700)
@@ -199,10 +203,10 @@ class PortfolioGUI(QMainWindow):
         # Load portfolios
         self.refresh_portfolio_list()
         
-        # Auto-update prices every 5 minutes
+        # Auto-update prices every 30 seconds for real-time tracking
         self.update_timer = QTimer()
-        self.update_timer.timeout.connect(self.update_prices)
-        self.update_timer.start(300000)  # 5 minutes
+        self.update_timer.timeout.connect(self.realtime_update)
+        self.update_timer.start(30000)  # 30 seconds
     
     def setup_ui(self):
         """Setup the user interface."""
@@ -328,8 +332,8 @@ class PortfolioGUI(QMainWindow):
         # Equity curve controls
         equity_controls = QHBoxLayout()
         
-        record_btn = QPushButton("📊 Record Today")
-        record_btn.setToolTip("Save today's equity value to database")
+        record_btn = QPushButton("💾 Save to DB")
+        record_btn.setToolTip("Save today's equity value to database for historical tracking")
         record_btn.clicked.connect(self.record_equity_point)
         record_btn.setStyleSheet("""
             QPushButton {
@@ -345,9 +349,34 @@ class PortfolioGUI(QMainWindow):
         """)
         equity_controls.addWidget(record_btn)
         
+        # Real-time toggle
+        self.realtime_check = QCheckBox("Real-time")
+        self.realtime_check.setChecked(True)
+        self.realtime_check.setStyleSheet("color: #00ff88;")
+        self.realtime_check.setToolTip("Enable real-time equity updates every 30 seconds")
+        equity_controls.addWidget(self.realtime_check)
+        
+        # Clear intraday button
+        clear_btn = QPushButton("🗑️ Clear")
+        clear_btn.setToolTip("Clear intraday equity data")
+        clear_btn.clicked.connect(self.clear_intraday_equity)
+        clear_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #5a2727;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #7a3737;
+            }
+        """)
+        equity_controls.addWidget(clear_btn)
+        
         equity_controls.addStretch()
         
-        self.equity_info_label = QLabel("No equity data")
+        self.equity_info_label = QLabel("Real-time tracking active")
         self.equity_info_label.setStyleSheet("color: #888;")
         equity_controls.addWidget(self.equity_info_label)
         
@@ -359,7 +388,7 @@ class PortfolioGUI(QMainWindow):
             self.equity_chart.setBackground('#1a1a1a')
             self.equity_chart.showGrid(x=True, y=True, alpha=0.3)
             self.equity_chart.setLabel('left', 'P&L %', color='white')
-            self.equity_chart.setLabel('bottom', 'Days', color='white')
+            self.equity_chart.setLabel('bottom', 'Time', color='white')
             self.equity_chart.setMinimumHeight(150)
             self.equity_chart.setMaximumHeight(200)
             
@@ -367,12 +396,18 @@ class PortfolioGUI(QMainWindow):
             self.equity_zero_line = pg.InfiniteLine(pos=0, angle=0, pen=pg.mkPen('#555555', width=1, style=Qt.PenStyle.DashLine))
             self.equity_chart.addItem(self.equity_zero_line)
             
+            # Create plot items for real-time data
+            self.equity_line = self.equity_chart.plot([], [], pen=pg.mkPen('#00ff88', width=2))
+            self.equity_fill_pos = None
+            self.equity_fill_neg = None
+            
             equity_layout.addWidget(self.equity_chart)
         else:
             no_chart_label = QLabel("PyQtGraph not installed - equity chart unavailable")
             no_chart_label.setStyleSheet("color: #ff6666;")
             equity_layout.addWidget(no_chart_label)
             self.equity_chart = None
+            self.equity_line = None
         
         right_layout.addWidget(equity_frame)
         
@@ -438,6 +473,14 @@ class PortfolioGUI(QMainWindow):
         """Handle portfolio selection."""
         name = item.data(Qt.ItemDataRole.UserRole)
         self.current_portfolio = self.tracker.manager.get_portfolio(name)
+        
+        # Clear intraday data when switching portfolios
+        self.intraday_equity = []
+        
+        # Reset realtime checkbox when switching
+        if hasattr(self, 'realtime_check') and self.realtime_check.isChecked():
+            self.realtime_check.setChecked(False)
+        
         self.refresh_portfolio_view()
     
     def refresh_portfolio_view(self):
@@ -526,58 +569,148 @@ class PortfolioGUI(QMainWindow):
         self.update_equity_curve()
     
     def update_equity_curve(self):
-        """Update the equity curve chart for the current portfolio."""
+        """Update the equity curve chart with real-time intraday data."""
         if not self.current_portfolio or not HAS_PYQTGRAPH or not self.equity_chart:
             return
         
-        # Get equity curve data
-        equity_data = self.tracker.manager.get_equity_curve(self.current_portfolio.name)
-        
-        # Clear existing plots
+        # Clear existing plots but keep zero line
         self.equity_chart.clear()
         self.equity_chart.addItem(self.equity_zero_line)
         
-        if not equity_data:
-            self.equity_info_label.setText("No equity data - click 'Record Today' to start tracking")
+        # Re-create the line plot
+        self.equity_line = self.equity_chart.plot([], [], pen=pg.mkPen('#00ff88', width=2))
+        
+        # If we have intraday data, show it
+        if self.intraday_equity:
+            x = np.arange(len(self.intraday_equity))
+            pnl_values = np.array([p[1] for p in self.intraday_equity])
+            
+            # Update line
+            self.equity_line.setData(x, pnl_values)
+            
+            # Fill areas
+            pos_fill = pg.FillBetweenItem(
+                pg.PlotCurveItem(x, np.maximum(pnl_values, 0)),
+                pg.PlotCurveItem(x, np.zeros(len(x))),
+                brush=pg.mkBrush(0, 255, 136, 50)
+            )
+            self.equity_chart.addItem(pos_fill)
+            
+            neg_fill = pg.FillBetweenItem(
+                pg.PlotCurveItem(x, np.minimum(pnl_values, 0)),
+                pg.PlotCurveItem(x, np.zeros(len(x))),
+                brush=pg.mkBrush(255, 68, 68, 50)
+            )
+            self.equity_chart.addItem(neg_fill)
+            
+            # Calculate stats
+            current_pnl = pnl_values[-1]
+            start_pnl = pnl_values[0]
+            change = current_pnl - start_pnl
+            high = np.max(pnl_values)
+            low = np.min(pnl_values)
+            
+            # Format time range
+            start_time = self.intraday_equity[0][0].strftime('%H:%M')
+            end_time = self.intraday_equity[-1][0].strftime('%H:%M')
+            
+            self.equity_info_label.setText(
+                f"📊 {len(self.intraday_equity)} pts ({start_time}-{end_time}) | "
+                f"P&L: {current_pnl:+.2f}% | "
+                f"Δ: {change:+.2f}% | "
+                f"H: {high:+.2f}% L: {low:+.2f}%"
+            )
+        else:
+            # No intraday data - try to load historical
+            equity_data = self.tracker.manager.get_equity_curve(self.current_portfolio.name)
+            
+            if equity_data:
+                x = np.arange(len(equity_data))
+                pnl_values = np.array([d['total_pnl_percent'] for d in equity_data])
+                
+                self.equity_line.setData(x, pnl_values)
+                
+                # Fill areas
+                pos_fill = pg.FillBetweenItem(
+                    pg.PlotCurveItem(x, np.maximum(pnl_values, 0)),
+                    pg.PlotCurveItem(x, np.zeros(len(x))),
+                    brush=pg.mkBrush(0, 255, 136, 50)
+                )
+                self.equity_chart.addItem(pos_fill)
+                
+                neg_fill = pg.FillBetweenItem(
+                    pg.PlotCurveItem(x, np.minimum(pnl_values, 0)),
+                    pg.PlotCurveItem(x, np.zeros(len(x))),
+                    brush=pg.mkBrush(255, 68, 68, 50)
+                )
+                self.equity_chart.addItem(neg_fill)
+                
+                self.equity_info_label.setText(
+                    f"📅 {len(equity_data)} days historical | "
+                    f"Current: {pnl_values[-1]:+.2f}%"
+                )
+            else:
+                self.equity_info_label.setText("No data - waiting for real-time updates...")
+    
+    def add_intraday_equity_point(self):
+        """Add current P&L to intraday equity data."""
+        if not self.current_portfolio:
             return
         
-        # Extract data for plotting
-        dates = [d['trade_date'] for d in equity_data]
-        pnl_values = [d['total_pnl_percent'] for d in equity_data]
-        win_rates = [d['win_rate'] for d in equity_data]
+        timestamp = datetime.now()
+        pnl_percent = self.current_portfolio.total_pnl_percent
         
-        x = np.arange(len(pnl_values))
+        self.intraday_equity.append((timestamp, pnl_percent))
         
-        # Plot P&L curve
-        pnl_pen = pg.mkPen('#00ff88', width=2)
-        self.equity_chart.plot(x, pnl_values, pen=pnl_pen, name='P&L %')
+        # Trim to max points
+        if len(self.intraday_equity) > self.max_intraday_points:
+            self.intraday_equity = self.intraday_equity[-self.max_intraday_points:]
+    
+    def clear_intraday_equity(self):
+        """Clear intraday equity data."""
+        self.intraday_equity = []
+        self.update_equity_curve()
+        self.status_bar.showMessage("Cleared intraday equity data")
+    
+    def realtime_update(self):
+        """Real-time update for equity curve (called by timer)."""
+        if not self.realtime_check.isChecked():
+            return
         
-        # Fill area (green above 0, red below 0)
-        pnl_array = np.array(pnl_values)
-        pos_fill = pg.FillBetweenItem(
-            pg.PlotCurveItem(x, np.maximum(pnl_array, 0)),
-            pg.PlotCurveItem(x, np.zeros(len(x))),
-            brush=pg.mkBrush(0, 255, 136, 50)
-        )
-        self.equity_chart.addItem(pos_fill)
+        if not self.current_portfolio:
+            return
         
-        neg_fill = pg.FillBetweenItem(
-            pg.PlotCurveItem(x, np.minimum(pnl_array, 0)),
-            pg.PlotCurveItem(x, np.zeros(len(x))),
-            brush=pg.mkBrush(255, 68, 68, 50)
-        )
-        self.equity_chart.addItem(neg_fill)
+        # Update prices silently
+        self.status_bar.showMessage("Updating prices...")
         
-        # Update info label
-        latest = equity_data[-1]
-        first = equity_data[0]
-        change = latest['total_pnl_percent'] - first['total_pnl_percent'] if len(equity_data) > 1 else 0
-        
-        self.equity_info_label.setText(
-            f"{len(equity_data)} days tracked | "
-            f"Current: {latest['total_pnl_percent']:+.2f}% | "
-            f"Change: {change:+.2f}%"
-        )
+        try:
+            # Get all symbols in current portfolio
+            symbols = [pos.symbol for pos in self.current_portfolio.positions]
+            
+            if symbols:
+                # Get batch prices
+                prices = self.tracker.get_prices_batch(symbols)
+                
+                # Update positions
+                for pos in self.current_portfolio.positions:
+                    if pos.symbol in prices:
+                        pos.current_price = prices[pos.symbol]
+                
+                # Save updated portfolio
+                self.tracker.manager.save_portfolio(self.current_portfolio)
+                
+                # Add equity point
+                self.add_intraday_equity_point()
+                
+                # Refresh display
+                self.refresh_portfolio_view()
+                
+                self.status_bar.showMessage(
+                    f"Real-time update: {self.current_portfolio.total_pnl_percent:+.2f}% @ {datetime.now().strftime('%H:%M:%S')}"
+                )
+        except Exception as e:
+            logger.error(f"Real-time update error: {e}")
+            self.status_bar.showMessage(f"Update error: {e}")
     
     def record_equity_point(self):
         """Record current equity value to database."""
@@ -588,8 +721,8 @@ class PortfolioGUI(QMainWindow):
         success = self.tracker.manager.record_equity_curve(self.current_portfolio.name)
         
         if success:
-            self.status_bar.showMessage(f"Recorded equity point for {self.current_portfolio.name}")
-            self.update_equity_curve()
+            self.status_bar.showMessage(f"Saved equity to database for {self.current_portfolio.name}")
+            QMessageBox.information(self, "Saved", f"Equity data saved to database for {self.current_portfolio.name}")
         else:
             QMessageBox.warning(self, "Error", "Failed to record equity point")
     
