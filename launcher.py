@@ -103,6 +103,11 @@ APPS = {
         ("Zodiac Report", "vedic_astrology/zodiac_market_report.py", "Zodiac-based market report"),
         ("Generate PDF Report", "vedic_astrology/generate_zodiac_pdf_report.py", "Generate zodiac PDF"),
     ],
+    
+    "🪙 Crypto": [
+        ("Crypto Data Wizard", "crypto/wizards/crypto_data_wizard.py", "Sync Top 100 cryptos: daily data, MAs, RSI, A/D breadth"),
+        ("Crypto Symbol List", "crypto/data/crypto_symbols.py", "View Top 100 crypto symbols by market cap"),
+    ],
 }
 
 
