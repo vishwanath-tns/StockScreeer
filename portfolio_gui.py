@@ -25,6 +25,16 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt6.QtGui import QColor, QFont, QBrush, QAction
 
+# PyQtGraph for equity curve visualization
+try:
+    import pyqtgraph as pg
+    from pyqtgraph import PlotWidget
+    HAS_PYQTGRAPH = True
+except ImportError:
+    HAS_PYQTGRAPH = False
+
+import numpy as np
+
 from portfolio import PortfolioTracker, Portfolio, Position, PortfolioType
 
 logging.basicConfig(level=logging.INFO)
@@ -295,6 +305,77 @@ class PortfolioGUI(QMainWindow):
         """)
         right_layout.addWidget(self.positions_table)
         
+        # Equity Curve Panel
+        equity_frame = QGroupBox("📈 Equity Curve")
+        equity_frame.setStyleSheet("""
+            QGroupBox {
+                color: #00aaff;
+                font-weight: bold;
+                border: 1px solid #333;
+                border-radius: 5px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+            }
+        """)
+        equity_layout = QVBoxLayout(equity_frame)
+        equity_layout.setContentsMargins(5, 15, 5, 5)
+        
+        # Equity curve controls
+        equity_controls = QHBoxLayout()
+        
+        record_btn = QPushButton("📊 Record Today")
+        record_btn.setToolTip("Save today's equity value to database")
+        record_btn.clicked.connect(self.record_equity_point)
+        record_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2d5a27;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #3d7a37;
+            }
+        """)
+        equity_controls.addWidget(record_btn)
+        
+        equity_controls.addStretch()
+        
+        self.equity_info_label = QLabel("No equity data")
+        self.equity_info_label.setStyleSheet("color: #888;")
+        equity_controls.addWidget(self.equity_info_label)
+        
+        equity_layout.addLayout(equity_controls)
+        
+        # Equity curve chart
+        if HAS_PYQTGRAPH:
+            self.equity_chart = pg.PlotWidget()
+            self.equity_chart.setBackground('#1a1a1a')
+            self.equity_chart.showGrid(x=True, y=True, alpha=0.3)
+            self.equity_chart.setLabel('left', 'P&L %', color='white')
+            self.equity_chart.setLabel('bottom', 'Days', color='white')
+            self.equity_chart.setMinimumHeight(150)
+            self.equity_chart.setMaximumHeight(200)
+            
+            # Add zero line
+            self.equity_zero_line = pg.InfiniteLine(pos=0, angle=0, pen=pg.mkPen('#555555', width=1, style=Qt.PenStyle.DashLine))
+            self.equity_chart.addItem(self.equity_zero_line)
+            
+            equity_layout.addWidget(self.equity_chart)
+        else:
+            no_chart_label = QLabel("PyQtGraph not installed - equity chart unavailable")
+            no_chart_label.setStyleSheet("color: #ff6666;")
+            equity_layout.addWidget(no_chart_label)
+            self.equity_chart = None
+        
+        right_layout.addWidget(equity_frame)
+        
         # Stats panel
         stats_frame = QFrame()
         stats_frame.setStyleSheet("background: #1a1a1a; border-radius: 5px; padding: 5px;")
@@ -440,6 +521,77 @@ class PortfolioGUI(QMainWindow):
             
             # Notes
             self.positions_table.setItem(row, 7, QTableWidgetItem(pos.notes))
+        
+        # Update equity curve chart
+        self.update_equity_curve()
+    
+    def update_equity_curve(self):
+        """Update the equity curve chart for the current portfolio."""
+        if not self.current_portfolio or not HAS_PYQTGRAPH or not self.equity_chart:
+            return
+        
+        # Get equity curve data
+        equity_data = self.tracker.manager.get_equity_curve(self.current_portfolio.name)
+        
+        # Clear existing plots
+        self.equity_chart.clear()
+        self.equity_chart.addItem(self.equity_zero_line)
+        
+        if not equity_data:
+            self.equity_info_label.setText("No equity data - click 'Record Today' to start tracking")
+            return
+        
+        # Extract data for plotting
+        dates = [d['trade_date'] for d in equity_data]
+        pnl_values = [d['total_pnl_percent'] for d in equity_data]
+        win_rates = [d['win_rate'] for d in equity_data]
+        
+        x = np.arange(len(pnl_values))
+        
+        # Plot P&L curve
+        pnl_pen = pg.mkPen('#00ff88', width=2)
+        self.equity_chart.plot(x, pnl_values, pen=pnl_pen, name='P&L %')
+        
+        # Fill area (green above 0, red below 0)
+        pnl_array = np.array(pnl_values)
+        pos_fill = pg.FillBetweenItem(
+            pg.PlotCurveItem(x, np.maximum(pnl_array, 0)),
+            pg.PlotCurveItem(x, np.zeros(len(x))),
+            brush=pg.mkBrush(0, 255, 136, 50)
+        )
+        self.equity_chart.addItem(pos_fill)
+        
+        neg_fill = pg.FillBetweenItem(
+            pg.PlotCurveItem(x, np.minimum(pnl_array, 0)),
+            pg.PlotCurveItem(x, np.zeros(len(x))),
+            brush=pg.mkBrush(255, 68, 68, 50)
+        )
+        self.equity_chart.addItem(neg_fill)
+        
+        # Update info label
+        latest = equity_data[-1]
+        first = equity_data[0]
+        change = latest['total_pnl_percent'] - first['total_pnl_percent'] if len(equity_data) > 1 else 0
+        
+        self.equity_info_label.setText(
+            f"{len(equity_data)} days tracked | "
+            f"Current: {latest['total_pnl_percent']:+.2f}% | "
+            f"Change: {change:+.2f}%"
+        )
+    
+    def record_equity_point(self):
+        """Record current equity value to database."""
+        if not self.current_portfolio:
+            QMessageBox.warning(self, "No Portfolio", "Please select a portfolio first")
+            return
+        
+        success = self.tracker.manager.record_equity_curve(self.current_portfolio.name)
+        
+        if success:
+            self.status_bar.showMessage(f"Recorded equity point for {self.current_portfolio.name}")
+            self.update_equity_curve()
+        else:
+            QMessageBox.warning(self, "Error", "Failed to record equity point")
     
     def create_portfolio(self):
         """Create a new portfolio manually."""
@@ -766,9 +918,12 @@ class PortfolioGUI(QMainWindow):
     
     def on_prices_updated(self):
         """Handle price update completion."""
+        # Record equity curves for all portfolios after price update
+        self.tracker.manager.record_all_equity_curves()
+        
         self.refresh_portfolio_list()
         self.refresh_portfolio_view()
-        self.status_bar.showMessage(f"Prices updated at {datetime.now().strftime('%H:%M:%S')}")
+        self.status_bar.showMessage(f"Prices updated & equity recorded at {datetime.now().strftime('%H:%M:%S')}")
     
     def show_portfolio_context_menu(self, position):
         """Show context menu for portfolio list."""

@@ -226,6 +226,35 @@ class PortfolioManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            # Create equity curve table for detailed daily tracking
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS portfolio_equity_curve (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    portfolio_name TEXT NOT NULL,
+                    trade_date TEXT NOT NULL,
+                    total_value REAL,
+                    total_cost REAL,
+                    total_pnl REAL,
+                    total_pnl_percent REAL,
+                    positions_count INTEGER,
+                    winners_count INTEGER,
+                    losers_count INTEGER,
+                    win_rate REAL,
+                    avg_gain REAL,
+                    avg_loss REAL,
+                    best_performer TEXT,
+                    best_pnl_percent REAL,
+                    worst_performer TEXT,
+                    worst_pnl_percent REAL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(portfolio_name, trade_date)
+                )
+            """)
+            # Create index for faster queries
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_equity_curve_portfolio_date 
+                ON portfolio_equity_curve(portfolio_name, trade_date)
+            """)
             conn.commit()
     
     def _load_portfolios(self):
@@ -427,6 +456,130 @@ class PortfolioManager:
                 portfolio.win_rate
             ))
             conn.commit()
+    
+    def record_equity_curve(self, portfolio_name: str, trade_date: str = None):
+        """
+        Record detailed equity curve data point for a portfolio.
+        
+        Args:
+            portfolio_name: Name of the portfolio
+            trade_date: Date string (ISO format), defaults to today
+        """
+        if portfolio_name not in self.portfolios:
+            return False
+        
+        portfolio = self.portfolios[portfolio_name]
+        if trade_date is None:
+            trade_date = date.today().isoformat()
+        
+        # Find best and worst performers
+        best_performer = ""
+        best_pnl = 0.0
+        worst_performer = ""
+        worst_pnl = 0.0
+        
+        if portfolio.positions:
+            sorted_by_pnl = sorted(portfolio.positions, key=lambda p: p.pnl_percent, reverse=True)
+            if sorted_by_pnl:
+                best = sorted_by_pnl[0]
+                best_performer = best.symbol
+                best_pnl = best.pnl_percent
+                
+                worst = sorted_by_pnl[-1]
+                worst_performer = worst.symbol
+                worst_pnl = worst.pnl_percent
+        
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO portfolio_equity_curve 
+                (portfolio_name, trade_date, total_value, total_cost, total_pnl, 
+                 total_pnl_percent, positions_count, winners_count, losers_count,
+                 win_rate, avg_gain, avg_loss, best_performer, best_pnl_percent,
+                 worst_performer, worst_pnl_percent)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                portfolio_name,
+                trade_date,
+                portfolio.total_value,
+                portfolio.total_cost,
+                portfolio.total_pnl,
+                portfolio.total_pnl_percent,
+                portfolio.total_positions,
+                len(portfolio.winners),
+                len(portfolio.losers),
+                portfolio.win_rate,
+                portfolio.avg_gain,
+                portfolio.avg_loss,
+                best_performer,
+                best_pnl,
+                worst_performer,
+                worst_pnl
+            ))
+            conn.commit()
+        
+        logger.info(f"Recorded equity curve for {portfolio_name}: {trade_date} = {portfolio.total_pnl_percent:.2f}%")
+        return True
+    
+    def record_all_equity_curves(self, trade_date: str = None):
+        """Record equity curve data for all portfolios."""
+        for portfolio_name in self.portfolios:
+            self.record_equity_curve(portfolio_name, trade_date)
+    
+    def get_equity_curve(self, portfolio_name: str, days: int = None) -> List[Dict]:
+        """
+        Get equity curve data for a portfolio.
+        
+        Args:
+            portfolio_name: Name of the portfolio
+            days: Number of days to retrieve (None = all data)
+        
+        Returns:
+            List of dicts with equity curve data points
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            if days:
+                cursor = conn.execute("""
+                    SELECT trade_date, total_value, total_cost, total_pnl, total_pnl_percent,
+                           positions_count, winners_count, losers_count, win_rate,
+                           avg_gain, avg_loss, best_performer, best_pnl_percent,
+                           worst_performer, worst_pnl_percent
+                    FROM portfolio_equity_curve
+                    WHERE portfolio_name = ?
+                    ORDER BY trade_date DESC
+                    LIMIT ?
+                """, (portfolio_name, days))
+            else:
+                cursor = conn.execute("""
+                    SELECT trade_date, total_value, total_cost, total_pnl, total_pnl_percent,
+                           positions_count, winners_count, losers_count, win_rate,
+                           avg_gain, avg_loss, best_performer, best_pnl_percent,
+                           worst_performer, worst_pnl_percent
+                    FROM portfolio_equity_curve
+                    WHERE portfolio_name = ?
+                    ORDER BY trade_date ASC
+                """, (portfolio_name,))
+            
+            results = []
+            for row in cursor.fetchall():
+                results.append({
+                    'trade_date': row[0],
+                    'total_value': row[1],
+                    'total_cost': row[2],
+                    'total_pnl': row[3],
+                    'total_pnl_percent': row[4],
+                    'positions_count': row[5],
+                    'winners_count': row[6],
+                    'losers_count': row[7],
+                    'win_rate': row[8],
+                    'avg_gain': row[9],
+                    'avg_loss': row[10],
+                    'best_performer': row[11],
+                    'best_pnl_percent': row[12],
+                    'worst_performer': row[13],
+                    'worst_pnl_percent': row[14]
+                })
+            
+            return results
     
     def get_history(self, portfolio_name: str, days: int = 30) -> List[Dict]:
         """Get historical performance data."""
