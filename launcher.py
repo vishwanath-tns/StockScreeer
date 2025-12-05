@@ -31,6 +31,15 @@ APPS = {
         ("Fast Price Monitor", "fast_price_monitor.py", "Real-time price alerts with 5-second updates (BTC-USD, etc.)"),
     ],
     
+    "📊 Volume Cluster Analysis": [
+        ("Volume Analysis Suite", "volume_cluster_analysis/volume_analysis_suite.py", "Full GUI: Scanner, Alerts, Patterns, Stock Events (4 tabs)"),
+        ("Volume Events GUI", "volume_cluster_analysis/volume_events_gui.py", "Simple view of high volume events with forward returns"),
+        ("Volume Scanner (CLI)", "volume_cluster_analysis/scanner.py", "Find recent high volume events from command line"),
+        ("Volume Alerts (CLI)", "volume_cluster_analysis/alerts.py", "Check and manage volume alerts from command line"),
+        ("Pattern Analyzer (CLI)", "volume_cluster_analysis/pattern_analyzer.py", "Analyze volume-price patterns from command line"),
+        ("Populate Events DB", "volume_cluster_analysis/populate_events.py", "Analyze all Nifty 50 stocks and store events in DB"),
+    ],
+    
     "⭐ Stock Ratings": [
         ("Price & Ratings Analyzer", "launch_price_ratings_analyzer.py", "Price correlation, signals, sector rotation analysis"),
         ("Rankings Data Analyzer", "launch_rankings_analyzer.py", "Validate and explore historical rankings data"),
