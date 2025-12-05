@@ -32,6 +32,7 @@ class Position:
     entry_price: float
     quantity: int = 0
     current_price: float = 0.0
+    prev_close: float = 0.0            # Previous day's close for today's change
     stop_loss: Optional[float] = None
     target: Optional[float] = None
     notes: str = ""
@@ -48,15 +49,29 @@ class Position:
     
     @property
     def pnl(self) -> float:
-        """Profit/Loss in absolute terms."""
+        """Profit/Loss in absolute terms (from entry)."""
         return self.market_value - self.cost_basis
     
     @property
     def pnl_percent(self) -> float:
-        """Profit/Loss as percentage."""
+        """Profit/Loss as percentage (from entry)."""
         if self.entry_price == 0:
             return 0.0
         return ((self.current_price - self.entry_price) / self.entry_price) * 100
+    
+    @property
+    def today_change(self) -> float:
+        """Today's change in absolute terms (from previous close)."""
+        if self.prev_close == 0:
+            return 0.0
+        return self.current_price - self.prev_close
+    
+    @property
+    def today_change_percent(self) -> float:
+        """Today's change as percentage (from previous close)."""
+        if self.prev_close == 0:
+            return 0.0
+        return ((self.current_price - self.prev_close) / self.prev_close) * 100
     
     @property
     def hit_stop_loss(self) -> bool:
@@ -75,6 +90,9 @@ class Position:
     
     @classmethod
     def from_dict(cls, data: Dict) -> 'Position':
+        # Handle missing fields for backwards compatibility
+        if 'prev_close' not in data:
+            data['prev_close'] = 0.0
         return cls(**data)
 
 
@@ -109,6 +127,23 @@ class Portfolio:
         if self.total_cost == 0:
             return 0.0
         return (self.total_pnl / self.total_cost) * 100
+    
+    @property
+    def total_today_change(self) -> float:
+        """Total today's change in absolute terms."""
+        return sum(p.today_change for p in self.positions)
+    
+    @property
+    def total_today_change_percent(self) -> float:
+        """Average today's change as percentage."""
+        if not self.positions:
+            return 0.0
+        # Calculate weighted average based on prev_close values
+        total_prev = sum(p.prev_close for p in self.positions if p.prev_close > 0)
+        if total_prev == 0:
+            return 0.0
+        total_current = sum(p.current_price for p in self.positions if p.prev_close > 0)
+        return ((total_current - total_prev) / total_prev) * 100
     
     @property
     def winners(self) -> List[Position]:

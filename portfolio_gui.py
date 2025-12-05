@@ -277,9 +277,15 @@ class PortfolioGUI(QMainWindow):
         self.positions_label.setStyleSheet("color: white;")
         summary_layout.addWidget(self.positions_label)
         
-        self.pnl_label = QLabel("P&L: -")
+        self.pnl_label = QLabel("Total P&L: -")
         self.pnl_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        self.pnl_label.setToolTip("Total gain/loss from entry price")
         summary_layout.addWidget(self.pnl_label)
+        
+        self.today_change_label = QLabel("Today: -")
+        self.today_change_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        self.today_change_label.setToolTip("Today's change from previous close")
+        summary_layout.addWidget(self.today_change_label)
         
         self.winrate_label = QLabel("Win Rate: -")
         self.winrate_label.setStyleSheet("color: white;")
@@ -289,10 +295,10 @@ class PortfolioGUI(QMainWindow):
         
         # Positions table
         self.positions_table = QTableWidget()
-        self.positions_table.setColumnCount(8)
+        self.positions_table.setColumnCount(9)
         self.positions_table.setHorizontalHeaderLabels([
             "Symbol", "Entry Date", "Entry Price", "Current Price", 
-            "P&L %", "Score", "Signal", "Notes"
+            "Total P&L %", "Day %", "Score", "Signal", "Notes"
         ])
         self.positions_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.positions_table.setAlternatingRowColors(True)
@@ -557,7 +563,7 @@ class PortfolioGUI(QMainWindow):
             current_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.positions_table.setItem(row, 3, current_item)
             
-            # P&L %
+            # Total P&L % (from entry)
             pnl_item = QTableWidgetItem(f"{pos.pnl_percent:+.2f}%")
             pnl_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             if pos.pnl_percent > 5:
@@ -572,17 +578,33 @@ class PortfolioGUI(QMainWindow):
                 pnl_item.setForeground(QBrush(QColor("#ff4444")))
             self.positions_table.setItem(row, 4, pnl_item)
             
+            # Day % (today's change from prev close)
+            day_chg = pos.today_change_percent
+            day_item = QTableWidgetItem(f"{day_chg:+.2f}%" if pos.prev_close > 0 else "-")
+            day_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            if day_chg > 2:
+                day_item.setBackground(QBrush(QColor("#004400")))
+                day_item.setForeground(QBrush(QColor("#00ff00")))
+            elif day_chg > 0:
+                day_item.setForeground(QBrush(QColor("#00ff00")))
+            elif day_chg < -2:
+                day_item.setBackground(QBrush(QColor("#440000")))
+                day_item.setForeground(QBrush(QColor("#ff4444")))
+            elif day_chg < 0:
+                day_item.setForeground(QBrush(QColor("#ff4444")))
+            self.positions_table.setItem(row, 5, day_item)
+            
             # Score
             score_item = QTableWidgetItem(f"{pos.scanner_score:.1f}" if pos.scanner_score else "-")
             score_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.positions_table.setItem(row, 5, score_item)
+            self.positions_table.setItem(row, 6, score_item)
             
             # Signal
             signal_item = QTableWidgetItem(pos.scanner_signal)
-            self.positions_table.setItem(row, 6, signal_item)
+            self.positions_table.setItem(row, 7, signal_item)
             
             # Notes
-            self.positions_table.setItem(row, 7, QTableWidgetItem(pos.notes))
+            self.positions_table.setItem(row, 8, QTableWidgetItem(pos.notes))
         
         # Update equity curve chart
         self.update_equity_curve()

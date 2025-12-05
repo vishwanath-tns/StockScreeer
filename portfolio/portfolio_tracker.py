@@ -93,6 +93,23 @@ class PortfolioTracker:
         
         return None
     
+    def _get_price_data_from_yfinance(self, symbol: str) -> Dict[str, float]:
+        """Get current price and previous close from Yahoo Finance."""
+        if not HAS_YFINANCE:
+            return {}
+        
+        try:
+            ticker = yf.Ticker(symbol)
+            info = ticker.fast_info
+            return {
+                'current_price': info.last_price,
+                'prev_close': info.previous_close if hasattr(info, 'previous_close') else info.last_price
+            }
+        except Exception as e:
+            logger.debug(f"YFinance price data lookup failed for {symbol}: {e}")
+        
+        return {}
+    
     def get_price(self, symbol: str) -> float:
         """Get current price for a symbol."""
         # Try database first (faster)
@@ -242,12 +259,24 @@ class PortfolioTracker:
         if not all_symbols:
             return
         
+        # Get current prices (fast batch)
         prices = self.get_prices_batch(list(all_symbols))
+        
+        # Get price data with prev_close from yfinance for today's change
+        price_data = {}
+        if HAS_YFINANCE:
+            for symbol in all_symbols:
+                data = self._get_price_data_from_yfinance(symbol)
+                if data:
+                    price_data[symbol] = data
         
         for portfolio in self.manager.portfolios.values():
             for position in portfolio.positions:
                 if position.symbol in prices:
                     position.current_price = prices[position.symbol]
+                # Update prev_close for today's change tracking
+                if position.symbol in price_data:
+                    position.prev_close = price_data[position.symbol].get('prev_close', 0.0)
             self.manager.save_portfolio(portfolio)
         
         logger.info(f"Updated prices for {len(prices)} symbols")

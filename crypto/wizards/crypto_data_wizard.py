@@ -107,6 +107,9 @@ class SyncDailyWorker(QThread):
                     df = df[['symbol', 'trade_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume', 'pct_change']]
                     df = df.dropna(subset=['close_price'])
                     
+                    # Replace inf/-inf with None (MySQL doesn't accept inf)
+                    df = df.replace([np.inf, -np.inf], np.nan)
+                    
                     all_data.append(df)
                     success_count += 1
                     
@@ -188,6 +191,9 @@ class CalculateMAWorker(QThread):
                     ma_df = df[['symbol', 'trade_date', 'ema_21', 'sma_5', 'sma_10', 'sma_20', 
                                'sma_50', 'sma_150', 'sma_200', 'price_vs_sma50', 'price_vs_sma200', 'sma50_vs_sma200']].copy()
                     ma_df = ma_df.dropna(subset=['sma_5'])  # At least SMA5 should be valid
+                    
+                    # Replace inf/-inf with None (MySQL doesn't accept inf)
+                    ma_df = ma_df.replace([np.inf, -np.inf], np.nan)
                     
                     all_ma_data.append(ma_df)
                     self.progress.emit(int((i + 1) / total * 100), f"✅ {symbol}: {len(ma_df)} records")
@@ -273,6 +279,9 @@ class CalculateRSIWorker(QThread):
                     # Select columns
                     rsi_df = df[['symbol', 'trade_date', 'rsi_9', 'rsi_14', 'rsi_zone']].copy()
                     rsi_df = rsi_df.dropna(subset=['rsi_9'])
+                    
+                    # Replace inf/-inf with None (MySQL doesn't accept inf)
+                    rsi_df = rsi_df.replace([np.inf, -np.inf], np.nan)
                     
                     all_rsi_data.append(rsi_df)
                     self.progress.emit(int((i + 1) / total * 100), f"✅ {symbol}: {len(rsi_df)} records")
@@ -361,9 +370,10 @@ class CalculateADWorker(QThread):
                     loss_5_10 = len(df[(df['pct_change'] < -5) & (df['pct_change'] >= -10)])
                     loss_10_plus = len(df[df['pct_change'] < -10])
                     
-                    # Stats
-                    avg_change = df['pct_change'].mean()
-                    median_change = df['pct_change'].median()
+                    # Stats (filter out inf values for safety)
+                    clean_pct = df['pct_change'].replace([np.inf, -np.inf], np.nan)
+                    avg_change = clean_pct.mean()
+                    median_change = clean_pct.median()
                     total_volume = df['volume'].sum()
                     
                     # Save to database

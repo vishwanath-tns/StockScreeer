@@ -114,6 +114,38 @@ def load_ad_data(engine, start_date=None, end_date=None):
     return df
 
 
+def load_pct_above_sma(engine, start_date=None, end_date=None):
+    """
+    Calculate % of stocks above SMA50 and SMA200 for each trading day.
+    Uses yfinance_daily_ma table.
+    """
+    query = """
+        SELECT 
+            date as trade_date,
+            COUNT(*) as total_count,
+            SUM(CASE WHEN close > sma_50 THEN 1 ELSE 0 END) as above_sma50,
+            SUM(CASE WHEN close > sma_200 THEN 1 ELSE 0 END) as above_sma200,
+            ROUND(SUM(CASE WHEN close > sma_50 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as pct_above_sma50,
+            ROUND(SUM(CASE WHEN close > sma_200 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as pct_above_sma200
+        FROM yfinance_daily_ma
+        WHERE sma_50 IS NOT NULL AND sma_200 IS NOT NULL
+    """
+    params = {}
+    
+    if start_date:
+        query += " AND date >= :start_date"
+        params['start_date'] = start_date
+    if end_date:
+        query += " AND date <= :end_date"
+        params['end_date'] = end_date
+    
+    query += " GROUP BY date ORDER BY date ASC"
+    
+    df = pd.read_sql(text(query), engine, params=params)
+    df['trade_date'] = pd.to_datetime(df['trade_date'])
+    return df
+
+
 # ============================================================================
 # Turning Point Detection
 # ============================================================================
@@ -274,6 +306,7 @@ class HistoricalADVisualizer(QMainWindow):
         # Data containers
         self.nifty_df = pd.DataFrame()
         self.ad_df = pd.DataFrame()
+        self.pct_sma_df = pd.DataFrame()
         self.turning_points = pd.DataFrame()
         self.performance_df = pd.DataFrame()
         
@@ -340,17 +373,11 @@ class HistoricalADVisualizer(QMainWindow):
             }
         """
         
-        self.chk_advances = QCheckBox("Advances")
-        self.chk_advances.setChecked(True)
-        self.chk_advances.setStyleSheet(checkbox_style)
-        self.chk_advances.toggled.connect(self.toggle_advances)
-        controls_layout.addWidget(self.chk_advances)
-        
-        self.chk_declines = QCheckBox("Declines")
-        self.chk_declines.setChecked(True)
-        self.chk_declines.setStyleSheet(checkbox_style)
-        self.chk_declines.toggled.connect(self.toggle_declines)
-        controls_layout.addWidget(self.chk_declines)
+        self.chk_ad_count = QCheckBox("A/D Count")
+        self.chk_ad_count.setChecked(True)
+        self.chk_ad_count.setStyleSheet(checkbox_style)
+        self.chk_ad_count.toggled.connect(self.toggle_ad_count)
+        controls_layout.addWidget(self.chk_ad_count)
         
         self.chk_ratio = QCheckBox("A/D Ratio")
         self.chk_ratio.setChecked(True)
@@ -364,11 +391,23 @@ class HistoricalADVisualizer(QMainWindow):
         self.chk_cumulative.toggled.connect(self.toggle_cumulative)
         controls_layout.addWidget(self.chk_cumulative)
         
+        self.chk_pct_above_sma = QCheckBox("% Above SMA")
+        self.chk_pct_above_sma.setChecked(True)
+        self.chk_pct_above_sma.setStyleSheet(checkbox_style)
+        self.chk_pct_above_sma.toggled.connect(self.toggle_pct_above_sma)
+        controls_layout.addWidget(self.chk_pct_above_sma)
+        
         self.chk_turning_points = QCheckBox("Turning Pts")
         self.chk_turning_points.setChecked(True)
         self.chk_turning_points.setStyleSheet(checkbox_style)
         self.chk_turning_points.toggled.connect(self.toggle_turning_points)
         controls_layout.addWidget(self.chk_turning_points)
+        
+        self.chk_tp_table = QCheckBox("TP Table")
+        self.chk_tp_table.setChecked(True)
+        self.chk_tp_table.setStyleSheet(checkbox_style)
+        self.chk_tp_table.toggled.connect(self.toggle_tp_table)
+        controls_layout.addWidget(self.chk_tp_table)
         
         # Separator
         sep = QFrame()
@@ -418,7 +457,7 @@ class HistoricalADVisualizer(QMainWindow):
         # ─────────────────────────────────────────────────────────────────
         # MIDDLE: Charts (Splitter)
         # ─────────────────────────────────────────────────────────────────
-        splitter = QSplitter(Qt.Vertical)
+        self.chart_splitter = QSplitter(Qt.Vertical)
         
         # PyQtGraph styling
         pg.setConfigOptions(antialias=True)
@@ -430,51 +469,52 @@ class HistoricalADVisualizer(QMainWindow):
         self.nifty_widget.setLabel('left', 'NIFTY 50', color='white')
         self.nifty_widget.setLabel('bottom', 'Date', color='white')
         self.nifty_plot = self.nifty_widget.getPlotItem()
-        splitter.addWidget(self.nifty_widget)
+        self.chart_splitter.addWidget(self.nifty_widget)
         
-        # BOTTOM CHART: A/D Indicators (stacked)
-        ad_widget = QWidget()
-        ad_layout = QVBoxLayout(ad_widget)
-        ad_layout.setSpacing(2)
-        ad_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # A/D Line Chart (Advances vs Declines) - changed from bar to line
+        # A/D Count Chart (Advances vs Declines)
         self.ad_line_widget = pg.PlotWidget()
         self.ad_line_widget.setBackground('#1e1e1e')
         self.ad_line_widget.showGrid(x=True, y=True, alpha=0.3)
         self.ad_line_widget.setLabel('left', 'A/D Count', color='white')
-        self.ad_line_widget.setXLink(self.nifty_widget)  # Link X axis
+        self.ad_line_widget.setXLink(self.nifty_widget)
         self.ad_line_widget.addLegend(offset=(70, 10))
-        ad_layout.addWidget(self.ad_line_widget, stretch=1)
+        self.chart_splitter.addWidget(self.ad_line_widget)
         
-        # A/D Ratio Line Chart
+        # A/D Ratio Chart
         self.ad_ratio_widget = pg.PlotWidget()
         self.ad_ratio_widget.setBackground('#1e1e1e')
         self.ad_ratio_widget.showGrid(x=True, y=True, alpha=0.3)
         self.ad_ratio_widget.setLabel('left', 'A/D Ratio', color='white')
-        self.ad_ratio_widget.setXLink(self.nifty_widget)  # Link X axis
-        ad_layout.addWidget(self.ad_ratio_widget, stretch=1)
+        self.ad_ratio_widget.setXLink(self.nifty_widget)
+        self.chart_splitter.addWidget(self.ad_ratio_widget)
         
-        # Net A/D Cumulative
+        # Cumulative Net A/D Chart
         self.net_ad_widget = pg.PlotWidget()
         self.net_ad_widget.setBackground('#1e1e1e')
         self.net_ad_widget.showGrid(x=True, y=True, alpha=0.3)
         self.net_ad_widget.setLabel('left', 'Cumulative Net A/D', color='white')
         self.net_ad_widget.setXLink(self.nifty_widget)
-        ad_layout.addWidget(self.net_ad_widget, stretch=1)
+        self.chart_splitter.addWidget(self.net_ad_widget)
         
-        splitter.addWidget(ad_widget)
+        # % Above SMA Chart
+        self.pct_sma_widget = pg.PlotWidget()
+        self.pct_sma_widget.setBackground('#1e1e1e')
+        self.pct_sma_widget.showGrid(x=True, y=True, alpha=0.3)
+        self.pct_sma_widget.setLabel('left', '% Above SMA', color='white')
+        self.pct_sma_widget.setXLink(self.nifty_widget)
+        self.pct_sma_widget.addLegend(offset=(70, 10))
+        self.chart_splitter.addWidget(self.pct_sma_widget)
         
-        # Set splitter proportions (60% nifty, 40% A/D)
-        splitter.setSizes([500, 350])
+        # Set splitter proportions
+        self.chart_splitter.setSizes([300, 120, 120, 120, 120])
         
-        layout.addWidget(splitter, stretch=1)
+        layout.addWidget(self.chart_splitter, stretch=1)
         
         # ─────────────────────────────────────────────────────────────────
         # BOTTOM: Turning Points Table
         # ─────────────────────────────────────────────────────────────────
-        tp_group = QGroupBox("📍 Turning Points & Post-Event NIFTY Performance")
-        tp_group.setStyleSheet("""
+        self.tp_group = QGroupBox("📍 Turning Points & Post-Event NIFTY Performance")
+        self.tp_group.setStyleSheet("""
             QGroupBox {
                 color: #00aaff;
                 font-weight: bold;
@@ -489,7 +529,7 @@ class HistoricalADVisualizer(QMainWindow):
                 padding: 0 5px;
             }
         """)
-        tp_layout = QVBoxLayout(tp_group)
+        tp_layout = QVBoxLayout(self.tp_group)
         
         self.tp_table = QTableWidget()
         self.tp_table.setColumnCount(9)
@@ -517,7 +557,7 @@ class HistoricalADVisualizer(QMainWindow):
         """)
         tp_layout.addWidget(self.tp_table)
         
-        layout.addWidget(tp_group)
+        layout.addWidget(self.tp_group)
         
         # ─────────────────────────────────────────────────────────────────
         # Status Bar
@@ -564,11 +604,18 @@ class HistoricalADVisualizer(QMainWindow):
         self.net_ad_widget.addItem(self.vLine_cumulative, ignoreBounds=True)
         self.net_ad_widget.addItem(self.hLine_cumulative, ignoreBounds=True)
         
+        # Crosshairs for % Above SMA chart
+        self.vLine_sma = pg.InfiniteLine(angle=90, movable=False, pen=crosshair_pen)
+        self.hLine_sma = pg.InfiniteLine(angle=0, movable=False, pen=crosshair_pen)
+        self.pct_sma_widget.addItem(self.vLine_sma, ignoreBounds=True)
+        self.pct_sma_widget.addItem(self.hLine_sma, ignoreBounds=True)
+        
         # Connect mouse move for all charts
         self.nifty_widget.scene().sigMouseMoved.connect(lambda pos: self.mouse_moved(pos, 'nifty'))
         self.ad_line_widget.scene().sigMouseMoved.connect(lambda pos: self.mouse_moved(pos, 'ad'))
         self.ad_ratio_widget.scene().sigMouseMoved.connect(lambda pos: self.mouse_moved(pos, 'ratio'))
         self.net_ad_widget.scene().sigMouseMoved.connect(lambda pos: self.mouse_moved(pos, 'cumulative'))
+        self.pct_sma_widget.scene().sigMouseMoved.connect(lambda pos: self.mouse_moved(pos, 'sma'))
     
     def mouse_moved(self, pos, source='nifty'):
         """Handle mouse movement for synchronized crosshairs."""
@@ -577,7 +624,8 @@ class HistoricalADVisualizer(QMainWindow):
             'nifty': self.nifty_widget,
             'ad': self.ad_line_widget,
             'ratio': self.ad_ratio_widget,
-            'cumulative': self.net_ad_widget
+            'cumulative': self.net_ad_widget,
+            'sma': self.pct_sma_widget
         }
         
         source_widget = widget_map.get(source, self.nifty_widget)
@@ -590,6 +638,7 @@ class HistoricalADVisualizer(QMainWindow):
             self.vLine_nifty.setPos(x_pos)
             self.vLine_ad.setPos(x_pos)
             self.vLine_ratio.setPos(x_pos)
+            self.vLine_sma.setPos(x_pos)
             self.vLine_cumulative.setPos(x_pos)
             
             # Update horizontal crosshair only for the source chart
@@ -601,6 +650,8 @@ class HistoricalADVisualizer(QMainWindow):
                 self.hLine_ratio.setPos(mouse_point.y())
             elif source == 'cumulative':
                 self.hLine_cumulative.setPos(mouse_point.y())
+            elif source == 'sma':
+                self.hLine_sma.setPos(mouse_point.y())
             
             # Update status bar with values at cursor position
             x_idx = int(round(x_pos))
@@ -615,6 +666,11 @@ class HistoricalADVisualizer(QMainWindow):
                 if x_idx < len(self.ad_df):
                     ad_row = self.ad_df.iloc[x_idx]
                     status += f" | Adv:{ad_row['advances']} Dec:{ad_row['declines']} Ratio:{ad_row['ad_ratio']:.2f}"
+                
+                # Get % Above SMA data
+                if x_idx < len(self.pct_sma_df):
+                    sma_row = self.pct_sma_df.iloc[x_idx]
+                    status += f" | >SMA50:{sma_row['pct_above_sma50']:.1f}% >SMA200:{sma_row['pct_above_sma200']:.1f}%"
                 
                 self.status_bar.showMessage(status)
     
@@ -643,6 +699,9 @@ class HistoricalADVisualizer(QMainWindow):
             # Load A/D data
             self.ad_df = load_ad_data(self.engine, start_date, end_date)
             
+            # Load % Above SMA data
+            self.pct_sma_df = load_pct_above_sma(self.engine, start_date, end_date)
+            
             # Detect turning points
             self.turning_points = detect_turning_points(self.ad_df)
             
@@ -662,7 +721,7 @@ class HistoricalADVisualizer(QMainWindow):
             
             self.status_bar.showMessage(
                 f"Loaded {len(self.nifty_df)} NIFTY records, {len(self.ad_df)} A/D records, "
-                f"{len(self.turning_points)} turning points"
+                f"{len(self.pct_sma_df)} SMA records, {len(self.turning_points)} turning points"
             )
             
         except Exception as e:
@@ -677,6 +736,7 @@ class HistoricalADVisualizer(QMainWindow):
         self.ad_line_widget.clear()
         self.ad_ratio_widget.clear()
         self.net_ad_widget.clear()
+        self.pct_sma_widget.clear()
         
         # Initialize plot item references
         self.plot_items = {
@@ -737,6 +797,8 @@ class HistoricalADVisualizer(QMainWindow):
         self.ad_ratio_widget.addItem(self.hLine_ratio, ignoreBounds=True)
         self.net_ad_widget.addItem(self.vLine_cumulative, ignoreBounds=True)
         self.net_ad_widget.addItem(self.hLine_cumulative, ignoreBounds=True)
+        self.pct_sma_widget.addItem(self.vLine_sma, ignoreBounds=True)
+        self.pct_sma_widget.addItem(self.hLine_sma, ignoreBounds=True)
         
         if self.ad_df.empty:
             return
@@ -744,24 +806,23 @@ class HistoricalADVisualizer(QMainWindow):
         x_ad = np.arange(len(self.ad_df))
         
         # ─────────────────────────────────────────────────────────────────
-        # A/D Line Chart (Advances vs Declines) - for crossover visibility
+        # A/D Count Chart (Advances vs Declines) - for crossover visibility
         # ─────────────────────────────────────────────────────────────────
         # Re-add legend
         self.ad_line_widget.addLegend(offset=(70, 10))
         
-        # Advances (green line)
-        if self.chk_advances.isChecked():
+        # Advances (green line) and Declines (red line) with data points
+        if self.chk_ad_count.isChecked():
             self.plot_items['advances'] = self.ad_line_widget.plot(
                 x_ad, self.ad_df['advances'].values,
                 pen=pg.mkPen('#00ff00', width=2),
+                symbol='o', symbolSize=5, symbolBrush='#00ff00',
                 name='Advances'
             )
-        
-        # Declines (red line)
-        if self.chk_declines.isChecked():
             self.plot_items['declines'] = self.ad_line_widget.plot(
                 x_ad, self.ad_df['declines'].values,
                 pen=pg.mkPen('#ff4444', width=2),
+                symbol='o', symbolSize=5, symbolBrush='#ff4444',
                 name='Declines'
             )
         
@@ -800,23 +861,42 @@ class HistoricalADVisualizer(QMainWindow):
                 brush=pg.mkBrush(0, 170, 255, 50)
             )
             self.net_ad_widget.addItem(self.plot_items['cumulative_fill'])
+        
+        # ─────────────────────────────────────────────────────────────────
+        # % Above SMA Chart
+        # ─────────────────────────────────────────────────────────────────
+        if self.chk_pct_above_sma.isChecked() and not self.pct_sma_df.empty:
+            self.pct_sma_df = self.pct_sma_df.reset_index(drop=True)
+            x_sma = np.arange(len(self.pct_sma_df))
+            
+            self.pct_sma_widget.addLegend(offset=(70, 10))
+            
+            # % Above SMA50
+            pct50 = self.pct_sma_df['pct_above_sma50'].values
+            self.pct_sma_widget.plot(x_sma, pct50, pen=pg.mkPen('#00aaff', width=2),
+                                     symbol='o', symbolSize=4, symbolBrush='#00aaff',
+                                     symbolPen=pg.mkPen('#00aaff'), name='% > SMA50')
+            
+            # % Above SMA200
+            pct200 = self.pct_sma_df['pct_above_sma200'].values
+            self.pct_sma_widget.plot(x_sma, pct200, pen=pg.mkPen('#ffaa00', width=2),
+                                     symbol='o', symbolSize=4, symbolBrush='#ffaa00',
+                                     symbolPen=pg.mkPen('#ffaa00'), name='% > SMA200')
+            
+            # Reference lines
+            self.pct_sma_widget.addLine(y=50, pen=pg.mkPen('#888', width=1, style=Qt.DashLine))
+            self.pct_sma_widget.addLine(y=80, pen=pg.mkPen('#00ff88', width=1, style=Qt.DotLine))
+            self.pct_sma_widget.addLine(y=20, pen=pg.mkPen('#ff4444', width=1, style=Qt.DotLine))
+            
+            # Set Y range 0-100
+            self.pct_sma_widget.setYRange(0, 100)
     
     # ─────────────────────────────────────────────────────────────────
     # Toggle visibility handlers
     # ─────────────────────────────────────────────────────────────────
-    def toggle_advances(self, checked):
-        """Toggle advances line visibility."""
-        if hasattr(self, 'plot_items') and self.plot_items.get('advances'):
-            self.plot_items['advances'].setVisible(checked)
-        elif checked:
-            self.update_charts()
-    
-    def toggle_declines(self, checked):
-        """Toggle declines line visibility."""
-        if hasattr(self, 'plot_items') and self.plot_items.get('declines'):
-            self.plot_items['declines'].setVisible(checked)
-        elif checked:
-            self.update_charts()
+    def toggle_ad_count(self, checked):
+        """Toggle A/D Count chart visibility."""
+        self.ad_line_widget.setVisible(checked)
     
     def toggle_ratio(self, checked):
         """Toggle A/D ratio visibility."""
@@ -826,11 +906,19 @@ class HistoricalADVisualizer(QMainWindow):
         """Toggle cumulative net A/D visibility."""
         self.net_ad_widget.setVisible(checked)
     
+    def toggle_pct_above_sma(self, checked):
+        """Toggle % Above SMA chart visibility."""
+        self.pct_sma_widget.setVisible(checked)
+    
     def toggle_turning_points(self, checked):
         """Toggle turning point markers visibility."""
         if hasattr(self, 'plot_items'):
             for tp_item in self.plot_items.get('turning_points', []):
                 tp_item.setVisible(checked)
+    
+    def toggle_tp_table(self, checked):
+        """Toggle Turning Points table visibility."""
+        self.tp_group.setVisible(checked)
     
     def update_tp_table(self):
         """Update turning points table."""

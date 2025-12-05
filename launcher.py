@@ -73,6 +73,7 @@ APPS = {
         ("Minervini Screener", "scanners/minervini_screener.py", "Mark Minervini criteria scanner"),
         ("Scanner GUI", "scanners/scanner_gui.py", "Visual scanner interface"),
         ("VCP Scanner", "volatility_patterns/analysis/vcp_scanner.py", "Volatility Contraction Pattern"),
+        ("Mean Reversion Scanner", "mean_reversion/ui/scanner_gui.py", "Event-Driven Parallel Scanner (RSI, BB)"),
     ],
     
     "📈 Charts & Analysis": [
@@ -107,6 +108,7 @@ APPS = {
     "🪙 Crypto": [
         ("Crypto Data Wizard", "crypto/wizards/crypto_data_wizard.py", "Sync Top 100 cryptos: daily data, MAs, RSI, A/D breadth"),
         ("Crypto Visualizer", "crypto/gui/crypto_visualizer.py", "Price chart with candlesticks, SMAs, RSI - PyQtGraph"),
+        ("Crypto Breadth Visualizer", "crypto/gui/crypto_breadth_visualizer.py", "Market breadth: A/D Line, distribution, BTC overlay"),
         ("Crypto Symbol List", "crypto/data/crypto_symbols.py", "View Top 100 crypto symbols by market cap"),
     ],
 }

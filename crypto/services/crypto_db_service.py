@@ -392,6 +392,37 @@ class CryptoDBService:
         
         return stats
     
+    def get_pct_above_sma(self, start_date: date = None, end_date: date = None) -> pd.DataFrame:
+        """
+        Calculate % of cryptos above SMA50 and SMA200 for each trading day.
+        Returns DataFrame with trade_date, pct_above_sma50, pct_above_sma200, total_count.
+        """
+        sql = """
+            SELECT 
+                trade_date,
+                COUNT(*) as total_count,
+                SUM(CASE WHEN price_vs_sma50 > 0 THEN 1 ELSE 0 END) as above_sma50,
+                SUM(CASE WHEN price_vs_sma200 > 0 THEN 1 ELSE 0 END) as above_sma200,
+                ROUND(SUM(CASE WHEN price_vs_sma50 > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as pct_above_sma50,
+                ROUND(SUM(CASE WHEN price_vs_sma200 > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as pct_above_sma200
+            FROM crypto_daily_ma
+            WHERE sma_50 IS NOT NULL
+        """
+        params = {}
+        
+        if start_date:
+            sql += " AND trade_date >= :start_date"
+            params["start_date"] = start_date
+        
+        if end_date:
+            sql += " AND trade_date <= :end_date"
+            params["end_date"] = end_date
+        
+        sql += " GROUP BY trade_date ORDER BY trade_date"
+        
+        with self.engine.connect() as conn:
+            return pd.read_sql(text(sql), conn, params=params)
+    
     def dispose(self):
         """Close database connections."""
         if self._engine:
