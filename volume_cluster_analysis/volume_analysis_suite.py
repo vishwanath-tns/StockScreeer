@@ -151,6 +151,9 @@ class VolumeAnalysisGUI:
         self.scanner_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
+        # Double-click to open chart
+        self.scanner_tree.bind('<Double-1>', self._on_scanner_double_click)
+        
         # Configure tags for coloring
         self.scanner_tree.tag_configure('breakout', background='#C8E6C9')
         self.scanner_tree.tag_configure('breakdown', background='#FFCDD2')
@@ -278,9 +281,9 @@ class VolumeAnalysisGUI:
         symbol_combo.bind('<<ComboboxSelected>>', lambda e: self._load_stock_events())
         
         ttk.Label(control_frame, text="Quintile:").pack(side=tk.LEFT, padx=(20, 5))
-        self.stock_quintile_var = tk.StringVar(value="Very High")
+        self.stock_quintile_var = tk.StringVar(value="Ultra High")
         quintile_combo = ttk.Combobox(control_frame, textvariable=self.stock_quintile_var,
-                                       values=["All", "High", "Very High"], width=12, state='readonly')
+                                       values=["All", "High", "Very High", "Ultra High"], width=12, state='readonly')
         quintile_combo.pack(side=tk.LEFT, padx=5)
         quintile_combo.bind('<<ComboboxSelected>>', lambda e: self._load_stock_events())
         
@@ -759,6 +762,28 @@ BY TYPE:
         
         self.patterns_fig.tight_layout()
         self.patterns_canvas.draw()
+
+    def _on_scanner_double_click(self, event):
+        """Handle double-click on scanner tree - open chart visualizer."""
+        selected = self.scanner_tree.selection()
+        if not selected:
+            return
+        
+        item = self.scanner_tree.item(selected[0])
+        values = item.get('values', [])
+        if values:
+            symbol = values[0]  # First column is symbol
+            self._launch_chart(symbol)
+    
+    def _launch_chart(self, symbol: str):
+        """Launch the chart visualizer for a symbol."""
+        try:
+            from .chart_visualizer import launch_chart
+            launch_chart(symbol)
+        except ImportError as e:
+            messagebox.showerror("Error", f"Chart visualizer not available: {e}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to launch chart: {e}")
 
 
 def main():

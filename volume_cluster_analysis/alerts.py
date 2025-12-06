@@ -76,6 +76,7 @@ class VolumeAlertSystem:
     """
     
     THRESHOLDS = {
+        'ultra_high_volume': 4.0,  # 4x average volume (Ultra High)
         'very_high_volume': 3.0,   # 3x average volume
         'high_volume': 2.0,        # 2x average volume
         'breakout_return': 3.0,    # 3% price increase
@@ -192,8 +193,8 @@ class VolumeAlertSystem:
             
             alert = None
             
-            # Check for very high volume
-            if rel_vol >= self.THRESHOLDS['very_high_volume']:
+            # Check for ultra high volume (4x+)
+            if rel_vol >= self.THRESHOLDS['ultra_high_volume']:
                 # Check for breakout
                 if day_return >= self.THRESHOLDS['breakout_return']:
                     alert = self._create_alert(
@@ -214,6 +215,40 @@ class VolumeAlertSystem:
                         day_return=day_return,
                         alert_type='breakdown',
                         priority='critical',
+                        message=f"⚠️ BREAKDOWN: {symbol} {day_return:.1f}% on {rel_vol:.1f}x volume!"
+                    )
+                else:
+                    alert = self._create_alert(
+                        symbol=symbol,
+                        row=row,
+                        rel_vol=rel_vol,
+                        day_return=day_return,
+                        alert_type='ultra_high_volume',
+                        priority='critical',
+                        message=f"💥 {symbol}: ULTRA HIGH volume ({rel_vol:.1f}x), price {day_return:+.1f}%"
+                    )
+            # Check for very high volume (3x+)
+            elif rel_vol >= self.THRESHOLDS['very_high_volume']:
+                # Check for breakout
+                if day_return >= self.THRESHOLDS['breakout_return']:
+                    alert = self._create_alert(
+                        symbol=symbol,
+                        row=row,
+                        rel_vol=rel_vol,
+                        day_return=day_return,
+                        alert_type='breakout',
+                        priority='high',
+                        message=f"🚀 BREAKOUT: {symbol} +{day_return:.1f}% on {rel_vol:.1f}x volume!"
+                    )
+                # Check for breakdown
+                elif day_return <= self.THRESHOLDS['breakdown_return']:
+                    alert = self._create_alert(
+                        symbol=symbol,
+                        row=row,
+                        rel_vol=rel_vol,
+                        day_return=day_return,
+                        alert_type='breakdown',
+                        priority='high',
                         message=f"⚠️ BREAKDOWN: {symbol} {day_return:.1f}% on {rel_vol:.1f}x volume!"
                     )
                 else:

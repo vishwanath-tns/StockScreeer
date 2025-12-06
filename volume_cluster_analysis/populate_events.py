@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Populate Volume Events Database
-Analyzes all Nifty 50 stocks and stores high volume events in database.
+Analyzes all Nifty 500 stocks and stores high volume events in database.
 """
 
 import sys
@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.event_analyzer import VolumeEventAnalyzer
-from data.data_loader import NIFTY_50_SYMBOLS
+from data.data_loader import NIFTY_50_SYMBOLS, get_nifty500_symbols
 from sqlalchemy import text
 from tqdm import tqdm
 
@@ -57,7 +57,7 @@ def populate_all_stocks(symbols=None, quintiles=None):
         symbols = NIFTY_50_SYMBOLS
     
     if quintiles is None:
-        quintiles = ['High', 'Very High']
+        quintiles = ['High', 'Very High', 'Ultra High']
     
     analyzer = VolumeEventAnalyzer()
     
@@ -106,7 +106,7 @@ def get_stats():
     GROUP BY volume_quintile
     ORDER BY CASE volume_quintile 
         WHEN 'Very Low' THEN 1 WHEN 'Low' THEN 2 WHEN 'Normal' THEN 3 
-        WHEN 'High' THEN 4 WHEN 'Very High' THEN 5 END
+        WHEN 'High' THEN 4 WHEN 'Very High' THEN 5 WHEN 'Ultra High' THEN 6 END
     """
     
     import pandas as pd
@@ -124,6 +124,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Populate volume events database')
     parser.add_argument('--stats', action='store_true', help='Show statistics only')
     parser.add_argument('--symbol', type=str, help='Analyze single symbol')
+    parser.add_argument('--nifty50', action='store_true', help='Analyze Nifty 50 only (default: all stocks)')
+    parser.add_argument('--nifty500', action='store_true', help='Analyze all Nifty 500 stocks')
     args = parser.parse_args()
     
     if args.stats:
@@ -131,6 +133,14 @@ if __name__ == '__main__':
     elif args.symbol:
         populate_all_stocks(symbols=[args.symbol])
         get_stats()
+    elif args.nifty50:
+        print("Analyzing Nifty 50 stocks...")
+        populate_all_stocks(symbols=NIFTY_50_SYMBOLS)
+        get_stats()
     else:
-        populate_all_stocks()
+        # Default: analyze all stocks with sufficient data
+        print("Fetching all stocks with sufficient data...")
+        all_symbols = get_nifty500_symbols()
+        print(f"Found {len(all_symbols)} stocks with 200+ days of data")
+        populate_all_stocks(symbols=all_symbols)
         get_stats()

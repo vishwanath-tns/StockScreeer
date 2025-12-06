@@ -33,6 +33,9 @@ APPS = {
     
     "📊 Volume Cluster Analysis": [
         ("Volume Analysis Suite", "volume_cluster_analysis/volume_analysis_suite.py", "Full GUI: Scanner, Alerts, Patterns, Stock Events (4 tabs)"),
+        ("Trading Rules GUI", "volume_cluster_analysis/trading_rules_gui.py", "Interactive GUI for trading signals with rule performance"),
+        ("Chart Visualizer", "volume_cluster_analysis/chart_visualizer.py", "Interactive PyQtGraph chart with SMAs, Bollinger Bands, RSI, volume events"),
+        ("Trading Rules Engine", "volume_cluster_analysis/trading_rules.py", "Generate trading signals based on volume patterns"),
         ("Volume Events GUI", "volume_cluster_analysis/volume_events_gui.py", "Simple view of high volume events with forward returns"),
         ("Volume Scanner (CLI)", "volume_cluster_analysis/scanner.py", "Find recent high volume events from command line"),
         ("Volume Alerts (CLI)", "volume_cluster_analysis/alerts.py", "Check and manage volume alerts from command line"),

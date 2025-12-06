@@ -46,12 +46,12 @@ class VolumeAlert:
     """Alert for a high volume event."""
     symbol: str
     event_date: datetime
-    alert_type: str  # 'very_high_volume', 'high_volume', 'breakout', 'breakdown'
+    alert_type: str  # 'ultra_high_volume', 'very_high_volume', 'high_volume', 'breakout', 'breakdown'
     volume: int
     relative_volume: float
     day_return: float
     message: str
-    priority: str  # 'high', 'medium', 'low'
+    priority: str  # 'critical', 'high', 'medium', 'low'
 
 
 class VolumeEventScanner:
@@ -377,6 +377,7 @@ if __name__ == '__main__':
     parser.add_argument('--leaders', action='store_true', help='Show volume leaders')
     parser.add_argument('--alerts', action='store_true', help='Check for alerts')
     parser.add_argument('--patterns', action='store_true', help='Show pattern statistics')
+    parser.add_argument('--ultra', action='store_true', help='Show only Ultra High (4x+) events')
     args = parser.parse_args()
     
     scanner = VolumeEventScanner()
@@ -396,6 +397,9 @@ if __name__ == '__main__':
     elif args.alerts:
         alerts = scanner.scan_for_alerts()
         print_alerts(alerts)
+    elif args.ultra:
+        events = scanner.scan_recent_events(days=args.days, quintile='Ultra High')
+        print_recent_events(events, f"🔥 ULTRA HIGH Volume Events (4x+) (Last {args.days} Days)")
     else:
         events = scanner.scan_recent_events(days=args.days)
         print_recent_events(events, f"Very High Volume Events (Last {args.days} Days)")

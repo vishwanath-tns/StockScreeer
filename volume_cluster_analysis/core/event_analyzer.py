@@ -53,6 +53,9 @@ class VolumeEventAnalyzer:
     
     QUINTILE_NAMES = ['Very Low', 'Low', 'Normal', 'High', 'Very High']
     
+    # Ultra High threshold: relative volume >= 4x average
+    ULTRA_HIGH_THRESHOLD = 4.0
+    
     def __init__(self):
         load_dotenv()
         self.engine = self._create_engine()
@@ -105,7 +108,7 @@ class VolumeEventAnalyzer:
     def analyze_stock(self, symbol: str, quintiles_to_track: List[str] = None) -> List[VolumeEvent]:
         """Analyze all volume events for a stock."""
         if quintiles_to_track is None:
-            quintiles_to_track = ['High', 'Very High']
+            quintiles_to_track = ['High', 'Very High', 'Ultra High']
         
         df = self.get_stock_data(symbol)
         if df is None:
@@ -117,6 +120,10 @@ class VolumeEventAnalyzer:
         
         try:
             df['quintile'] = pd.qcut(df['volume'], q=5, labels=self.QUINTILE_NAMES)
+            # Add "Ultra High" as a new category before assignment
+            df['quintile'] = df['quintile'].cat.add_categories(['Ultra High'])
+            # Override to "Ultra High" if relative volume >= threshold
+            df.loc[df['relative_volume'] >= self.ULTRA_HIGH_THRESHOLD, 'quintile'] = 'Ultra High'
         except ValueError:
             return []
         
