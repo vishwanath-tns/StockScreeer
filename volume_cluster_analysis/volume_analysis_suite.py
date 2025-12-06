@@ -778,10 +778,10 @@ BY TYPE:
     def _launch_chart(self, symbol: str):
         """Launch the chart visualizer for a symbol."""
         try:
-            from .chart_visualizer import launch_chart
-            launch_chart(symbol)
-        except ImportError as e:
-            messagebox.showerror("Error", f"Chart visualizer not available: {e}")
+            # Use subprocess to launch chart in separate process to avoid import issues
+            import subprocess
+            import sys
+            subprocess.Popen([sys.executable, '-m', 'volume_cluster_analysis.chart_visualizer', symbol])
         except Exception as e:
             messagebox.showerror("Error", f"Failed to launch chart: {e}")
 
