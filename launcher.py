@@ -27,7 +27,10 @@ APPS = {
     
     "💼 Portfolio & Analysis": [
         ("Portfolio Manager", "portfolio_gui.py", "Manage portfolios from scanner results, track P&L and performance"),
+        ("🎯 Swing Trade Scanner", "analysis/swing_trade_scanner.py", "Weekly stock selection for swing trades based on volume analysis"),
         ("Volume Analysis Scanner", "volume_analysis_gui.py", "Detect accumulation/distribution patterns with OBV, CMF, VWAP"),
+        ("Turnover Analysis GUI", "analysis/turnover_analysis_gui.py", "Daily, weekly, monthly turnover with charts and unusual detection"),
+        ("Turnover Analysis CLI", "analysis/turnover_analysis.py", "Command-line turnover analysis (--daily, --weekly, --top, --unusual)"),
         ("Fast Price Monitor", "fast_price_monitor.py", "Real-time price alerts with 5-second updates (BTC-USD, etc.)"),
     ],
     
@@ -89,6 +92,8 @@ APPS = {
     ],
     
     "📈 Charts & Analysis": [
+        ("Coppock Curve (PyQtGraph)", "analysis/coppock_curve_pyqt.py", "Long-term momentum indicator - High performance interactive charts"),
+        ("Coppock Curve (Matplotlib)", "analysis/coppock_curve.py", "Long-term momentum indicator - Classic Tkinter/Matplotlib version"),
         ("Chart Tool", "charts/chart_tool.py", "Interactive stock charts"),
         ("Chart Window", "charts/chart_window.py", "Standalone chart window"),
         ("Price Cluster Analyzer", "analysis/price_cluster_analyzer.py", "Find support/resistance price zones"),
@@ -122,6 +127,12 @@ APPS = {
         ("Crypto Visualizer", "crypto/gui/crypto_visualizer.py", "Price chart with candlesticks, SMAs, RSI - PyQtGraph"),
         ("Crypto Breadth Visualizer", "crypto/gui/crypto_breadth_visualizer.py", "Market breadth: A/D Line, distribution, BTC overlay"),
         ("Crypto Symbol List", "crypto/data/crypto_symbols.py", "View Top 100 crypto symbols by market cap"),
+    ],
+    
+    "📊 SMA Breadth Analysis": [
+        ("SMA Breadth Visualizer", "analysis/sma_breadth_visualizer.py", "Interactive % stocks above SMA (5,10,20,50,100,150,200) with peak/trough detection"),
+        ("SMA Breadth Calculator", "analysis/sma_breadth_analysis.py", "Calculate and store % above SMA for Nifty 50/500"),
+        ("Historical A/D Visualizer", "historical_ad_visualizer.py", "Historical Advance/Decline + % above SMA50/200 with NIFTY overlay"),
     ],
 }
 
