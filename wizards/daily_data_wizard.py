@@ -53,6 +53,10 @@ import yfinance as yf
 from utilities.nifty500_stocks_list import NIFTY_500_STOCKS
 from ranking import RankingOrchestrator
 
+# Configure logging FIRST (before any logger usage)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 # Import A/D calculator for post-sync update
 try:
     from utilities.yfinance_advance_decline import update_latest as update_ad_latest
@@ -60,10 +64,6 @@ try:
 except ImportError:
     AD_MODULE_AVAILABLE = False
     logger.warning("yfinance_advance_decline module not found - A/D update will be skipped")
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -1688,6 +1688,66 @@ class WizardStepsExecutor:
             self.state_manager.complete_step(step_id, False, str(e), self.failed_symbols)
             return False, str(e)
 
+    def step9_scan_crossovers(self) -> Tuple[bool, str]:
+        """Scan for Golden Cross and Death Cross signals"""
+        step_id = 9
+        self.failed_symbols = []
+        
+        try:
+            self.progress_callback(0, "Initializing crossover scanner...")
+            
+            # Start tracking step
+            self.state_manager.start_step(step_id, "Scan Crossovers", len(self.all_symbols))
+            
+            # Import crossover detector
+            try:
+                from scanners.golden_death_cross import CrossoverDetector, run_daily_scan
+            except ImportError as e:
+                msg = f"Crossover scanner module not available: {e}"
+                logger.warning(msg)
+                self.state_manager.complete_step(step_id, False, msg, [])
+                return False, msg
+            
+            self.progress_callback(10, "Running daily crossover scan...")
+            
+            # Create detector and run scan
+            detector = CrossoverDetector()
+            
+            # Scan for today's signals
+            target_date = date.today()
+            signals = detector.scan_for_date(target_date)
+            
+            self.progress_callback(60, f"Found {len(signals)} crossover signals...")
+            
+            # Save signals to database
+            saved = detector.save_signals(signals)
+            
+            self.progress_callback(80, "Updating performance metrics...")
+            
+            # Update performance for older signals
+            detector.update_performance()
+            
+            # Check for stop request
+            if self.stop_requested:
+                self.state_manager.complete_step(step_id, False, "Stopped by user", [])
+                return False, "Stopped by user"
+            
+            # Get summary
+            summary = detector.get_signals_summary(target_date)
+            gc_today = summary['today']['golden_cross']
+            dc_today = summary['today']['death_cross']
+            
+            msg = f"Crossover scan: {len(signals)} signals | Golden Cross: {gc_today} | Death Cross: {dc_today}"
+            
+            self.progress_callback(100, msg)
+            self.state_manager.complete_step(step_id, True, msg, [])
+            return True, msg
+            
+        except Exception as e:
+            logger.error(f"Step 9 failed: {e}")
+            self.state_manager.complete_step(step_id, False, str(e), self.failed_symbols)
+            return False, str(e)
+
 
 # =============================================================================
 # WIZARD GUI
@@ -1721,6 +1781,7 @@ class DailyDataWizardGUI:
             WizardStep(6, "Calculate RSI", "Calculate 9-period RSI for daily and intraday data"),
             WizardStep(7, "Calculate Rankings", "Calculate RS Rating, Momentum, Trend Template, and Composite scores"),
             WizardStep(8, "Calculate Bollinger Bands", "Calculate BB indicators (%b, BandWidth, squeeze/bulge detection)"),
+            WizardStep(9, "Scan Crossovers", "Detect Golden Cross / Death Cross signals (50/200 SMA)"),
         ]
         
         # Colors
@@ -2063,6 +2124,7 @@ class DailyDataWizardGUI:
             self.executor.step6_calculate_rsi,
             self.executor.step7_calculate_rankings,
             self.executor.step8_calculate_bollinger_bands,
+            self.executor.step9_scan_crossovers,
         ]
         
         for i, (step, method) in enumerate(zip(self.steps, step_methods)):

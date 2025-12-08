@@ -77,6 +77,7 @@ APPS = {
     ],
     
     "🔍 Scanners": [
+        ("Golden/Death Cross Scanner", "scanners/golden_death_cross/scanner_gui.py", "50/200 SMA crossover signals with historical tracking"),
         ("Momentum Scanner GUI", "scanners/momentum_scanner_gui.py", "Visual momentum scanner (Yahoo Finance)"),
         ("Cup & Handle Scanner", "scanners/cup_handle_scanner.py", "Cup and handle pattern scanner"),
         ("Cup & Handle Analyzer", "scanners/cup_handle_analyzer.py", "Detailed cup and handle analysis"),
