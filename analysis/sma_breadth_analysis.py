@@ -181,6 +181,94 @@ def calculate_missing_smas(engine, progress_cb=None, batch_size: int = 50) -> in
     return updated
 
 
+def calculate_missing_smas_incremental(engine, date_str: str = None, progress_cb=None) -> int:
+    """
+    Calculate missing SMA values (10, 20, 100) for a specific date only.
+    Much faster than full recalculation - use for daily updates.
+    
+    Args:
+        engine: SQLAlchemy engine
+        date_str: Date to update (YYYY-MM-DD). Defaults to today.
+        progress_cb: Optional progress callback
+    
+    Returns:
+        Number of symbols updated
+    """
+    from datetime import datetime, timedelta
+    
+    if date_str is None:
+        date_str = datetime.now().strftime('%Y-%m-%d')
+    
+    # Ensure SMA columns exist
+    status = check_sma_columns(engine)
+    missing = [p for p, exists in status.items() if not exists]
+    if missing:
+        add_missing_sma_columns(engine, progress_cb)
+    
+    # Get symbols that have data for the target date
+    with engine.connect() as conn:
+        symbols = conn.execute(text("""
+            SELECT DISTINCT symbol FROM yfinance_daily_ma
+            WHERE date = :date
+        """), {'date': date_str}).fetchall()
+        symbols = [s[0] for s in symbols]
+    
+    if not symbols:
+        if progress_cb:
+            progress_cb(f"No data found for {date_str}")
+        return 0
+    
+    total = len(symbols)
+    updated = 0
+    periods_to_calc = [10, 20, 100]
+    max_period = max(periods_to_calc)
+    
+    if progress_cb:
+        progress_cb(f"Calculating SMAs (10, 20, 100) for {total} symbols on {date_str}...")
+    
+    for i, symbol in enumerate(symbols):
+        if progress_cb and i % 100 == 0 and i > 0:
+            progress_cb(f"Processing {i}/{total}...")
+        
+        with engine.begin() as conn:
+            # Get enough historical data for the longest SMA (100)
+            df = pd.read_sql(text("""
+                SELECT date, close FROM yfinance_daily_ma
+                WHERE symbol = :symbol AND date <= :date
+                ORDER BY date DESC
+                LIMIT :limit
+            """), conn, params={'symbol': symbol, 'date': date_str, 'limit': max_period + 5})
+            
+            if len(df) < max_period:
+                continue
+            
+            # Sort by date ascending
+            df = df.sort_values('date')
+            
+            # Calculate SMAs
+            sma_values = {}
+            for period in periods_to_calc:
+                if len(df) >= period:
+                    sma_values[SMA_COLUMNS[period]] = df['close'].tail(period).mean()
+            
+            if sma_values:
+                # Update the specific row
+                set_clause = ", ".join([f"{k} = :{k}" for k in sma_values.keys()])
+                sma_values['symbol'] = symbol
+                sma_values['date'] = date_str
+                conn.execute(text(f"""
+                    UPDATE yfinance_daily_ma
+                    SET {set_clause}
+                    WHERE symbol = :symbol AND date = :date
+                """), sma_values)
+                updated += 1
+    
+    if progress_cb:
+        progress_cb(f"Updated {updated}/{total} symbols for {date_str}")
+    
+    return updated
+
+
 # ============================================================================
 # Step 2: Calculate Percentage of Stocks Above/Below SMA
 # ============================================================================
@@ -599,10 +687,13 @@ def get_nifty_index_data(
     if use_yahoo:
         try:
             import yfinance as yf
+            from datetime import timedelta
             
             # Download from Yahoo Finance
             start = start_date or '2024-01-01'
-            end = end_date or datetime.now().strftime('%Y-%m-%d')
+            # yf.download end date is exclusive, so add 1 day to include end_date
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d') if end_date else datetime.now()
+            end = (end_dt + timedelta(days=1)).strftime('%Y-%m-%d')
             
             nifty = yf.download('^NSEI', start=start, end=end, progress=False)
             
@@ -718,8 +809,15 @@ def verify_data_availability(engine) -> Dict:
 # Main Functions for CLI
 # ============================================================================
 
-def run_full_calculation(engine, index_name: str = 'NIFTY 500', progress_cb=None):
-    """Run full SMA breadth calculation and store results."""
+def run_full_calculation(engine, index_name: str = 'NIFTY 500', progress_cb=None, calculate_smas: bool = True):
+    """Run full SMA breadth calculation and store results.
+    
+    Args:
+        engine: SQLAlchemy engine
+        index_name: 'NIFTY 50' or 'NIFTY 500'
+        progress_cb: Optional progress callback function
+        calculate_smas: If True, calculate missing SMA values (10, 20, 100) first
+    """
     if progress_cb:
         progress_cb("=" * 50)
         progress_cb(f"Running SMA Breadth Analysis for {index_name}")
@@ -727,7 +825,7 @@ def run_full_calculation(engine, index_name: str = 'NIFTY 500', progress_cb=None
     
     # Step 1: Ensure all SMA columns exist
     if progress_cb:
-        progress_cb("\n[1/4] Checking SMA columns...")
+        progress_cb("\n[1/5] Checking SMA columns...")
     status = check_sma_columns(engine)
     missing = [p for p, exists in status.items() if not exists]
     if missing:
@@ -738,22 +836,28 @@ def run_full_calculation(engine, index_name: str = 'NIFTY 500', progress_cb=None
         if progress_cb:
             progress_cb("All SMA columns present: " + ", ".join([f"sma_{p}" for p in SMA_PERIODS]))
     
-    # Step 2: Calculate breadth for all SMAs
+    # Step 2: Calculate missing SMA values (10, 20, 100) - these are not computed by daily wizard
+    if calculate_smas:
+        if progress_cb:
+            progress_cb("\n[2/5] Calculating missing SMA values (10, 20, 100)...")
+        calculate_missing_smas(engine, progress_cb)
+    
+    # Step 3: Calculate breadth for all SMAs
     if progress_cb:
-        progress_cb("\n[2/4] Calculating SMA breadth...")
+        progress_cb("\n[3/5] Calculating SMA breadth...")
     breadth_df = calculate_all_sma_breadth(engine, index_name, progress_cb=progress_cb)
     
     if progress_cb:
         progress_cb(f"Calculated {len(breadth_df)} data points")
     
-    # Step 3: Store results
+    # Step 4: Store results
     if progress_cb:
-        progress_cb("\n[3/4] Storing results...")
+        progress_cb("\n[4/5] Storing results...")
     store_breadth_data(engine, breadth_df, progress_cb)
     
-    # Step 4: Verify
+    # Step 5: Verify
     if progress_cb:
-        progress_cb("\n[4/4] Verification...")
+        progress_cb("\n[5/5] Verification...")
         loaded = load_breadth_data(engine, index_name)
         progress_cb(f"Verified: {len(loaded)} records in database")
         

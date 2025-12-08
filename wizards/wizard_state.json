@@ -1,11 +1,11 @@
 {
-  "last_updated": "2025-12-06T08:46:23.348599",
+  "last_updated": "2025-12-08T18:37:14.904214",
   "steps": [
     {
       "step_id": 1,
       "step_name": "Sync Daily Data",
-      "last_run_start": "2025-12-06T08:26:28.332859",
-      "last_run_end": "2025-12-06T08:27:06.253109",
+      "last_run_start": "2025-12-08T18:26:00.475290",
+      "last_run_end": "2025-12-08T18:26:03.166027",
       "last_status": "completed",
       "symbols_processed": 515,
       "symbols_total": 515,
@@ -15,8 +15,8 @@
     {
       "step_id": 2,
       "step_name": "Sync Intraday Data",
-      "last_run_start": "2025-12-06T08:27:07.718478",
-      "last_run_end": "2025-12-06T08:31:55.897645",
+      "last_run_start": "2025-12-08T18:26:03.930993",
+      "last_run_end": "2025-12-08T18:27:02.612710",
       "last_status": "completed",
       "symbols_processed": 1545,
       "symbols_total": 1545,
@@ -26,8 +26,8 @@
     {
       "step_id": 3,
       "step_name": "Verify Data Sync",
-      "last_run_start": "2025-12-06T08:31:55.916645",
-      "last_run_end": "2025-12-06T08:32:09.809930",
+      "last_run_start": "2025-12-08T18:27:02.628920",
+      "last_run_end": "2025-12-08T18:27:15.440650",
       "last_status": "completed",
       "symbols_processed": 50,
       "symbols_total": 50,
@@ -37,8 +37,8 @@
     {
       "step_id": 4,
       "step_name": "Calculate Daily MA",
-      "last_run_start": "2025-12-06T08:32:09.869944",
-      "last_run_end": "2025-12-06T08:32:58.260496",
+      "last_run_start": "2025-12-08T18:27:15.475384",
+      "last_run_end": "2025-12-08T18:27:18.074172",
       "last_status": "completed",
       "symbols_processed": 515,
       "symbols_total": 515,
@@ -48,8 +48,8 @@
     {
       "step_id": 5,
       "step_name": "Calculate Intraday MA",
-      "last_run_start": "2025-12-06T08:32:58.304501",
-      "last_run_end": "2025-12-06T08:38:38.933025",
+      "last_run_start": "2025-12-08T18:27:18.150461",
+      "last_run_end": "2025-12-08T18:29:12.276562",
       "last_status": "completed",
       "symbols_processed": 1545,
       "symbols_total": 1545,
@@ -59,8 +59,8 @@
     {
       "step_id": 6,
       "step_name": "Calculate RSI",
-      "last_run_start": "2025-12-06T08:38:38.970669",
-      "last_run_end": "2025-12-06T08:45:11.789406",
+      "last_run_start": "2025-12-08T18:29:12.325718",
+      "last_run_end": "2025-12-08T18:36:03.750093",
       "last_status": "completed",
       "symbols_processed": 2060,
       "symbols_total": 2060,
@@ -70,24 +70,24 @@
     {
       "step_id": 7,
       "step_name": "Calculate Rankings",
-      "last_run_start": "2025-12-06T08:45:11.836423",
-      "last_run_end": "2025-12-06T08:45:39.543669",
+      "last_run_start": "2025-12-08T18:36:03.789016",
+      "last_run_end": "2025-12-08T18:36:36.717528",
       "last_status": "completed",
       "symbols_processed": 484,
       "symbols_total": 515,
       "symbols_failed": [],
-      "error_message": "Rankings complete: 484/484 stocks ranked | Top 5: LTF.NS, BSE.NS, NAVINFLUOR.NS, FORCEMOT.NS, MUTHOOTFIN.NS"
+      "error_message": "Rankings complete: 484/484 stocks ranked | Top 5: FORCEMOT.NS, PTCIL.NS, BSE.NS, AUBANK.NS, ABCAPITAL.NS"
     },
     {
       "step_id": 8,
       "step_name": "Calculate Bollinger Bands",
-      "last_run_start": "2025-12-06T08:45:39.632218",
-      "last_run_end": "2025-12-06T08:46:23.348599",
+      "last_run_start": "2025-12-08T18:36:36.801389",
+      "last_run_end": "2025-12-08T18:37:14.904214",
       "last_status": "completed",
       "symbols_processed": 500,
       "symbols_total": 515,
       "symbols_failed": [],
-      "error_message": "BB computed: 499 stocks | Squeeze: 105 | Bulge: 26 | Uptrend: 75 | Downtrend: 235 | Time: 42.6s"
+      "error_message": "BB computed: 499 stocks | Squeeze: 90 | Bulge: 34 | Uptrend: 60 | Downtrend: 273 | Time: 36.5s"
     }
   ]
 }

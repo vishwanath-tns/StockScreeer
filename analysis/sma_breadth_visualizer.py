@@ -44,7 +44,7 @@ from analysis.sma_breadth_analysis import (
     get_engine, SMA_PERIODS, SMA_COLUMNS,
     load_breadth_data, get_nifty_index_data,
     detect_peaks_troughs, analyze_predictive_power,
-    run_full_calculation
+    run_full_calculation, calculate_missing_smas_incremental
 )
 
 # Configure PyQtGraph
@@ -421,17 +421,38 @@ class SMABreadthVisualizer(QMainWindow):
         self._load_data()
     
     def _recalculate_data(self):
-        """Recalculate breadth data."""
-        self.statusBar.showMessage("Recalculating... This may take a minute.")
+        """Recalculate breadth data for today only (incremental)."""
+        from datetime import datetime
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        self.statusBar.showMessage(f"Calculating missing SMAs for {today}...")
         QApplication.processEvents()
         
         try:
-            run_full_calculation(self.engine, 'NIFTY 500')
-            run_full_calculation(self.engine, 'NIFTY 50')
+            # Step 1: Calculate missing SMAs (10, 20, 100) for today
+            calculate_missing_smas_incremental(
+                self.engine, 
+                date_str=today,
+                progress_cb=lambda msg: (self.statusBar.showMessage(msg), QApplication.processEvents())
+            )
+            
+            # Step 2: Recalculate breadth for NIFTY 500 (skip SMA calc since we did it)
+            self.statusBar.showMessage("Recalculating NIFTY 500 breadth...")
+            QApplication.processEvents()
+            run_full_calculation(self.engine, 'NIFTY 500', calculate_smas=False)
+            
+            # Step 3: Recalculate breadth for NIFTY 50
+            self.statusBar.showMessage("Recalculating NIFTY 50 breadth...")
+            QApplication.processEvents()
+            run_full_calculation(self.engine, 'NIFTY 50', calculate_smas=False)
+            
+            # Step 4: Reload data
             self._load_data()
-            self.statusBar.showMessage("Recalculation complete!")
+            self.statusBar.showMessage(f"✅ Updated! Last data: {today}")
         except Exception as e:
             self.statusBar.showMessage(f"Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     # ========================================================================
     # Chart Updates

@@ -131,6 +131,10 @@ APPS = {
     
     "📊 SMA Breadth Analysis": [
         ("SMA Breadth Visualizer", "analysis/sma_breadth_visualizer.py", "Interactive % stocks above SMA (5,10,20,50,100,150,200) with peak/trough detection"),
+        ("Intraday SMA Breadth", "intraday_breadth/visualizer.py", "Nifty 50 intraday (5-min) % above SMA10/20/50/200 with live refresh"),
+        ("Sector SMA Analysis", "analysis/sector_sma_visualizer.py", "Sector rotation analysis - find leading/lagging sectors and stock picks"),
+        ("Swing Trade Scanner", "analysis/swing_trade_scanner_gui.py", "Find swing trade candidates (Long/Short) based on SMA analysis"),
+        ("Sector Analysis CLI", "analysis/sector_sma_analysis.py", "Command-line sector rotation and stock picker"),
         ("SMA Breadth Calculator", "analysis/sma_breadth_analysis.py", "Calculate and store % above SMA for Nifty 50/500"),
         ("Historical A/D Visualizer", "historical_ad_visualizer.py", "Historical Advance/Decline + % above SMA50/200 with NIFTY overlay"),
     ],
