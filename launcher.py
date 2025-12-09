@@ -93,6 +93,7 @@ APPS = {
     ],
     
     "📈 Charts & Analysis": [
+        ("Volume Profile Analyzer", "volume_profile/visualizer.py", "Daily volume profiles with VPOC, VAH, VAL from 1-min data"),
         ("Coppock Curve (PyQtGraph)", "analysis/coppock_curve_pyqt.py", "Long-term momentum indicator - High performance interactive charts"),
         ("Coppock Curve (Matplotlib)", "analysis/coppock_curve.py", "Long-term momentum indicator - Classic Tkinter/Matplotlib version"),
         ("Chart Tool", "charts/chart_tool.py", "Interactive stock charts"),
