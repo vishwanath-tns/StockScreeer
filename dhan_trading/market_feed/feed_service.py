@@ -523,6 +523,10 @@ class DhanFeedService:
                     if quote.security_id in self._oi_cache:
                         quote.open_interest = self._oi_cache[quote.security_id]
                     
+                    # Add prev_close if cached
+                    if quote.security_id in self._prev_close_cache:
+                        quote.prev_close = self._prev_close_cache[quote.security_id]
+                    
                     self._stats['quotes_received'] += 1
                     self._stats['last_tick_time'] = datetime.now()
                     self.redis.publish_quote(quote)

@@ -1,6 +1,6 @@
 # Today's Progress
 
-[View today's progress log →](DAILY_PROGRESS/2025-12-07_progress.md)
+[View today's progress log →](DAILY_PROGRESS/2025-12-10_progress.md)
 
 ---
 

@@ -134,6 +134,17 @@ class MarketFeedLauncher:
             })
             logger.info(f"  Commodity: {inst.get('display_name', inst['symbol'])} (expiry: {inst.get('expiry_date', 'N/A')})")
         
+        # Get Nifty 50 stocks (equity)
+        logger.info("Fetching Nifty 50 stocks...")
+        nifty50_stocks = selector.get_nifty50_stocks()
+        
+        for inst in nifty50_stocks:
+            instruments.append({
+                'security_id': inst['security_id'],
+                'exchange_segment': inst.get('exchange_segment', 'NSE_EQ')
+            })
+            logger.info(f"  Stock: {inst.get('symbol')} - {inst.get('display_name', '')}")
+        
         logger.info(f"Total instruments to subscribe: {len(instruments)}")
         return instruments
     

@@ -63,6 +63,7 @@ class QuoteData:
     day_high: float
     day_low: float
     open_interest: Optional[int] = None
+    prev_close: Optional[float] = None
     received_at: float = 0.0
     
     def to_dict(self) -> Dict:

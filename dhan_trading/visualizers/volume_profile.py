@@ -51,8 +51,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-# Market open time
-MARKET_OPEN_TIME = dt_time(9, 15)  # 9:15 AM IST
+# Market timing
+MARKET_OPEN_TIME = dt_time(9, 15)   # 9:15 AM IST (NSE equity market open)
+MARKET_CLOSE_TIME = dt_time(15, 30) # 3:30 PM IST (NSE equity market close)
 
 
 @dataclass
@@ -640,17 +641,94 @@ class VolumeProfileVisualizer(QMainWindow):
         self.status_bar.showMessage("📥 Loading historical data from database...")
         QApplication.processEvents()  # Update UI
         
-        today = date.today()
-        market_open = datetime.combine(today, MARKET_OPEN_TIME)
+        # Determine which date to load: today if market hours, else most recent trading day
+        target_date = self._get_target_trading_date()
+        market_open = datetime.combine(target_date, MARKET_OPEN_TIME)
+        
+        self.status_bar.showMessage(f"📥 Loading data for {target_date.strftime('%Y-%m-%d')}...")
+        QApplication.processEvents()
         
         for sec_id, profile in self.profiles.items():
-            self._load_historical_for_instrument(sec_id, profile, market_open)
+            self._load_historical_for_instrument(sec_id, profile, target_date, market_open)
         
-        self.status_bar.showMessage("✅ Historical data loaded. Starting real-time updates...")
+        self.status_bar.showMessage(f"✅ Loaded data for {target_date.strftime('%Y-%m-%d')}. Starting real-time updates...")
         self._update_display()
     
-    def _load_historical_for_instrument(self, security_id: int, profile: VolumeProfileData, 
-                                        market_open: datetime):
+    def _get_target_trading_date(self) -> date:
+        """
+        Get the target date for historical data loading.
+        - During market hours with significant data: use today
+        - Otherwise: use the most recent date with substantial data in the database
+        """
+        today = date.today()
+        now = datetime.now()
+        
+        # Check if we're in market hours
+        market_open_dt = datetime.combine(today, MARKET_OPEN_TIME)
+        market_close_dt = datetime.combine(today, MARKET_CLOSE_TIME)
+        in_market_hours = market_open_dt <= now <= market_close_dt
+        
+        # Check how much data we have for today (only data after market open counts)
+        try:
+            with self._db_engine.connect() as conn:
+                # Count only quotes from after market open today
+                result = conn.execute(text("""
+                    SELECT COUNT(*) FROM dhan_quotes 
+                    WHERE DATE(received_at) = CURDATE()
+                      AND TIME(received_at) >= :market_open
+                """), {"market_open": MARKET_OPEN_TIME})
+                today_market_count = result.scalar() or 0
+                
+                # If in market hours and significant market data exists, use today
+                if in_market_hours and today_market_count >= 100:
+                    logger.info(f"Using today's date (in market hours, {today_market_count} market quotes)")
+                    return today
+                
+                # If today has very significant data (>1000 quotes after market open), use today
+                if today_market_count > 1000:
+                    logger.info(f"Using today's date ({today_market_count} market quotes available)")
+                    return today
+                
+                # Otherwise, find the most recent date with substantial data
+                result = conn.execute(text("""
+                    SELECT DATE(received_at) as trade_date, COUNT(*) as cnt
+                    FROM dhan_quotes
+                    GROUP BY DATE(received_at)
+                    HAVING cnt >= 1000
+                    ORDER BY trade_date DESC
+                    LIMIT 1
+                """))
+                row = result.fetchone()
+                if row:
+                    recent_date = row[0]
+                    quote_count = row[1]
+                    logger.info(f"Using most recent data date: {recent_date} ({quote_count:,} quotes)")
+                    return recent_date
+                
+                # If no substantial data, try any data
+                result = conn.execute(text("""
+                    SELECT DATE(received_at) as trade_date
+                    FROM dhan_quotes
+                    GROUP BY DATE(received_at)
+                    ORDER BY trade_date DESC
+                    LIMIT 1
+                """))
+                row = result.fetchone()
+                if row:
+                    recent_date = row[0]
+                    logger.info(f"Using most recent data date (fallback): {recent_date}")
+                    return recent_date
+                
+                # Fallback to today
+                logger.info("No historical data found, using today")
+                return today
+                
+        except Exception as e:
+            logger.error(f"Error determining target date: {e}")
+            return today
+    
+    def _load_historical_for_instrument(self, security_id: int, profile: VolumeProfileData,
+                                        target_date: date, market_open: datetime):
         """Load historical quotes for a single instrument."""
         try:
             with self._db_engine.connect() as conn:
@@ -660,22 +738,22 @@ class VolumeProfileVisualizer(QMainWindow):
                     SELECT ltp, volume, received_at
                     FROM dhan_quotes
                     WHERE security_id = :sec_id
-                      AND DATE(received_at) = CURDATE()
+                      AND DATE(received_at) = :target_date
                       AND received_at >= :market_open
                     ORDER BY received_at ASC
-                """), {"sec_id": security_id, "market_open": market_open})
+                """), {"sec_id": security_id, "target_date": target_date, "market_open": market_open})
                 
                 rows = result.fetchall()
                 
-                # If no data from market open, try all today's data
+                # If no data from market open, try all data for target date
                 if not rows:
                     result = conn.execute(text("""
                         SELECT ltp, volume, received_at
                         FROM dhan_quotes
                         WHERE security_id = :sec_id
-                          AND DATE(received_at) = CURDATE()
+                          AND DATE(received_at) = :target_date
                         ORDER BY received_at ASC
-                    """), {"sec_id": security_id})
+                    """), {"sec_id": security_id, "target_date": target_date})
                     rows = result.fetchall()
                 
                 if rows:
@@ -691,7 +769,7 @@ class VolumeProfileVisualizer(QMainWindow):
                     
                     profile.finalize_historical_load()
                 else:
-                    logger.info(f"No historical data for {profile.symbol} today")
+                    logger.info(f"No historical data for {profile.symbol} on {target_date}")
                     profile.historical_loaded = True
                     
         except Exception as e:
@@ -750,6 +828,16 @@ class VolumeProfileVisualizer(QMainWindow):
                     profile.tick_size = 1.0  # Rs 1 bins for Copper
                 else:
                     profile.tick_size = 1.0  # Default Rs 1 bins
+                self.profiles[sec_id] = profile
+            
+            # Nifty 50 stocks
+            for inst in selector.get_nifty50_stocks():
+                sec_id = inst['security_id']
+                name = inst.get('display_name', inst['symbol'])
+                self.instrument_names[sec_id] = name
+                
+                profile = VolumeProfileData(security_id=sec_id, symbol=name)
+                profile.tick_size = 0.5  # Rs 0.50 bins for stocks
                 self.profiles[sec_id] = profile
             
             logger.info(f"Loaded {len(self.instrument_names)} instruments")

@@ -186,12 +186,12 @@ class DatabaseWriter:
                     exchange_segment, security_id, ltp, ltq, ltt, 
                     atp, volume, total_sell_qty, total_buy_qty,
                     day_open, day_close, day_high, day_low,
-                    open_interest
+                    open_interest, prev_close
                 ) VALUES (
                     :exchange_segment, :security_id, :ltp, :ltq, :ltt,
                     :atp, :volume, :total_sell_qty, :total_buy_qty,
                     :day_open, :day_close, :day_high, :day_low,
-                    :open_interest
+                    :open_interest, :prev_close
                 )
             """)
             
@@ -212,7 +212,8 @@ class DatabaseWriter:
                     'day_close': quote.day_close,
                     'day_high': quote.day_high,
                     'day_low': quote.day_low,
-                    'open_interest': quote.open_interest or 0
+                    'open_interest': quote.open_interest or 0,
+                    'prev_close': quote.prev_close
                 })
             
             # Execute batch

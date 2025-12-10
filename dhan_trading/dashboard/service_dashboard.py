@@ -528,6 +528,10 @@ class ServiceDashboard(QMainWindow):
             for inst in selector.get_major_commodity_futures(expiries=[0, 1]):
                 self._instrument_names[inst['security_id']] = inst.get('display_name', inst['symbol'])
             
+            # Get Nifty 50 stocks
+            for inst in selector.get_nifty50_stocks():
+                self._instrument_names[inst['security_id']] = inst.get('display_name', inst['symbol'])
+            
             logger.info(f"Loaded {len(self._instrument_names)} instrument names")
         except Exception as e:
             logger.error(f"Failed to load instrument names: {e}")

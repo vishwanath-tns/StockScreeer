@@ -332,6 +332,71 @@ class InstrumentSelector:
         
         return options
     
+    # Nifty 50 constituent symbols (as of Dec 2025)
+    NIFTY50_SYMBOLS = [
+        'ADANIENT', 'ADANIPORTS', 'APOLLOHOSP', 'ASIANPAINT', 'AXISBANK',
+        'BAJAJ-AUTO', 'BAJFINANCE', 'BAJAJFINSV', 'BEL', 'BPCL',
+        'BHARTIARTL', 'BRITANNIA', 'CIPLA', 'COALINDIA', 'DRREDDY',
+        'EICHERMOT', 'GRASIM', 'HCLTECH', 'HDFCBANK', 'HDFCLIFE',
+        'HEROMOTOCO', 'HINDALCO', 'HINDUNILVR', 'ICICIBANK', 'ITC',
+        'INDUSINDBK', 'INFY', 'JSWSTEEL', 'KOTAKBANK', 'LT',
+        'M&M', 'MARUTI', 'NTPC', 'NESTLEIND', 'ONGC',
+        'POWERGRID', 'RELIANCE', 'SBILIFE', 'SHRIRAMFIN', 'SBIN',
+        'SUNPHARMA', 'TCS', 'TATACONSUM', 'TATAMOTORS', 'TATASTEEL',
+        'TECHM', 'TITAN', 'TRENT', 'ULTRACEMCO', 'WIPRO'
+    ]
+    
+    def get_nifty50_stocks(self, series: str = "EQ") -> List[Dict]:
+        """
+        Get Nifty 50 constituent stocks from dhan_instruments.
+        
+        Args:
+            series: Stock series (default "EQ" for equity)
+            
+        Returns:
+            List of instrument dicts with security_id, symbol, etc.
+        """
+        # Build placeholders for IN clause
+        placeholders = ', '.join([f':sym{i}' for i in range(len(self.NIFTY50_SYMBOLS))])
+        
+        sql = text(f"""
+            SELECT 
+                security_id,
+                exchange_segment,
+                symbol,
+                display_name,
+                underlying_symbol,
+                isin,
+                instrument,
+                instrument_type,
+                series,
+                lot_size
+            FROM dhan_instruments
+            WHERE exchange_segment = 'NSE_EQ'
+              AND series = :series
+              AND underlying_symbol IN ({placeholders})
+            ORDER BY underlying_symbol
+        """)
+        
+        # Build params dict
+        params = {'series': series}
+        for i, sym in enumerate(self.NIFTY50_SYMBOLS):
+            params[f'sym{i}'] = sym
+        
+        with self.engine.connect() as conn:
+            result = conn.execute(sql, params)
+            stocks = [dict(row._mapping) for row in result.fetchall()]
+        
+        logger.info(f"Found {len(stocks)} Nifty 50 stocks in dhan_instruments")
+        
+        # Log any missing symbols
+        found_symbols = {s['underlying_symbol'] for s in stocks}
+        missing = set(self.NIFTY50_SYMBOLS) - found_symbols
+        if missing:
+            logger.warning(f"Missing Nifty 50 symbols in database: {missing}")
+        
+        return stocks
+
     def get_nifty500_stocks(self, series: str = "EQ") -> List[Dict]:
         """
         Get Nifty 500 constituent stocks.
