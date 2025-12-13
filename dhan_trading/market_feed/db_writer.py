@@ -17,6 +17,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from .redis_queue import RedisQueueManager, QuoteData
 from .tick_models import create_tick_tables
 from .feed_config import FeedConfig
+from ..db_setup import get_engine, DHAN_DB_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -378,15 +379,8 @@ if __name__ == "__main__":
     
     logging.basicConfig(level=logging.DEBUG)
     
-    # Database URL - URL-encode password for special characters
-    password = quote_plus(os.getenv('MYSQL_PASSWORD', ''))
-    db_url = (
-        f"mysql+pymysql://{os.getenv('MYSQL_USER', 'root')}:"
-        f"{password}@"
-        f"{os.getenv('MYSQL_HOST', 'localhost')}:"
-        f"{os.getenv('MYSQL_PORT', '3306')}/"
-        f"dhan_trading?charset=utf8mb4"
-    )
+    # Use centralized database configuration
+    engine = get_engine(DHAN_DB_NAME)
     
     # Create Redis manager and writer
     redis_manager = RedisQueueManager()

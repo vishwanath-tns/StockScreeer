@@ -36,6 +36,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from dhan_trading.dashboard.service_manager import (
     ServiceManager, ServiceStatus, ServiceInfo, get_service_manager
 )
+from dhan_trading.db_setup import get_engine, DHAN_DB_NAME
 
 logging.basicConfig(
     level=logging.INFO,
@@ -741,15 +742,11 @@ class ServiceDashboard(QMainWindow):
     def _update_db_stats(self):
         """Update database statistics display."""
         try:
-            from urllib.parse import quote_plus
-            from sqlalchemy import create_engine, text
+            from sqlalchemy import text
             from dotenv import load_dotenv
             load_dotenv()
             
-            password = quote_plus(os.environ.get('MYSQL_PASSWORD', ''))
-            db_url = f"mysql+pymysql://root:{password}@localhost:3306/dhan_trading"
-            
-            engine = create_engine(db_url)
+            engine = get_engine(DHAN_DB_NAME)
             with engine.connect() as conn:
                 # Get quote count
                 result = conn.execute(text("SELECT COUNT(*) FROM dhan_quotes"))

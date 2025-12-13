@@ -1,0 +1,328 @@
+================================================================================
+                  FNO FEED SERVICE - DEPLOYMENT INSTRUCTIONS
+                          December 11, 2025
+================================================================================
+
+DATABASE SETUP: ✅ COMPLETE
+  ✓ dhan_fno_quotes (27 columns, 0 rows - ready for data)
+  ✓ dhan_options_quotes (32 columns, 0 rows - ready for data)
+  ✓ dhan_fno_metadata (8 columns, 0 rows - for metadata)
+  ✓ dhan_fno_feed_log (15 columns, 0 rows - for event logging)
+
+================================================================================
+                        READY TO START FEED SERVICE
+================================================================================
+
+STEP 1: START FNO MARKET FEED
+─────────────────────────────
+
+In Terminal A (FNO Feed Publisher):
+
+    python launch_fno_feed.py --force
+
+What it does:
+  • Connects to Dhan WebSocket (FNO segment)
+  • Selects Nifty/BankNifty futures
+  • Selects Nifty/BankNifty options (20-strike spreads = 42 contracts each)
+  • Publishes quotes to Redis dhan:quotes channel
+  • Runs independently from spot feed
+
+Expected output:
+  ✅ Connected to Redis
+  ✅ Total FNO instruments to subscribe: ~130
+  ✅ Started receiving data...
+
+
+STEP 2: START FNO DATABASE WRITER
+──────────────────────────────────
+
+In Terminal B (FNO DB Writer Subscriber):
+
+    python -m dhan_trading.subscribers.fno_db_writer
+
+What it does:
+  • Subscribes to Redis dhan:quotes channel
+  • Filters quotes by exchange_segment (NSE_FNO, OPTIDX, OPTSTK)
+  • Batches quotes (default: 100 per batch)
+  • Writes to dhan_fno_quotes and dhan_options_quotes tables
+  • Shows real-time statistics
+
+Expected output:
+  🚀 FNO Database Writer Subscriber is RUNNING
+  ✅ Wrote 100 FNO quotes
+  ✅ Wrote 50 Options quotes
+  ... (continuous)
+
+
+STEP 3: MONITOR DATA FLOW
+──────────────────────────
+
+In Terminal C (Monitoring):
+
+  A. Watch database growth:
+     
+     python -c "import time; from dhan_trading.db_setup import get_engine; from sqlalchemy import text; engine = get_engine('dhan_trading'); 
+     while True: 
+         with engine.connect() as conn: 
+             fno = conn.execute(text('SELECT COUNT(*) FROM dhan_fno_quotes')).fetchone()[0]
+             opt = conn.execute(text('SELECT COUNT(*) FROM dhan_options_quotes')).fetchone()[0]
+             print(f'FNO: {fno:,} | Options: {opt:,}'); 
+         time.sleep(5)"
+
+  B. Watch Redis data:
+     
+     redis-cli MONITOR | grep dhan:quotes
+
+  C. Check for errors:
+     
+     Look at Terminal A and B for error messages
+
+
+STEP 4: VERIFY DATA WITH SQL QUERIES
+──────────────────────────────────────
+
+In MySQL client or terminal:
+
+    USE dhan_trading;
+    
+    -- Check FNO quotes count and latest timestamp
+    SELECT COUNT(*) as total_quotes, MAX(received_at) as latest 
+    FROM dhan_fno_quotes;
+    
+    -- Check Options quotes count and latest timestamp
+    SELECT COUNT(*) as total_options, MAX(received_at) as latest 
+    FROM dhan_options_quotes;
+    
+    -- See unique futures being tracked
+    SELECT DISTINCT underlying_symbol, COUNT(*) as quote_count
+    FROM dhan_fno_quotes
+    GROUP BY underlying_symbol;
+    
+    -- See option chains being tracked
+    SELECT DISTINCT underlying_symbol, COUNT(*) as contracts
+    FROM dhan_options_quotes
+    GROUP BY underlying_symbol;
+    
+    -- Check last 5 FNO quotes
+    SELECT security_id, symbol, ltp, volume, open_interest, received_at
+    FROM dhan_fno_quotes
+    ORDER BY received_at DESC LIMIT 5;
+    
+    -- Check last 5 options quotes
+    SELECT security_id, symbol, strike_price, option_type, ltp, open_interest, received_at
+    FROM dhan_options_quotes
+    ORDER BY received_at DESC LIMIT 5;
+
+================================================================================
+                        EXPECTED DATA FLOW
+================================================================================
+
+Timeline: Data should start appearing immediately upon startup
+
+Minute 0-1: FNO feed connects
+  • Terminal A: "Connected to Dhan WebSocket"
+  • Terminal A: "Total FNO instruments to subscribe: 130-150"
+  • Terminal A: "Started receiving data..."
+
+Minute 1-2: DB Writer connects and starts buffering
+  • Terminal B: "Connected to database"
+  • Terminal B: "FNO Database Writer Subscriber is RUNNING"
+
+Minute 2-5: First batch write
+  • Terminal B: "✅ Wrote 100+ FNO quotes (total: 100)"
+  • Terminal B: "✅ Wrote 50+ Options quotes (total: 50)"
+
+Continuous: Data accumulation
+  • Expected: 100-300 quotes/second total
+  • Expected: FNO and Options quotes written in batches every 1-5 seconds
+  • Database grows at ~100K quotes/hour during active hours
+
+================================================================================
+                        COMMAND-LINE OPTIONS
+================================================================================
+
+FNO Feed Options:
+
+  --force                   Run outside market hours
+  --mode QUOTE              Feed mode (default: QUOTE)
+  --no-futures              Skip futures (test options only)
+  --no-nifty-options        Skip Nifty options (test BankNifty only)
+  --no-banknifty-options    Skip BankNifty options (test Nifty only)
+  --include-commodities     Add MCX commodities (Gold, Crude, etc.)
+  --debug                   Enable debug logging
+
+Examples:
+
+  # Minimal setup (just futures)
+  python launch_fno_feed.py --force --no-nifty-options --no-banknifty-options
+
+  # Nifty options only
+  python launch_fno_feed.py --force --no-futures --no-banknifty-options
+
+  # Everything including commodities
+  python launch_fno_feed.py --force --include-commodities
+
+DB Writer Options:
+
+  --debug                   Enable debug logging
+  --batch-size 100          Batch size (default: 100)
+  --flush-interval 1.0      Flush every N seconds (default: 1.0)
+
+Examples:
+
+  # Debug mode
+  python -m dhan_trading.subscribers.fno_db_writer --debug
+
+  # Smaller batches for lower latency
+  python -m dhan_trading.subscribers.fno_db_writer --batch-size 50 --flush-interval 0.5
+
+  # Larger batches for fewer database writes
+  python -m dhan_trading.subscribers.fno_db_writer --batch-size 200
+
+================================================================================
+                        TROUBLESHOOTING
+================================================================================
+
+PROBLEM: "Connection refused" when starting FNO feed
+──────────────────────────────────────────────────
+Solution:
+  1. Check .env file has DHAN_CLIENT_ID and DHAN_ACCESS_TOKEN
+  2. Verify internet connection
+  3. Check if spot feed is running (usually runs first)
+  4. Wait 30 seconds and retry
+
+PROBLEM: "No instruments to subscribe" error
+─────────────────────────────────────────────
+Solution:
+  1. Check database has instruments:
+     SELECT COUNT(*) FROM dhan_instruments 
+     WHERE segment LIKE '%FNO%' OR instrument LIKE '%OPT%';
+  
+  2. If count is 0, download instruments:
+     python -m dhan_trading.market_feed.instrument_fetcher
+  
+  3. Retry FNO launcher
+
+PROBLEM: Database write errors / "Table doesn't exist"
+──────────────────────────────────────────────────────
+Solution:
+  1. Verify tables exist:
+     python verify_fno_tables.py
+  
+  2. If tables missing, recreate:
+     python -m dhan_trading.fno_schema
+  
+  3. Retry DB writer
+
+PROBLEM: No data arriving in database after 5 minutes
+──────────────────────────────────────────────────────
+Solution:
+  1. Check FNO feed is running (look at Terminal A)
+  2. Check for errors in Terminal A and B
+  3. Check Redis is receiving data:
+     redis-cli MONITOR | grep dhan:quotes
+  
+  4. Check DB writer is connected:
+     Look for "Connected to database" in Terminal B
+  
+  5. Verify exchange_segment filtering:
+     Check Terminal B debug output: "Buffered FNO quote"
+
+PROBLEM: High latency / Data arriving in large bursts
+──────────────────────────────────────────────────────
+Solution:
+  1. Reduce batch size:
+     python -m dhan_trading.subscribers.fno_db_writer --batch-size 50
+  
+  2. Reduce flush interval:
+     python -m dhan_trading.subscribers.fno_db_writer --flush-interval 0.5
+  
+  3. Check database load:
+     Look at MySQL connection count and slow query log
+
+================================================================================
+                        TESTING CHECKLIST
+================================================================================
+
+Use this checklist to verify everything is working:
+
+Setup:
+  [x] Database tables created (verify_fno_tables.py shows 4 tables)
+  [ ] Spot feed is running (check Market Breadth Chart or DB Writer terminal)
+
+Startup:
+  [ ] Terminal A: FNO feed started with "Total FNO instruments to subscribe: X"
+  [ ] Terminal B: DB Writer started with "FNO Database Writer is RUNNING"
+  [ ] No errors in either terminal
+
+Data Flow:
+  [ ] Terminal B shows "Wrote N FNO quotes" messages
+  [ ] Terminal B shows "Wrote M Options quotes" messages
+  [ ] Messages appear every 1-5 seconds
+
+Database:
+  [ ] dhan_fno_quotes row count > 0 and increasing
+  [ ] dhan_options_quotes row count > 0 and increasing
+  [ ] MAX(received_at) is recent (within last 10 seconds)
+
+Redis:
+  [ ] redis-cli MONITOR shows dhan:quotes messages
+  [ ] Messages appear at ~100-300/second
+
+Final:
+  [ ] No errors in any terminal
+  [ ] Data consistently flowing for 5+ minutes
+  [ ] Database growing at expected rate
+
+================================================================================
+                        NEXT STEPS
+================================================================================
+
+Once data is flowing and verified:
+
+1. Let the feed run for 5-10 minutes to accumulate data
+2. Create a summary of data collected:
+   - Number of FNO quotes
+   - Number of Options quotes
+   - Data rate (quotes/second)
+   - Coverage (which symbols/contracts)
+
+3. Create visualizations:
+   - FNO Dashboard showing live prices
+   - Options chain display
+   - Greeks calculator
+   - IV analysis
+
+4. Monitor for 1-2 hours to ensure stability
+
+5. Consider:
+   - Archive old data (>30 days) to separate tables
+   - Create partitions by date for faster queries
+   - Add more indexes if needed
+
+================================================================================
+                        DOCUMENTATION
+================================================================================
+
+For more information, see:
+
+• FNO_DEPLOYMENT_READY.txt - Complete deployment guide
+• FNO_QUICK_START.txt - Quick reference card
+• FNO_OPTIONS_SUMMARY.txt - Options implementation details
+• OPTIONS_IMPLEMENTATION.md - Technical reference
+• launch_fno_feed.py - Usage examples in docstring
+• dhan_trading/fno_schema.py - Database schema details
+• dhan_trading/subscribers/fno_db_writer.py - Implementation details
+
+================================================================================
+                        STATUS
+================================================================================
+
+✅ Database setup complete
+✅ FNO launcher ready
+✅ DB writer ready
+✅ Documentation complete
+
+NEXT ACTION: Run the 3 steps above to start collecting FNO & Options data
+
+================================================================================

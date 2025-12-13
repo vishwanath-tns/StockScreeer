@@ -22,15 +22,18 @@ import time
 from datetime import datetime, time as dt_time
 from typing import List, Dict, Optional
 
+# Add project root to path for direct execution
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-from .feed_config import FeedConfig, FeedMode, ExchangeSegment
-from .feed_service import DhanFeedService
-from .redis_publisher import RedisPublisher
-from .instrument_selector import InstrumentSelector
+from dhan_trading.market_feed.feed_config import FeedConfig, FeedMode, ExchangeSegment
+from dhan_trading.market_feed.feed_service import DhanFeedService
+from dhan_trading.market_feed.redis_publisher import RedisPublisher
+from dhan_trading.market_feed.instrument_selector import InstrumentSelector
 
 logger = logging.getLogger(__name__)
 

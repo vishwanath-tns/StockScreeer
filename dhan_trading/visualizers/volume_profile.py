@@ -46,6 +46,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from dhan_trading.market_feed.redis_subscriber import RedisSubscriber, CHANNEL_QUOTES
 from dhan_trading.market_feed.redis_publisher import QuoteData
 from dhan_trading.market_feed.instrument_selector import InstrumentSelector
+from dhan_trading.db_setup import get_engine, DHAN_DB_NAME
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -625,10 +626,8 @@ class VolumeProfileVisualizer(QMainWindow):
     def _init_database(self):
         """Initialize database connection."""
         try:
-            password = quote_plus(os.environ.get('MYSQL_PASSWORD', ''))
-            db_url = f"mysql+pymysql://root:{password}@localhost:3306/dhan_trading"
-            self._db_engine = create_engine(db_url, pool_pre_ping=True)
-            logger.info("Database connection initialized")
+            self._db_engine = get_engine(DHAN_DB_NAME)
+            logger.info(f"Database connection initialized to '{DHAN_DB_NAME}'")
         except Exception as e:
             logger.error(f"Failed to initialize database: {e}")
     
@@ -638,21 +637,15 @@ class VolumeProfileVisualizer(QMainWindow):
             logger.warning("No database connection, skipping historical load")
             return
         
-        self.status_bar.showMessage("📥 Loading historical data from database...")
-        QApplication.processEvents()  # Update UI
-        
         # Determine which date to load: today if market hours, else most recent trading day
         target_date = self._get_target_trading_date()
         market_open = datetime.combine(target_date, MARKET_OPEN_TIME)
         
-        self.status_bar.showMessage(f"📥 Loading data for {target_date.strftime('%Y-%m-%d')}...")
+        self.status_bar.showMessage(f"Loading data for {target_date.strftime('%Y-%m-%d')}...")
         QApplication.processEvents()
         
         for sec_id, profile in self.profiles.items():
             self._load_historical_for_instrument(sec_id, profile, target_date, market_open)
-        
-        self.status_bar.showMessage(f"✅ Loaded data for {target_date.strftime('%Y-%m-%d')}. Starting real-time updates...")
-        self._update_display()
     
     def _get_target_trading_date(self) -> date:
         """
@@ -691,9 +684,9 @@ class VolumeProfileVisualizer(QMainWindow):
                 
                 # Otherwise, find the most recent date with substantial data
                 result = conn.execute(text("""
-                    SELECT DATE(received_at) as trade_date, COUNT(*) as cnt
-                    FROM dhan_quotes
-                    GROUP BY DATE(received_at)
+                    SELECT DATE(quote_time) as trade_date, COUNT(*) as cnt
+                    FROM dhan_fno_quotes
+                    GROUP BY DATE(quote_time)
                     HAVING cnt >= 1000
                     ORDER BY trade_date DESC
                     LIMIT 1
@@ -707,9 +700,9 @@ class VolumeProfileVisualizer(QMainWindow):
                 
                 # If no substantial data, try any data
                 result = conn.execute(text("""
-                    SELECT DATE(received_at) as trade_date
-                    FROM dhan_quotes
-                    GROUP BY DATE(received_at)
+                    SELECT DATE(quote_time) as trade_date
+                    FROM dhan_fno_quotes
+                    GROUP BY DATE(quote_time)
                     ORDER BY trade_date DESC
                     LIMIT 1
                 """))
@@ -735,12 +728,12 @@ class VolumeProfileVisualizer(QMainWindow):
                 # First, try to get data from market open (9:15 AM)
                 # If not available, get all data from today
                 result = conn.execute(text("""
-                    SELECT ltp, volume, received_at
-                    FROM dhan_quotes
+                    SELECT ltp, volume, quote_time
+                    FROM dhan_fno_quotes
                     WHERE security_id = :sec_id
-                      AND DATE(received_at) = :target_date
-                      AND received_at >= :market_open
-                    ORDER BY received_at ASC
+                      AND DATE(quote_time) = :target_date
+                      AND quote_time >= :market_open
+                    ORDER BY quote_time ASC
                 """), {"sec_id": security_id, "target_date": target_date, "market_open": market_open})
                 
                 rows = result.fetchall()

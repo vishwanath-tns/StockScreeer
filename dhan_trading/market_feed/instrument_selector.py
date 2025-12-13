@@ -251,6 +251,626 @@ class InstrumentSelector:
         
         return selected
     
+    def _get_atm_strike(self, underlying_symbol: str, strike_interval: int = 100) -> Optional[float]:
+        """
+        Get ATM (At-The-Money) strike price for an underlying.
+        
+        Uses the current month futures LTP to determine ATM strike.
+        This is more reliable than index LTP since futures are always being quoted.
+        
+        Args:
+            underlying_symbol: e.g., "NIFTY", "BANKNIFTY", or stock symbol
+            strike_interval: Round to nearest interval (100 for indices, 50 for NIFTY weekly)
+        
+        Returns:
+            ATM strike price, or None if current price not available
+        """
+        try:
+            today = date.today()
+            
+            # First, try to get current month futures security_id
+            # This is more reliable than getting index quotes
+            sql_get_futures = text("""
+                SELECT security_id, symbol, expiry_date
+                FROM dhan_instruments 
+                WHERE underlying_symbol = :underlying
+                  AND instrument = 'FUTIDX'
+                  AND expiry_date >= :today
+                ORDER BY expiry_date
+                LIMIT 1
+            """)
+            
+            with self.engine.connect() as conn:
+                result = conn.execute(sql_get_futures, {
+                    'underlying': underlying_symbol,
+                    'today': today
+                })
+                row = result.fetchone()
+                
+            if not row:
+                logger.warning(f"No futures found for {underlying_symbol}")
+                return None
+            
+            security_id = row[0]
+            symbol = row[1]
+            logger.debug(f"Using futures {symbol} (ID: {security_id}) for ATM calculation")
+            
+            # Now get the latest LTP for the futures from dhan_quotes
+            sql_get_ltp = text("""
+                SELECT ltp FROM dhan_quotes 
+                WHERE security_id = :security_id
+                ORDER BY received_at DESC
+                LIMIT 1
+            """)
+            
+            with self.engine.connect() as conn:
+                result = conn.execute(sql_get_ltp, {'security_id': security_id})
+                row = result.fetchone()
+                
+            if row and row[0]:
+                spot_price = float(row[0])
+                atm_strike = round(spot_price / strike_interval) * strike_interval
+                logger.info(f"ATM for {underlying_symbol}: futures_ltp={spot_price:.2f}, ATM_strike={atm_strike}")
+                return atm_strike
+            else:
+                logger.warning(f"No quote data found for futures {symbol} (ID: {security_id})")
+                return None
+        except Exception as e:
+            logger.error(f"Error calculating ATM strike for {underlying_symbol}: {e}")
+            return None
+    
+    def get_nifty_options(self, 
+                         strike_offset_levels: int = 20,
+                         expiries: List[int] = [0],
+                         option_types: List[str] = ['CE', 'PE'],
+                         atm_strike: Optional[float] = None) -> List[Dict]:
+        """
+        Get Nifty options around ATM with specified strike offset.
+        
+        Note: NIFTY options use 100-point strike intervals.
+        For strike_offset_levels=20, gets 20 strikes above and below ATM.
+        Example: ATM=25000, offset=20 -> strikes 24800 to 25200 (41 strikes total with ATM)
+        
+        Args:
+            strike_offset_levels: Number of 100-point levels above/below ATM (default 20)
+            expiries: List of expiry indices (0=current, 1=next)
+            option_types: List of option types ('CE', 'PE', or both)
+            atm_strike: Optional explicit ATM strike. If None, tries to fetch from quotes table
+        
+        Returns:
+            List of option instrument dicts with security_id, symbol, strike_price, etc.
+        """
+        # Use FINNIFTY as fallback since NIFTY options might not be available
+        # In production, check if NIFTY options exist, else use FINNIFTY
+        underlying = "FINNIFTY"  # or "NIFTY" if available in your database
+        
+        # Get ATM strike if not provided
+        if atm_strike is None:
+            calculated_atm = self._get_atm_strike(underlying, strike_interval=100)
+            if calculated_atm is None:
+                # Use default around current market levels if no quote data
+                logger.info(f"No ATM data available for {underlying}, using reasonable defaults")
+                # For FINNIFTY, typical range is 20000-25000
+                atm_strike = 22000  # Default fallback
+            else:
+                atm_strike = calculated_atm
+        
+        # Calculate strike range
+        strike_interval = 100  # Nifty index options use 100-point spreads
+        min_strike = atm_strike - (strike_offset_levels * strike_interval)
+        max_strike = atm_strike + (strike_offset_levels * strike_interval)
+        
+        today = date.today()
+        
+        # Get expiry dates
+        expiry_sql = text("""
+            SELECT DISTINCT expiry_date 
+            FROM dhan_instruments
+            WHERE underlying_symbol = :underlying
+              AND instrument = 'OPTIDX'
+              AND expiry_date >= :today
+            ORDER BY expiry_date
+        """)
+        
+        with self.engine.connect() as conn:
+            result = conn.execute(expiry_sql, {
+                'underlying': underlying,
+                'today': today
+            })
+            available_expiries = [row[0] for row in result.fetchall()]
+        
+        # Collect options for requested expiry indices
+        all_options = []
+        
+        for expiry_idx in expiries:
+            if expiry_idx >= len(available_expiries):
+                logger.warning(f"Expiry index {expiry_idx} not available for {underlying}")
+                continue
+            
+            target_expiry = available_expiries[expiry_idx]
+            
+            # Get options around ATM for this expiry
+            opt_sql = text("""
+                SELECT 
+                    security_id,
+                    exchange_segment,
+                    symbol,
+                    display_name,
+                    instrument,
+                    instrument_type,
+                    lot_size,
+                    expiry_date,
+                    strike_price,
+                    option_type,
+                    underlying_security_id,
+                    underlying_symbol
+                FROM dhan_instruments
+                WHERE underlying_symbol = :underlying
+                  AND instrument = 'OPTIDX'
+                  AND expiry_date = :expiry
+                  AND strike_price >= :min_strike
+                  AND strike_price <= :max_strike
+                  AND option_type IN ({})
+                ORDER BY strike_price, option_type
+            """.format(', '.join([f"'{ot}'" for ot in option_types])))
+            
+            with self.engine.connect() as conn:
+                result = conn.execute(opt_sql, {
+                    'underlying': underlying,
+                    'expiry': target_expiry,
+                    'min_strike': min_strike,
+                    'max_strike': max_strike
+                })
+                
+                expiry_options = [dict(row._mapping) for row in result.fetchall()]
+                all_options.extend(expiry_options)
+        
+        logger.info(f"Selected {len(all_options)} {underlying} options (ATM={atm_strike}, "
+                   f"offset={strike_offset_levels}, range={min_strike}-{max_strike})")
+        
+        return all_options
+    
+    def get_banknifty_options(self, 
+                             strike_offset_levels: int = 20,
+                             expiries: List[int] = [0],
+                             option_types: List[str] = ['CE', 'PE'],
+                             atm_strike: Optional[float] = None) -> List[Dict]:
+        """
+        Get BankNifty options around ATM with specified strike offset.
+        
+        Note: BankNifty options use 100-point strike intervals.
+        For strike_offset_levels=20, gets 20 strikes above and below ATM.
+        
+        Args:
+            strike_offset_levels: Number of 100-point levels above/below ATM (default 20)
+            expiries: List of expiry indices (0=current, 1=next)
+            option_types: List of option types ('CE', 'PE', or both)
+            atm_strike: Optional explicit ATM strike. If None, tries to fetch from quotes table
+        
+        Returns:
+            List of option instrument dicts with security_id, symbol, strike_price, etc.
+        """
+        underlying = "BANKNIFTY"
+        
+        # Get ATM strike if not provided
+        if atm_strike is None:
+            calculated_atm = self._get_atm_strike(underlying, strike_interval=100)
+            if calculated_atm is None:
+                # Use default around current market levels if no quote data
+                logger.info(f"No ATM data available for {underlying}, using reasonable defaults")
+                # For BankNifty, typical range is 45000-50000
+                atm_strike = 47500  # Default fallback
+            else:
+                atm_strike = calculated_atm
+        
+        # Calculate strike range
+        strike_interval = 100  # BankNifty options use 100-point spreads
+        min_strike = atm_strike - (strike_offset_levels * strike_interval)
+        max_strike = atm_strike + (strike_offset_levels * strike_interval)
+        
+        today = date.today()
+        
+        # Get expiry dates
+        expiry_sql = text("""
+            SELECT DISTINCT expiry_date 
+            FROM dhan_instruments
+            WHERE underlying_symbol = :underlying
+              AND instrument = 'OPTIDX'
+              AND expiry_date >= :today
+            ORDER BY expiry_date
+        """)
+        
+        with self.engine.connect() as conn:
+            result = conn.execute(expiry_sql, {
+                'underlying': underlying,
+                'today': today
+            })
+            available_expiries = [row[0] for row in result.fetchall()]
+        
+        # Collect options for requested expiry indices
+        all_options = []
+        
+        for expiry_idx in expiries:
+            if expiry_idx >= len(available_expiries):
+                logger.warning(f"Expiry index {expiry_idx} not available for {underlying}")
+                continue
+            
+            target_expiry = available_expiries[expiry_idx]
+            
+            # Get options around ATM for this expiry
+            opt_sql = text("""
+                SELECT 
+                    security_id,
+                    exchange_segment,
+                    symbol,
+                    display_name,
+                    instrument,
+                    instrument_type,
+                    lot_size,
+                    expiry_date,
+                    strike_price,
+                    option_type,
+                    underlying_security_id,
+                    underlying_symbol
+                FROM dhan_instruments
+                WHERE underlying_symbol = :underlying
+                  AND instrument = 'OPTIDX'
+                  AND expiry_date = :expiry
+                  AND strike_price >= :min_strike
+                  AND strike_price <= :max_strike
+                  AND option_type IN ({})
+                ORDER BY strike_price, option_type
+            """.format(', '.join([f"'{ot}'" for ot in option_types])))
+            
+            with self.engine.connect() as conn:
+                result = conn.execute(opt_sql, {
+                    'underlying': underlying,
+                    'expiry': target_expiry,
+                    'min_strike': min_strike,
+                    'max_strike': max_strike
+                })
+                
+                expiry_options = [dict(row._mapping) for row in result.fetchall()]
+                all_options.extend(expiry_options)
+        
+        logger.info(f"Selected {len(all_options)} {underlying} options (ATM={atm_strike}, "
+                   f"offset={strike_offset_levels}, range={min_strike}-{max_strike})")
+        
+        return all_options
+    
+    def get_nifty_weekly_options(self,
+                                 strike_offset_levels: int = 10,
+                                 option_types: List[str] = ['CE', 'PE'],
+                                 atm_strike: Optional[float] = None) -> List[Dict]:
+        """
+        Get NIFTY (actual NIFTY index, not FINNIFTY) weekly expiry options.
+        Weekly options expire every Tuesday in NSE.
+        
+        Args:
+            strike_offset_levels: Number of 100-point levels above/below ATM (default 10)
+            option_types: List of option types ('CE', 'PE', or both)
+            atm_strike: Optional explicit ATM strike. If None, tries to fetch from quotes table
+        
+        Returns:
+            List of option instrument dicts with security_id, symbol, strike_price, etc.
+        """
+        underlying = "NIFTY"
+        
+        # Get ATM strike if not provided
+        # Use 50-point interval for NIFTY weekly options
+        if atm_strike is None:
+            calculated_atm = self._get_atm_strike(underlying, strike_interval=50)
+            if calculated_atm is None:
+                logger.info(f"No ATM data available for {underlying}, using reasonable defaults")
+                # For NIFTY, typical range is 24000-26000
+                atm_strike = 25000  # Default fallback
+            else:
+                atm_strike = calculated_atm
+        
+        # Calculate strike range
+        strike_interval = 50  # NIFTY weekly options use 50-point spreads
+        min_strike = atm_strike - (strike_offset_levels * strike_interval)
+        max_strike = atm_strike + (strike_offset_levels * strike_interval)
+        
+        today = date.today()
+        
+        # Get next Tuesday (for weekly expiry in NSE)
+        # NIFTY weekly options expire every Tuesday
+        days_until_tuesday = (1 - today.weekday()) % 7
+        if days_until_tuesday == 0:
+            days_until_tuesday = 7  # If today is Tuesday, get next Tuesday
+        next_tuesday = today + timedelta(days=days_until_tuesday)
+        
+        logger.info(f"Getting NIFTY weekly options expiring on {next_tuesday} (Tuesday)")
+        
+        # Get options around ATM for weekly expiry
+        opt_sql = text("""
+            SELECT 
+                security_id,
+                exchange_segment,
+                symbol,
+                display_name,
+                instrument,
+                instrument_type,
+                lot_size,
+                expiry_date,
+                strike_price,
+                option_type,
+                underlying_security_id,
+                underlying_symbol
+            FROM dhan_instruments
+            WHERE underlying_symbol = :underlying
+              AND instrument = 'OPTIDX'
+              AND expiry_date = :expiry
+              AND strike_price >= :min_strike
+              AND strike_price <= :max_strike
+              AND option_type IN ({})
+            ORDER BY strike_price, option_type
+        """.format(', '.join([f"'{ot}'" for ot in option_types])))
+        
+        with self.engine.connect() as conn:
+            result = conn.execute(opt_sql, {
+                'underlying': underlying,
+                'expiry': next_tuesday,
+                'min_strike': min_strike,
+                'max_strike': max_strike
+            })
+            
+            all_options = [dict(row._mapping) for row in result.fetchall()]
+        
+        logger.info(f"Selected {len(all_options)} {underlying} weekly options "
+                   f"(Expiry: {next_tuesday}, ATM={atm_strike}, "
+                   f"offset={strike_offset_levels}, range={min_strike}-{max_strike})")
+        
+        return all_options
+    
+    def get_banknifty_weekly_options(self,
+                                     strike_offset_levels: int = 10,
+                                     option_types: List[str] = ['CE', 'PE'],
+                                     atm_strike: Optional[float] = None) -> List[Dict]:
+        """
+        Get BANKNIFTY weekly/nearest expiry options.
+        Note: BANKNIFTY may not have weekly options every Tuesday. This gets the nearest available expiry.
+        
+        Args:
+            strike_offset_levels: Number of 100-point levels above/below ATM (default 10)
+            option_types: List of option types ('CE', 'PE', or both)
+            atm_strike: Optional explicit ATM strike. If None, tries to fetch from quotes table
+        
+        Returns:
+            List of option instrument dicts with security_id, symbol, strike_price, etc.
+        """
+        underlying = "BANKNIFTY"
+        
+        # Get ATM strike if not provided
+        if atm_strike is None:
+            calculated_atm = self._get_atm_strike(underlying, strike_interval=100)
+            if calculated_atm is None:
+                logger.info(f"No ATM data available for {underlying}, using reasonable defaults")
+                # For BankNifty, typical range is 45000-50000
+                atm_strike = 47500  # Default fallback
+            else:
+                atm_strike = calculated_atm
+        
+        # Calculate strike range
+        strike_interval = 100  # BankNifty options use 100-point spreads
+        min_strike = atm_strike - (strike_offset_levels * strike_interval)
+        max_strike = atm_strike + (strike_offset_levels * strike_interval)
+        
+        today = date.today()
+        
+        # Get nearest available expiry for BANKNIFTY
+        # First, check what expiries are available
+        expiry_sql = text("""
+            SELECT MIN(expiry_date) as nearest_expiry
+            FROM dhan_instruments
+            WHERE underlying_symbol = :underlying
+              AND instrument = 'OPTIDX'
+              AND expiry_date >= :today
+        """)
+        
+        nearest_expiry = None
+        with self.engine.connect() as conn:
+            result = conn.execute(expiry_sql, {
+                'underlying': underlying,
+                'today': today
+            })
+            row = result.fetchone()
+            if row and row[0]:
+                nearest_expiry = row[0]
+        
+        if nearest_expiry is None:
+            logger.warning(f"No {underlying} options found for future expiries. Using next Tuesday.")
+            days_until_tuesday = (1 - today.weekday()) % 7
+            if days_until_tuesday == 0:
+                days_until_tuesday = 7
+            nearest_expiry = today + timedelta(days=days_until_tuesday)
+        
+        logger.info(f"Getting BANKNIFTY options expiring on {nearest_expiry}")
+        
+        # Get options around ATM for weekly expiry
+        opt_sql = text("""
+            SELECT 
+                security_id,
+                exchange_segment,
+                symbol,
+                display_name,
+                instrument,
+                instrument_type,
+                lot_size,
+                expiry_date,
+                strike_price,
+                option_type,
+                underlying_security_id,
+                underlying_symbol
+            FROM dhan_instruments
+            WHERE underlying_symbol = :underlying
+              AND instrument = 'OPTIDX'
+              AND expiry_date = :expiry
+              AND strike_price >= :min_strike
+              AND strike_price <= :max_strike
+              AND option_type IN ({})
+            ORDER BY strike_price, option_type
+        """.format(', '.join([f"'{ot}'" for ot in option_types])))
+        
+        with self.engine.connect() as conn:
+            result = conn.execute(opt_sql, {
+                'underlying': underlying,
+                'expiry': nearest_expiry,
+                'min_strike': min_strike,
+                'max_strike': max_strike
+            })
+            
+            all_options = [dict(row._mapping) for row in result.fetchall()]
+        
+        logger.info(f"Selected {len(all_options)} {underlying} options "
+                   f"(Expiry: {nearest_expiry}, ATM={atm_strike}, "
+                   f"offset={strike_offset_levels}, range={min_strike}-{max_strike})")
+        
+        return all_options
+    
+    def get_stock_options(self, 
+                         symbols: List[str],
+                         strike_offset_levels: int = 5,
+                         expiries: List[int] = [0, 1],
+                         option_types: List[str] = ['CE', 'PE'],
+                         atm_strikes: Optional[Dict[str, float]] = None) -> List[Dict]:
+        """
+        Get options for specified stocks across current and next month.
+        
+        Note: Stock options use variable strike intervals (typically 5-50 points depending on price).
+        For strike_offset_levels=5, gets 5 strikes above and below ATM.
+        
+        Args:
+            symbols: List of stock symbols (e.g., ['HINDUNILVR', 'TCS', 'INFY'])
+            strike_offset_levels: Number of strikes above/below ATM (default 5)
+            expiries: List of expiry indices (0=current, 1=next, etc.)
+            option_types: List of option types ('CE', 'PE', or both)
+            atm_strikes: Optional dict mapping symbols to explicit ATM strikes.
+                        If None or missing for a symbol, uses reasonable defaults based on symbol.
+        
+        Returns:
+            List of option instrument dicts with security_id, symbol, strike_price, etc.
+        """
+        today = date.today()
+        all_options = []
+        
+        if atm_strikes is None:
+            atm_strikes = {}
+        
+        for symbol in symbols:
+            try:
+                # Get ATM for this stock or use provided value
+                if symbol in atm_strikes:
+                    atm_strike = atm_strikes[symbol]
+                    logger.debug(f"Using provided ATM for {symbol}: {atm_strike}")
+                else:
+                    atm_calc = self._get_atm_strike(symbol, strike_interval=5)
+                    if atm_calc:
+                        atm_strike = atm_calc
+                    else:
+                        # Use reasonable default based on typical stock prices
+                        # This is a fallback - in production you'd want real quote data
+                        logger.debug(f"No ATM data for {symbol}, using default spacing")
+                        # Query database for a rough idea of strike prices available
+                        sql_check = text("""
+                            SELECT AVG(strike_price) FROM dhan_instruments
+                            WHERE underlying_symbol = :symbol AND instrument = 'OPTSTK'
+                            LIMIT 1
+                        """)
+                        with self.engine.connect() as conn:
+                            result = conn.execute(sql_check, {'symbol': symbol})
+                            row = result.fetchone()
+                            if row and row[0]:
+                                atm_strike = float(row[0])
+                            else:
+                                logger.debug(f"Skipping {symbol}: no option data available")
+                                continue
+                
+                # Determine strike interval based on price level
+                # Common NSE practice: 5 below 100, 10 below 500, 20 below 5000, 50+ above
+                if atm_strike < 100:
+                    strike_interval = 5
+                elif atm_strike < 500:
+                    strike_interval = 10
+                elif atm_strike < 5000:
+                    strike_interval = 20
+                else:
+                    strike_interval = 50
+                
+                min_strike = atm_strike - (strike_offset_levels * strike_interval)
+                max_strike = atm_strike + (strike_offset_levels * strike_interval)
+                
+                # Get available expiries for this stock
+                expiry_sql = text("""
+                    SELECT DISTINCT expiry_date 
+                    FROM dhan_instruments
+                    WHERE underlying_symbol = :underlying
+                      AND instrument = 'OPTSTK'
+                      AND expiry_date >= :today
+                    ORDER BY expiry_date
+                """)
+                
+                with self.engine.connect() as conn:
+                    result = conn.execute(expiry_sql, {
+                        'underlying': symbol,
+                        'today': today
+                    })
+                    available_expiries = [row[0] for row in result.fetchall()]
+                
+                # Collect options for requested expiry indices
+                for expiry_idx in expiries:
+                    if expiry_idx >= len(available_expiries):
+                        continue
+                    
+                    target_expiry = available_expiries[expiry_idx]
+                    
+                    # Get options around ATM
+                    opt_sql = text("""
+                        SELECT 
+                            security_id,
+                            exchange_segment,
+                            symbol,
+                            display_name,
+                            instrument,
+                            instrument_type,
+                            lot_size,
+                            expiry_date,
+                            strike_price,
+                            option_type,
+                            underlying_security_id,
+                            underlying_symbol
+                        FROM dhan_instruments
+                        WHERE underlying_symbol = :underlying
+                          AND instrument = 'OPTSTK'
+                          AND expiry_date = :expiry
+                          AND strike_price >= :min_strike
+                          AND strike_price <= :max_strike
+                          AND option_type IN ({})
+                        ORDER BY strike_price, option_type
+                    """.format(', '.join([f"'{ot}'" for ot in option_types])))
+                    
+                    with self.engine.connect() as conn:
+                        result = conn.execute(opt_sql, {
+                            'underlying': symbol,
+                            'expiry': target_expiry,
+                            'min_strike': min_strike,
+                            'max_strike': max_strike
+                        })
+                        
+                        expiry_options = [dict(row._mapping) for row in result.fetchall()]
+                        all_options.extend(expiry_options)
+                
+                logger.debug(f"Collected options for {symbol} (ATM={atm_strike})")
+            
+            except Exception as e:
+                logger.error(f"Error processing stock options for {symbol}: {e}")
+                continue
+        
+        logger.info(f"Selected {len(all_options)} options for {len(symbols)} stocks")
+        
+        return all_options
+    
     def get_index_options(self, underlying_symbol: str,
                          expiry_index: int = 0,
                          option_type: Optional[str] = None,
@@ -334,15 +954,15 @@ class InstrumentSelector:
     
     # Nifty 50 constituent symbols (as of Dec 2025)
     NIFTY50_SYMBOLS = [
-        'ADANIENT', 'ADANIPORTS', 'APOLLOHOSP', 'ASIANPAINT', 'AXISBANK',
+        'ADANIPORTS', 'APOLLOHOSP', 'ASIANPAINT', 'AXISBANK',
         'BAJAJ-AUTO', 'BAJFINANCE', 'BAJAJFINSV', 'BEL', 'BPCL',
         'BHARTIARTL', 'BRITANNIA', 'CIPLA', 'COALINDIA', 'DRREDDY',
-        'EICHERMOT', 'GRASIM', 'HCLTECH', 'HDFCBANK', 'HDFCLIFE',
+        'EICHERMOT', 'GRASIM', 'HCLTECH', 'HDFCBANK',
         'HEROMOTOCO', 'HINDALCO', 'HINDUNILVR', 'ICICIBANK', 'ITC',
         'INDUSINDBK', 'INFY', 'JSWSTEEL', 'KOTAKBANK', 'LT',
         'M&M', 'MARUTI', 'NTPC', 'NESTLEIND', 'ONGC',
         'POWERGRID', 'RELIANCE', 'SBILIFE', 'SHRIRAMFIN', 'SBIN',
-        'SUNPHARMA', 'TCS', 'TATACONSUM', 'TATAMOTORS', 'TATASTEEL',
+        'SUNPHARMA', 'TCS', 'TATACONSUM', 'TMPV', 'TATASTEEL',
         'TECHM', 'TITAN', 'TRENT', 'ULTRACEMCO', 'WIPRO'
     ]
     

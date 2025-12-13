@@ -84,6 +84,8 @@ APPS = {
         ("Momentum Scanner (CLI)", "scanners/nifty500_momentum_scanner.py", "Momentum-based stock scanner (NSE BHAV)"),
         ("RSI Divergences", "scanners/rsi_divergences.py", "RSI divergence scanner"),
         ("RSI Fractals", "scanners/rsi_fractals.py", "RSI fractal scanner"),
+        ("RSI Overbought/Oversold (GUI)", "rsi_overbought_oversold_gui.py", "Interactive RSI >= 80 / <= 20 analyzer for NIFTY & NIFTY 500"),
+        ("RSI Overbought/Oversold (CLI)", "rsi_overbought_oversold_analyzer.py", "Command-line RSI analysis with CSV export"),
         ("52-Week Scanner", "scanners/week52_v2.py", "52-week high/low scanner"),
         ("Volatility Screener", "scanners/volatility_trading_screener.py", "Volatility trading scanner"),
         ("Minervini Screener", "scanners/minervini_screener.py", "Mark Minervini criteria scanner"),

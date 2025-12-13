@@ -807,26 +807,49 @@ class VolumeProfileChartWindow(QMainWindow):
     
     def _load_instruments(self):
         """Load available instruments."""
-        with self.engine.connect() as conn:
-            result = conn.execute(text("""
-                SELECT q.security_id, i.symbol, i.display_name, COUNT(*) as cnt
-                FROM dhan_quotes q
-                LEFT JOIN dhan_instruments i ON q.security_id = i.security_id
-                WHERE DATE(q.received_at) = CURDATE()
-                GROUP BY q.security_id, i.symbol, i.display_name
-                HAVING cnt >= 100
-                ORDER BY cnt DESC
-                LIMIT 50
-            """))
-            
-            for row in result.fetchall():
-                sec_id = row[0]
-                self.instruments[sec_id] = {
-                    'security_id': sec_id,
-                    'symbol': row[1] or f'ID:{sec_id}',
-                    'display_name': row[2] or row[1] or f'ID:{sec_id}',
-                    'quote_count': row[3]
-                }
+        try:
+            with self.engine.connect() as conn:
+                # First try: Get instruments with quotes TODAY (any amount)
+                result = conn.execute(text("""
+                    SELECT q.security_id, i.symbol, i.display_name, COUNT(*) as cnt
+                    FROM dhan_quotes q
+                    LEFT JOIN dhan_instruments i ON q.security_id = i.security_id
+                    WHERE DATE(q.received_at) = CURDATE()
+                    GROUP BY q.security_id, i.symbol, i.display_name
+                    ORDER BY cnt DESC
+                    LIMIT 100
+                """))
+                
+                for row in result.fetchall():
+                    sec_id = row[0]
+                    self.instruments[sec_id] = {
+                        'security_id': sec_id,
+                        'symbol': row[1] or f'ID:{sec_id}',
+                        'display_name': row[2] or row[1] or f'ID:{sec_id}',
+                        'quote_count': row[3]
+                    }
+                
+                # If no quotes found, load from dhan_instruments directly for testing
+                if not self.instruments:
+                    logger.info("No quotes found for today, loading from dhan_instruments...")
+                    result = conn.execute(text("""
+                        SELECT security_id, symbol, display_name
+                        FROM dhan_instruments
+                        WHERE segment = 'NSE_FNO' OR segment = 'MCX_COMM'
+                        LIMIT 50
+                    """))
+                    
+                    for row in result.fetchall():
+                        sec_id = row[0]
+                        self.instruments[sec_id] = {
+                            'security_id': sec_id,
+                            'symbol': row[1] or f'ID:{sec_id}',
+                            'display_name': row[2] or row[1] or f'ID:{sec_id}',
+                            'quote_count': 0
+                        }
+                
+        except Exception as e:
+            logger.error(f"Error loading instruments: {e}")
         
         logger.info(f"Loaded {len(self.instruments)} instruments")
     
@@ -1157,10 +1180,15 @@ class VolumeProfileChartWindow(QMainWindow):
                 actual_tick_size = self.builder.tick_size
                 tick_mode = "auto" if self.auto_tick_cb.isChecked() else "manual"
                 
-                self.status_bar.showMessage(
-                    f"Loaded {tick_count:,} ticks → {len(profiles)} profiles "
-                    f"({interval} min interval, {actual_tick_size:.2f} pts bin [{tick_mode}])"
-                )
+                if tick_count > 0:
+                    self.status_bar.showMessage(
+                        f"Loaded {tick_count:,} ticks → {len(profiles)} profiles "
+                        f"({interval} min interval, {actual_tick_size:.2f} pts bin [{tick_mode}])"
+                    )
+                else:
+                    self.status_bar.showMessage(
+                        f"No quotes found for {self.instruments.get(self.current_security_id, {}).get('display_name', 'instrument')} today"
+                    )
                 
                 # Update tick info label
                 self.tick_info_label.setText(f"Bin: {actual_tick_size:.2f} pts")

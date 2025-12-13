@@ -136,14 +136,20 @@ class DhanServiceManager:
             
     def start_websocket_service(self):
         """Start WebSocket market feed service"""
+        # Check if already running
+        if 'websocket' in self.processes and self.processes['websocket'].poll() is None:
+            self.log("WebSocket service already running")
+            return True
+            
         self.log("Starting WebSocket service...")
         self.update_status('websocket', ServiceStatus.STARTING)
         
         try:
-            script_path = self.project_root / "dhan_trading" / "market_feed" / "websocket_service.py"
+            script_path = self.project_root / "dhan_trading" / "market_feed" / "launcher.py"
             
+            # Use --force to allow starting before market hours (we start at 8:55 AM)
             process = subprocess.Popen(
-                [sys.executable, str(script_path)],
+                [sys.executable, str(script_path), "--force"],
                 cwd=str(self.project_root),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -157,7 +163,10 @@ class DhanServiceManager:
                 self.update_status('websocket', ServiceStatus.RUNNING)
                 return True
             else:
-                self.log("WebSocket service failed to start")
+                # Get error output
+                _, stderr = process.communicate(timeout=5)
+                error_msg = stderr.decode('utf-8', errors='ignore').strip()
+                self.log(f"WebSocket service failed to start: {error_msg[:200] if error_msg else 'Unknown error'}")
                 self.update_status('websocket', ServiceStatus.ERROR)
                 return False
                 
@@ -168,11 +177,16 @@ class DhanServiceManager:
             
     def start_dbwriter_service(self):
         """Start database writer service"""
+        # Check if already running
+        if 'dbwriter' in self.processes and self.processes['dbwriter'].poll() is None:
+            self.log("DBWriter service already running")
+            return True
+            
         self.log("Starting DBWriter service...")
         self.update_status('dbwriter', ServiceStatus.STARTING)
         
         try:
-            script_path = self.project_root / "dhan_trading" / "database" / "dbwriter_service.py"
+            script_path = self.project_root / "dhan_trading" / "subscribers" / "db_writer.py"
             
             process = subprocess.Popen(
                 [sys.executable, str(script_path)],
@@ -189,7 +203,10 @@ class DhanServiceManager:
                 self.update_status('dbwriter', ServiceStatus.RUNNING)
                 return True
             else:
-                self.log("DBWriter service failed to start")
+                # Get error output
+                _, stderr = process.communicate(timeout=5)
+                error_msg = stderr.decode('utf-8', errors='ignore').strip()
+                self.log(f"DBWriter service failed to start: {error_msg[:200] if error_msg else 'Unknown error'}")
                 self.update_status('dbwriter', ServiceStatus.ERROR)
                 return False
                 
@@ -203,16 +220,26 @@ class DhanServiceManager:
         self.log("=" * 50)
         self.log("Starting all Dhan services...")
         
-        # Start Redis first
-        if not self.start_redis():
-            self.log("Warning: Redis not available, services may not work properly")
+        # Start Redis first (always try to ensure it's running)
+        if not self.is_redis_running():
+            if not self.start_redis():
+                self.log("Warning: Redis not available, services may not work properly")
+        else:
+            self.log("Redis already running")
+            self.update_status('redis', ServiceStatus.RUNNING)
             
-        # Start WebSocket service
-        self.start_websocket_service()
+        # Start WebSocket service (if not already running)
+        if self.service_status['websocket'] != ServiceStatus.RUNNING:
+            self.start_websocket_service()
+        else:
+            self.log("WebSocket service already running")
         time.sleep(2)
         
-        # Start DBWriter service
-        self.start_dbwriter_service()
+        # Start DBWriter service (if not already running)
+        if self.service_status['dbwriter'] != ServiceStatus.RUNNING:
+            self.start_dbwriter_service()
+        else:
+            self.log("DBWriter service already running")
         
         self.log("All services start sequence completed")
         self.log("=" * 50)

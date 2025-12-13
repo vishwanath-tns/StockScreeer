@@ -378,7 +378,7 @@ class DhanFeedService:
             )
             
             self._stats['connected_at'] = datetime.now()
-            logger.info("✅ Connected to Dhan WebSocket")
+            logger.info("[OK] Connected to Dhan WebSocket")
             
             # Connect to Redis
             if not self.redis.connect():

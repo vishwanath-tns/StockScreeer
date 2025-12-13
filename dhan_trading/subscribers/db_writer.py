@@ -32,6 +32,7 @@ from dhan_trading.market_feed.redis_subscriber import (
 )
 from dhan_trading.market_feed.redis_publisher import QuoteData, TickData, DepthData
 from dhan_trading.market_feed.tick_models import create_tick_tables
+from dhan_trading.db_setup import get_engine, DHAN_DB_NAME
 
 logging.basicConfig(
     level=logging.INFO,
@@ -268,15 +269,9 @@ class DatabaseWriterSubscriber(RedisSubscriber):
 
 
 def build_db_url() -> str:
-    """Build database URL from environment variables."""
-    password = quote_plus(os.getenv('MYSQL_PASSWORD', ''))
-    return (
-        f"mysql+pymysql://{os.getenv('MYSQL_USER', 'root')}:"
-        f"{password}@"
-        f"{os.getenv('MYSQL_HOST', 'localhost')}:"
-        f"{os.getenv('MYSQL_PORT', '3306')}/"
-        f"dhan_trading?charset=utf8mb4"
-    )
+    """Build database URL using centralized configuration."""
+    engine = get_engine(DHAN_DB_NAME)
+    return str(engine.url)
 
 
 def main():
